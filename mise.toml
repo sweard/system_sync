@@ -1,0 +1,36 @@
+# 这是“显式根包”示例，不是通用 Arch 软件清单。
+# 首次使用前，请按 README 的 baseline 步骤替换为你自己的完整列表。
+[bootstrap.packages]
+"pacman:base" = "latest"
+"pacman:base-devel" = "latest"
+"pacman:git" = "latest"
+"pacman:openssh" = "latest"
+"pacman:python" = "latest"
+"pacman:ripgrep" = "latest"
+
+# AUR 由 yay 或 paru 执行。先在系统中准备其中一个 helper，再取消注释并换成你需要的包。
+# "aur:visual-studio-code-bin" = "latest"
+# "aur:google-chrome" = "latest"
+
+[tasks.status]
+description = "查看 mise 包状态、显式根包差异和当前 orphan（只读）"
+run = [
+  "LC_ALL=C mise bootstrap packages status",
+  "./scripts/pacman-converge.sh --status",
+]
+
+[tasks.dry-run]
+description = "预览缺失包安装和未声明包收敛（默认安全入口）"
+run = [
+  "LC_ALL=C mise bootstrap packages apply --dry-run",
+  "./scripts/pacman-converge.sh --dry-run",
+]
+
+[tasks.system-sync]
+description = "安装声明包，再经双重确认收敛显式包并清理真正 orphan"
+confirm = { message = "这会修改系统包状态。是否先安装缺失包并进入收敛确认流程？", default = "no" }
+raw = true
+run = [
+  "LC_ALL=C mise bootstrap packages apply",
+  "./scripts/pacman-converge.sh --apply",
+]

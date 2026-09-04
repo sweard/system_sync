@@ -1,0 +1,48 @@
+# 每行一个包名。这里的包即使没有写进 [bootstrap.packages]，也不会被降级或清理。
+# 首次 apply 前务必按本机的启动、磁盘、网络、远程登录和显卡栈补充此文件。
+
+# Arch 基础与构建环境
+base
+base-devel
+bash
+coreutils
+filesystem
+glibc
+pacman
+shadow
+sudo
+systemd
+util-linux
+
+# 内核、固件、启动链（未安装的条目没有副作用）
+linux
+linux-lts
+linux-zen
+linux-hardened
+linux-firmware
+amd-ucode
+intel-ucode
+mkinitcpio
+grub
+efibootmgr
+refind
+limine
+syslinux
+
+# 存储与加密
+cryptsetup
+lvm2
+mdadm
+btrfs-progs
+e2fsprogs
+xfsprogs
+f2fs-tools
+
+# 网络与远程救援
+iproute2
+networkmanager
+iwd
+wpa_supplicant
+dhcpcd
+openssh
+
