@@ -1,0 +1,78 @@
+scripts/apt-converge.sh
+  s_a9ce9d3bef3048::t_ddad88eabad7ef 1-7
+README.md
+  s_a9ce9d3bef3048::t_54916fca2982e0 213,236
+  s_a9ce9d3bef3048::t_2d9119ff89b2bf 190
+  s_a9ce9d3bef3048::t_b68edda1c5acdc 251,254
+  s_a9ce9d3bef3048::t_745352b31ca2c3 55
+  s_a9ce9d3bef3048::t_5df907c8c295e9 1,3,5,7-11,13-15,23,25-41,43-44,47-52,57,59,61,64,67,70-72,75-77,79,81-84,86,88,90,92,94,96,98-100,103,105-107,110,112,114,117-118,121,123,125,128-130,133-137,140-142,145,147,149,151-155,157,159,161,163-167,169,171,173,175-179,181,183,185,187-189,192,194,196-203,205,208,211,215,217-224,226,229-231,234,238,240-243,245,247,250,256,258,260-265,267,269,271,273,276,279,281-284,286,289-290,295,302,307-308,310-315
+platforms/linux/opensuse/protected-packages.txt
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1-25
+mise.toml
+  s_a9ce9d3bef3048::t_3e916af45fa450 2
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1
+  s_a9ce9d3bef3048::t_745352b31ca2c3 4-9
+  s_a9ce9d3bef3048::t_7a4e570c464dab 3
+platforms/linux/debian/protected-packages.txt
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1-38
+platforms/linux/arch/protected-packages.txt
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1-2,16
+platforms/macos/Brewfile
+  s_a9ce9d3bef3048::t_a0a1f16d3fe127 3-4,40
+scripts/zypper-converge.sh
+  s_a9ce9d3bef3048::t_a0a1f16d3fe127 137
+  s_a9ce9d3bef3048::t_0bdb532848c216 1-136,138-359,361-369
+  s_a9ce9d3bef3048::t_2d9119ff89b2bf 360
+platforms/linux/fedora/protected-packages.txt
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1-29
+platforms/linux/fedora/mise.toml
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1,5-10
+  s_a9ce9d3bef3048::t_09cf1e11ec7b23 2-4
+platforms/linux/opensuse/packages.txt
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1-9
+scripts/homebrew-converge.sh
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 10
+scripts/pacman-converge.sh
+  s_a9ce9d3bef3048::t_8688bb1933ab2d 8-9,183-184,199-200,222
+  s_a9ce9d3bef3048::t_c6c401bb10700c 14,114-122,126,129,132,157,349-351
+  s_a9ce9d3bef3048::t_7144a847900445 352-353
+scripts/linux-reason-converge.sh
+  s_a9ce9d3bef3048::t_a0a1f16d3fe127 128-131,136,139,471-474
+  s_a9ce9d3bef3048::t_ddad88eabad7ef 1-127,132-135,137-138,140-470,475-531
+platforms/linux/arch/mise.toml
+  s_a9ce9d3bef3048::t_09cf1e11ec7b23 2-4
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1,13
+scripts/parse-zypper-xml.py
+  s_a9ce9d3bef3048::t_0bdb532848c216 1-98
+scripts/system-sync.sh
+  s_a9ce9d3bef3048::t_2282fc20f4ac30 57
+  s_a9ce9d3bef3048::t_1b82f3e36a6ef8 56,58-80,82,85,88,91,94,100
+platforms/linux/debian/mise.toml
+  s_a9ce9d3bef3048::t_09cf1e11ec7b23 2-4
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1,5-12
+scripts/extract-mise-packages.py
+  s_a9ce9d3bef3048::t_d4427b9c8ec2fb 2,21-22,77-79,82-83,95,100,109-116,119-123,125-130
+scripts/detect-linux-profile.sh
+  s_a9ce9d3bef3048::t_4435601f9de979 20
+  s_a9ce9d3bef3048::t_a0a1f16d3fe127 13-14,24-36,40-41
+  s_a9ce9d3bef3048::t_aa5c74cf9dd014 1-12,15-19,21-23,37-39,42-66,68-70
+  s_a9ce9d3bef3048::t_2282fc20f4ac30 67
+scripts/dnf-converge.sh
+  s_a9ce9d3bef3048::t_ddad88eabad7ef 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "fe8272274c99700bc188d5f1006136ac1a12310f",
+  "prompts": {},
+  "sessions": {
+    "s_a9ce9d3bef3048": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06a23-f7d9-7e72-9d30-31b66df038f9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
