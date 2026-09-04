@@ -1,0 +1,12 @@
+# Arch Linux 的“显式根包”声明；macOS 不会加载此文件。
+[bootstrap.packages]
+"pacman:base" = "latest"
+"pacman:base-devel" = "latest"
+"pacman:git" = "latest"
+"pacman:openssh" = "latest"
+"pacman:python" = "latest"
+"pacman:ripgrep" = "latest"
+
+# AUR 由 yay 或 paru 执行。先在系统中准备其中一个 helper，再取消注释并换成你需要的包。
+# "aur:visual-studio-code-bin" = "latest"
+# "aur:google-chrome" = "latest"

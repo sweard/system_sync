@@ -4,7 +4,7 @@
 
 | 平台 | 声明来源 | 收敛方式 |
 |---|---|---|
-| Arch Linux | `mise.toml` 中的 `pacman:` / `aur:` 根包 | 降级未声明 explicit 包，再用 `pacman -Qdtq` + `pacman -Rs` 清理 orphan |
+| Arch Linux | `mise.linux.toml` 中的 `pacman:` / `aur:` 根包 | 降级未声明 explicit 包，再用 `pacman -Qdtq` + `pacman -Rs` 清理 orphan |
 | macOS | `platforms/macos/Brewfile` | `brew bundle install` 安装，再由 `brew bundle cleanup` 计算 formula/cask/tap 事务 |
 
 macOS 不把既有 cask 强行转移给 mise。Homebrew 继续拥有和管理现有 formula/cask；mise 只是统一任务入口。这样从 Brewfile 删除 cask 后，Homebrew 能可靠预演和卸载，而不是依赖 mise 对既有 cask 的有限 prune 支持。
@@ -14,7 +14,9 @@ macOS 不把既有 cask 强行转移给 mise。Homebrew 继续拥有和管理现
 ```text
 system_sync/
 ├── .gitignore
+├── .miserc.toml
 ├── README.md
+├── mise.linux.toml
 ├── mise.toml
 ├── config/
 │   ├── homebrew-protected.txt
@@ -31,6 +33,10 @@ system_sync/
 ```
 
 运行时审计清单保存在 `.system-sync/history/<UTC 时间>/`，该目录已被 Git 忽略。
+
+`.miserc.toml` 启用 mise 的平台环境自动发现：Linux 自动合并
+`mise.linux.toml`，macOS 不加载其中的 pacman/AUR 声明。公共 task 仍统一放在
+`mise.toml`。
 
 ## 统一入口
 
@@ -239,7 +245,7 @@ brew bundle install --no-upgrade --file=platforms/macos/Brewfile
 
 ## Arch Linux：建立 baseline
 
-Arch 仍以 `mise.toml` 中的 `pacman:` / `aur:` 项为显式根包。首次使用前先导出：
+Arch 以 `mise.linux.toml` 中的 `pacman:` / `aur:` 项为显式根包。首次使用前先导出：
 
 ```bash
 pacman -Qqen | LC_ALL=C sort -u > native-explicit.txt
@@ -252,8 +258,8 @@ pacman -Qqem | LC_ALL=C sort -u > foreign-explicit.txt
 生成 TOML 片段：
 
 ```bash
-awk '{ printf "\"pacman:%s\" = { version = \"latest\", os = \"linux\" }\n", $0 }' native-explicit.txt
-awk '{ printf "\"aur:%s\" = { version = \"latest\", os = \"linux\" }\n", $0 }' foreign-explicit.txt
+awk '{ printf "\"pacman:%s\" = \"latest\"\n", $0 }' native-explicit.txt
+awk '{ printf "\"aur:%s\" = \"latest\"\n", $0 }' foreign-explicit.txt
 ```
 
 最终配置必须保留 `pacman:base`。再按本机启动、磁盘、内核、网络和显卡环境审阅 `config/protected-packages.txt`。

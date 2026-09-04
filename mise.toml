@@ -1,16 +1,5 @@
-# 这是 Arch Linux 的“显式根包”示例，不是通用软件清单。
-# macOS 的 formula/cask 基线位于 platforms/macos/Brewfile。
-[bootstrap.packages]
-"pacman:base" = { version = "latest", os = "linux" }
-"pacman:base-devel" = { version = "latest", os = "linux" }
-"pacman:git" = { version = "latest", os = "linux" }
-"pacman:openssh" = { version = "latest", os = "linux" }
-"pacman:python" = { version = "latest", os = "linux" }
-"pacman:ripgrep" = { version = "latest", os = "linux" }
-
-# AUR 由 yay 或 paru 执行。先在系统中准备其中一个 helper，再取消注释并换成你需要的包。
-# "aur:visual-studio-code-bin" = { version = "latest", os = "linux" }
-# "aur:google-chrome" = { version = "latest", os = "linux" }
+# 公共任务入口。Linux 包声明位于 mise.linux.toml，macOS 软件声明位于
+# platforms/macos/Brewfile。
 
 [tasks.status]
 description = "查看当前系统的声明状态和差异（只读）"

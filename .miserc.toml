@@ -1,0 +1,2 @@
+# 自动加载与当前平台匹配的 mise.<os>.toml 配置。
+auto_env = true
