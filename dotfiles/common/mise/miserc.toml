@@ -1,0 +1,4 @@
+# 安装到 ~/.config/mise/miserc.toml 后，自动加载 config.macos.toml
+# 或 config.linux.toml。该文件本身也只有在根映射取消注释后才会安装。
+auto_env = true
+env_conf_d = false

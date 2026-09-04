@@ -1,0 +1,23 @@
+# Linux 登录 shell 初始化。仅在实际安装 Linuxbrew 时加载它。
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+elif [[ -x "$HOME/.linuxbrew/bin/brew" ]]; then
+  eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
+fi
+
+toolbox_bin="$HOME/.local/share/JetBrains/Toolbox/scripts"
+[[ -d "$toolbox_bin" ]] && path=("${path[@]}" "$toolbox_bin")
+unset toolbox_bin
+
+if [[ -z "${ANDROID_HOME:-}" && -d "$HOME/Android/Sdk" ]]; then
+  export ANDROID_HOME="$HOME/Android/Sdk"
+fi
+if [[ -n "${ANDROID_HOME:-}" ]]; then
+  for android_bin in emulator tools platform-tools build-tools; do
+    [[ -d "$ANDROID_HOME/$android_bin" ]] && path=("${path[@]}" "$ANDROID_HOME/$android_bin")
+  done
+  unset android_bin
+fi
+
+typeset -U path PATH
+export PATH

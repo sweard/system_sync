@@ -1,0 +1,23 @@
+# 跨平台全局 mise 配置候选。
+#
+# 当前所有设置均被注释；该文件即使被打开也不会安装工具或改变环境。
+# macOS / Linux 的环境和 PATH 差异分别位于对应平台目录。
+
+# 只负责在 mise 输出中隐藏匹配名称；这不是加密。
+# redactions = ["*_TOKEN", "*_SECRET", "*_PASSWORD", "*_API_KEY"]
+
+# 跨平台工具版本候选。版本来自 2026-09-04 的当前 Mac，
+# 在 Linux 正式启用前仍需逐项确认可用性。
+# [tools]
+# node = "24.15.0"
+# python = "3.9.6"
+# ruby = "4.0.6"
+# java = "21"
+# rust = "1.98.0"
+# bun = "1.4.0"
+# uv = "0.12.9"
+# yarn = "1.22.22"
+
+# 私密值只从 Git 仓库外加载。
+# [env]
+# _.file = "{{ env.HOME }}/.config/mise/secrets.env"

@@ -1,0 +1,24 @@
+# macOS 全局环境和 PATH 候选。所有设置当前均被注释。
+#
+# [env]
+# LANG = "zh"
+# LC_ALL = "en_US.UTF-8"
+# ANDROID_HOME = "{{ env.HOME }}/Library/Android/sdk"
+# LDFLAGS = "-L/opt/homebrew/opt/ruby/lib"
+# CPPFLAGS = "-I/opt/homebrew/opt/ruby/include"
+# PYENV_ROOT = "{{ env.HOME }}/.pyenv"
+#
+# _.path = [
+#   "{{ env.HOME }}/.local/bin",
+#   "{{ env.HOME }}/.git-ai/bin",
+#   "/opt/homebrew/opt/ruby/bin",
+#   "{{ env.HOME }}/.pyenv/bin",
+#   "{{ env.HOME }}/.cargo/bin",
+#   "{{ env.HOME }}/development/flutter/bin",
+#   "{{ env.HOME }}/.gem/bin",
+#   "{{ env.HOME }}/Library/Application Support/JetBrains/Toolbox/scripts",
+#   "{{ env.HOME }}/Library/Android/sdk/emulator",
+#   "{{ env.HOME }}/Library/Android/sdk/tools",
+#   "{{ env.HOME }}/Library/Android/sdk/platform-tools",
+#   "{{ env.HOME }}/Library/Android/sdk/build-tools",
+# ]

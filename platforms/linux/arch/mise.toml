@@ -6,9 +6,11 @@ system_packages.managers = ["pacman", "aur"]
 "pacman:base" = "latest"
 "pacman:base-devel" = "latest"
 "pacman:git" = "latest"
+"pacman:jq" = "latest"
 "pacman:openssh" = "latest"
 "pacman:python" = "latest"
 "pacman:ripgrep" = "latest"
+"pacman:zsh" = "latest"
 
 # AUR 由 yay 或 paru 执行。先准备其中一个 helper，再按需取消注释。
 # "aur:visual-studio-code-bin" = "latest"

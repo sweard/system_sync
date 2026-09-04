@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # 公共库：解析「仓库身份(origin)+分支」缓存目录，并提供上下文注入。
 # 供 branch-cache-save.sh / branch-cache-load.sh / branch-context-watch.sh source。
+CLAUDE_HOOK_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$CLAUDE_HOOK_DIR/hook-runtime.sh" 2>/dev/null || {
+  return 1 2>/dev/null || exit 1
+}
+unset CLAUDE_HOOK_DIR
 #
 # bc_resolve <cwd>：成功 return 0 并设置：
 #   BC_BRANCH 当前分支名
@@ -21,11 +26,12 @@ bc_resolve() {
   if [ -n "$remote" ]; then
     norm=$(printf '%s' "$remote" | sed -E 's#\.git$##')
     name=$(basename "$norm")
-    h=$(printf '%s' "$norm" | shasum 2>/dev/null | cut -c1-8)
+    h=$(printf '%s' "$norm" | claude_hook_sha1 2>/dev/null | cut -c1-8)
   else
     name=$(basename "$top")
-    h=$(printf '%s' "$top" | shasum 2>/dev/null | cut -c1-8)
+    h=$(printf '%s' "$top" | claude_hook_sha1 2>/dev/null | cut -c1-8)
   fi
+  [ -n "$h" ] || return 1
   safe=$(printf '%s' "$branch" | sed 's#[^A-Za-z0-9._-]#_#g')
   BC_BRANCH="$branch"
   BC_KEY="${name}-${h}__${safe}"

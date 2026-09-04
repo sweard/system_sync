@@ -3,7 +3,9 @@
 
 filesystem
 git
+jq
 openssh
 python3
 ripgrep
+zsh
 zypper

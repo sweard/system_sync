@@ -17,6 +17,7 @@ shadow-utils
 sudo
 systemd
 util-linux
+zsh
 
 # 常见启动、存储与网络组件
 dracut

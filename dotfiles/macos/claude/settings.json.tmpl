@@ -16,10 +16,10 @@
       "Bash(flutter_rust_bridge_codegen generate *)",
       "Bash(flutter analyze *)",
       "Bash(cargo build *)",
-      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf remote -v)",
-      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf log --oneline -5)",
-      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf/rust/src/excel_to_xml remote -v)",
-      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf/rust/src/excel_to_xml log --oneline -5)",
+      "Bash(git -C {{ env.HOME }}/FlutterProjects/e2xf remote -v)",
+      "Bash(git -C {{ env.HOME }}/FlutterProjects/e2xf log --oneline -5)",
+      "Bash(git -C {{ env.HOME }}/FlutterProjects/e2xf/rust/src/excel_to_xml remote -v)",
+      "Bash(git -C {{ env.HOME }}/FlutterProjects/e2xf/rust/src/excel_to_xml log --oneline -5)",
       "Bash(flutter pub *)",
       "Bash(dart run *)",
       "Read"
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/sbwoan/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
+            "command": "{{ env.HOME }}/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
           }
         ]
       },
@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PostToolUse"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude PostToolUse"
           }
         ]
       },
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PostToolUse"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PostToolUse"
           }
         ]
       }
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/sbwoan/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
+            "command": "{{ env.HOME }}/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
           }
         ]
       },
@@ -82,7 +82,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PreToolUse"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude PreToolUse"
           }
         ]
       },
@@ -91,7 +91,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PreToolUse"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PreToolUse"
           }
         ]
       }
@@ -113,7 +113,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude UserPromptSubmit"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude UserPromptSubmit"
           }
         ]
       },
@@ -121,7 +121,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude UserPromptSubmit"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude UserPromptSubmit"
           }
         ]
       }
@@ -139,7 +139,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude SessionStart"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude SessionStart"
           }
         ]
       },
@@ -147,7 +147,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude SessionStart"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude SessionStart"
           }
         ]
       }
@@ -166,7 +166,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude Stop"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude Stop"
           }
         ]
       },
@@ -174,7 +174,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude Stop"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude Stop"
           }
         ]
       }
@@ -185,7 +185,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PermissionRequest"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude PermissionRequest"
           }
         ]
       },
@@ -194,7 +194,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PermissionRequest"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PermissionRequest"
           }
         ]
       }
@@ -205,7 +205,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PermissionDenied"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude PermissionDenied"
           }
         ]
       },
@@ -214,7 +214,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PermissionDenied"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PermissionDenied"
           }
         ]
       }
@@ -225,7 +225,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude Elicitation"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude Elicitation"
           }
         ]
       },
@@ -234,7 +234,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude Elicitation"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude Elicitation"
           }
         ]
       }
@@ -244,7 +244,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude StopFailure"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude StopFailure"
           }
         ]
       },
@@ -252,7 +252,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude StopFailure"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude StopFailure"
           }
         ]
       }
@@ -262,7 +262,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude SessionEnd"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Applications/PromLight/agent_hook.py' --agent claude SessionEnd"
           }
         ]
       },
@@ -270,7 +270,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude SessionEnd"
+            "command": "/usr/bin/python3 '{{ env.HOME }}/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude SessionEnd"
           }
         ]
       }

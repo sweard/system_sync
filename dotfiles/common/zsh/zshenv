@@ -1,0 +1,15 @@
+# 跨平台 zsh 环境入口。保持轻量，且只加入实际存在的用户目录。
+[[ -r "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+
+for candidate_bin in \
+  "$HOME/.local/bin" \
+  "$HOME/.git-ai/bin" \
+  "$HOME/.gem/bin" \
+  "$HOME/development/flutter/bin"
+do
+  [[ -d "$candidate_bin" ]] && path=("$candidate_bin" "${path[@]}")
+done
+unset candidate_bin
+
+typeset -U path PATH
+export PATH

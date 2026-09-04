@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Stop hook：按「仓库身份(origin)+分支」生成当前会话上下文快照，每分支保留最近 4 份。
 # stdin = hook 输入 JSON。永远以 0 退出，绝不阻塞。
-export PATH="/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-export LANG="${LANG:-en_US.UTF-8}"
-. "$HOME/.claude/hooks/branch-cache-lib.sh" 2>/dev/null || exit 0
+CLAUDE_HOOK_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$CLAUDE_HOOK_DIR/branch-cache-lib.sh" 2>/dev/null || exit 0
+unset CLAUDE_HOOK_DIR
 
 input=$(cat)
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)

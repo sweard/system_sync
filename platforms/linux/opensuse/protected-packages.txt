@@ -13,6 +13,7 @@ sudo
 systemd
 systemd-sysvinit
 util-linux
+zsh
 zypper
 
 # 常见启动、存储与网络组件

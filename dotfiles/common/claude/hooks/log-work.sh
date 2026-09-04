@@ -2,8 +2,9 @@
 # 记录每次用户提交给 Claude 的需求，用于后期统计 / 总结由 AI 完成的工作。
 # 由 UserPromptSubmit hook 调用，stdin 为 hook 输入的 JSON。
 # 永远以 0 退出，绝不阻塞用户提交。
-export PATH="/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-export LANG="${LANG:-en_US.UTF-8}"
+CLAUDE_HOOK_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$CLAUDE_HOOK_DIR/hook-runtime.sh" 2>/dev/null || exit 0
+unset CLAUDE_HOOK_DIR
 
 LOG="$HOME/.claude/work-log.md"
 

@@ -12,6 +12,7 @@ shadow
 sudo
 systemd
 util-linux
+zsh
 
 # 内核、固件与启动链
 linux

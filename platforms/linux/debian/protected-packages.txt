@@ -24,6 +24,7 @@ systemd
 systemd-sysv
 tar
 util-linux
+zsh
 
 # 常见启动、存储与网络组件
 grub-common

@@ -5,6 +5,8 @@ system_packages.managers = ["dnf"]
 [bootstrap.packages]
 "dnf:filesystem" = "latest"
 "dnf:git" = "latest"
+"dnf:jq" = "latest"
 "dnf:openssh-clients" = "latest"
 "dnf:python3" = "latest"
 "dnf:ripgrep" = "latest"
+"dnf:zsh" = "latest"

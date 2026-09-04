@@ -1,7 +1,8 @@
 # 公共任务入口。各平台的软件声明位于 platforms/ 下。
 #
 # 开发工具、环境变量、PATH 和 dotfiles 的候选配置目前全部保持注释，
-# 不会改变当前电脑。候选值见 dotfiles/mise/config.toml。
+# 不会改变当前电脑。公共候选位于 dotfiles/common，平台差异分别位于
+# dotfiles/macos 和 dotfiles/linux。
 monorepo_root = true
 
 [monorepo]
@@ -31,7 +32,7 @@ confirm = { message = "这会升级 Brewfile 中的软件。是否继续进入�
 raw = true
 run = "./scripts/homebrew-converge.sh --upgrade"
 
-# dotfiles 命令入口可以安全保留；由于下方映射均被注释，当前不会接管任何文件。
+# dotfiles 命令入口可以安全保留；公共和平台映射均被注释，当前不会接管任何文件。
 [tasks.config-status]
 description = "查看已启用 dotfiles 映射的状态"
 run = "mise bootstrap dotfiles status"
@@ -48,15 +49,13 @@ run = "mise bootstrap dotfiles apply"
 # -----------------------------------------------------------------------------
 # 候选 dotfiles 映射（当前全部未启用）
 #
-# 工具、环境变量和 PATH 只在 dotfiles/mise/config.toml 保留一份候选定义，
-# 避免与根 task 配置重复。先审阅该文件，再启用全局 mise 配置映射。
+# 根配置只声明跨平台公共映射；mise.macos.toml / mise.linux.toml 是两个平台适配器。
+# .miserc.toml 的 auto_env 会自动选择当前平台。所有条目仍被注释。
 #
 # [dotfiles]
-# "~/.config/mise/config.toml" = { source = "dotfiles/mise/config.toml", mode = "symlink" }
-# "~/.zshenv" = { source = "dotfiles/zsh/zshenv", mode = "symlink" }
-# "~/.zprofile" = { source = "dotfiles/zsh/zprofile", mode = "symlink" }
-# "~/.zshrc" = { source = "dotfiles/zsh/zshrc", mode = "symlink" }
-# "~/.claude/CLAUDE.md" = { source = "dotfiles/claude/CLAUDE.md", mode = "copy" }
-# "~/.claude/settings.json" = { source = "dotfiles/claude/settings.json", mode = "copy" }
-# "~/.claude/hooks" = { source = "dotfiles/claude/hooks", mode = "symlink-each" }
-# "~/Library/Application Support/Code/User/settings.json" = { source = "dotfiles/vscode/settings.json", mode = "copy" }
+# "~/.config/mise/miserc.toml" = { source = "dotfiles/common/mise/miserc.toml", mode = "symlink" }
+# "~/.config/mise/config.toml" = { source = "dotfiles/common/mise/config.toml", mode = "symlink" }
+# "~/.zshenv" = { source = "dotfiles/common/zsh/zshenv", mode = "symlink" }
+# "~/.zshrc" = { source = "dotfiles/common/zsh/zshrc", mode = "symlink" }
+# "~/.claude/CLAUDE.md" = { source = "dotfiles/common/claude/CLAUDE.md", mode = "copy" }
+# "~/.claude/hooks" = { source = "dotfiles/common/claude/hooks", mode = "symlink-each" }

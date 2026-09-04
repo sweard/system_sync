@@ -2,9 +2,9 @@
 # UserPromptSubmit hook：检测会话内 git 分支切换（同一仓库 checkout 切分支），
 # 分支变化时自动注入新分支的上下文缓存。未变化则静默跳过。
 # stdin = hook 输入 JSON。永远以 0 退出。
-export PATH="/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-export LANG="${LANG:-en_US.UTF-8}"
-. "$HOME/.claude/hooks/branch-cache-lib.sh" 2>/dev/null || exit 0
+CLAUDE_HOOK_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$CLAUDE_HOOK_DIR/branch-cache-lib.sh" 2>/dev/null || exit 0
+unset CLAUDE_HOOK_DIR
 
 input=$(cat)
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)

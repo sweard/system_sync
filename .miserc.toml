@@ -1,0 +1,6 @@
+# 让仓库自动加载 mise.macos.toml 或 mise.linux.toml。
+# 这里只影响本仓库的配置发现，不会安装工具或应用 dotfiles。
+auto_env = true
+
+# 本仓库当前不使用带环境后缀的 conf.d 片段，显式固定迁移期行为。
+env_conf_d = false

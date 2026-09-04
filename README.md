@@ -18,23 +18,38 @@ mise 当前原生支持 `apt`、`dnf`、`pacman` 和 `aur`，但没有内置 `zy
 
 ```text
 system_sync/
+├── .miserc.toml                     # 在仓库内自动选择 macOS / Linux 配置环境
 ├── .gitignore
 ├── README.md
 ├── mise.toml                         # 公共 task 入口
-├── dotfiles/                         # 当前电脑的脱敏候选快照；映射尚未启用
-│   ├── mise/
-│   │   ├── config.toml               # 已注释的 tools / env / PATH 候选
-│   │   └── secrets.env.example
-│   ├── zsh/
-│   │   ├── zshenv
-│   │   ├── zprofile
-│   │   └── zshrc
-│   ├── claude/
-│   │   ├── CLAUDE.md
-│   │   ├── hooks/
-│   │   └── settings.json             # 已移除认证令牌
-│   └── vscode/
-│       └── settings.json
+├── mise.macos.toml                   # macOS dotfiles 适配器；映射尚未启用
+├── mise.linux.toml                   # Linux dotfiles 适配器；映射尚未启用
+├── dotfiles/
+│   ├── common/                       # 两个平台共用
+│   │   ├── mise/
+│   │   │   ├── config.toml           # 已注释的跨平台 tools 候选
+│   │   │   ├── miserc.toml
+│   │   │   └── secrets.env.example
+│   │   ├── zsh/
+│   │   │   ├── zshenv
+│   │   │   └── zshrc
+│   │   └── claude/
+│   │       ├── CLAUDE.md
+│   │       └── hooks/
+│   ├── macos/                        # 当前 Mac 脱敏快照与平台路径
+│   │   ├── mise/config.macos.toml
+│   │   ├── zsh/
+│   │   │   ├── zprofile
+│   │   │   └── platform.zsh
+│   │   ├── claude/settings.json.tmpl
+│   │   └── vscode/settings.json.tmpl
+│   └── linux/                        # 安全的 Linux 候选模板
+│       ├── mise/config.linux.toml
+│       ├── zsh/
+│       │   ├── zprofile
+│       │   └── platform.zsh
+│       ├── claude/settings.json.tmpl
+│       └── vscode/settings.json.tmpl
 ├── platforms/
 │   ├── macos/
 │   │   ├── Brewfile
@@ -66,7 +81,7 @@ system_sync/
     └── parse-zypper-xml.py
 ```
 
-`mise.toml` 设置了 `monorepo_root = true`，并在 `[monorepo].config_roots` 中显式列出 Arch、Debian 和 Fedora 的子配置。这样在对应 profile 目录中运行 mise 时，它会同时读取根配置的 task 和子目录的包声明，不再需要根目录的 `mise.linux.toml` 或 `.miserc.toml`，也不依赖已废弃的自动目录扫描。
+`mise.toml` 设置了 `monorepo_root = true`，并在 `[monorepo].config_roots` 中显式列出 Arch、Debian 和 Fedora 的包 profile。`.miserc.toml` 只负责启用 mise 的 `auto_env`：在 macOS 自动叠加 `mise.macos.toml`，在 Linux 自动叠加 `mise.linux.toml`。包 profile 与 dotfiles 平台适配器是两条独立配置链，不依赖自动目录扫描。
 
 运行时审计清单保存在 `.system-sync/history/<UTC 时间>/`；该目录和任意层级的 `.DS_Store` 都已被 Git 忽略。
 
@@ -98,7 +113,7 @@ mise run config-dry-run
 mise run config-sync
 ```
 
-当前根配置中的全部 `[dotfiles]` 映射都被注释，因此这三个命令不会接管或修改任何用户文件。它们是为以后逐项启用映射预留的入口。
+当前公共配置和两个平台适配器中的全部 `[dotfiles]` 映射都被注释，因此这三个命令不会接管或修改任何用户文件。启用后，命令接口保持不变，mise 会在内部选择当前平台适配器。
 
 Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 
@@ -111,7 +126,7 @@ Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 
 ## 首次迁移 Linux baseline
 
-所有 Linux profile 都需要 Bash、Python 3、mise 和对应的包管理器。APT/DNF/Arch 可先由 mise 安装 profile 中缺失的 Python；openSUSE 脚本自身需要 Python 解析 zypper XML，因此首次运行前必须已安装 `python3`。
+所有 Linux profile 都需要 Bash、Python 3、mise 和对应的包管理器。APT/DNF/Arch 可先由 mise 安装 profile 中缺失的 Python；openSUSE 脚本自身需要 Python 解析 zypper XML，因此首次运行前必须已安装 `python3`。为了支撑公共 shell 与 Claude Hook，各 Linux profile 还声明了 `zsh` 和 `jq`，并将 `zsh` 加入保护清单。
 
 导入后要逐项审阅 `protected-packages.txt`，根据本机的内核、引导、磁盘/加密、网络、远程救援和显卡环境补充保护项。
 
@@ -300,57 +315,92 @@ tap:owner/repository
 mise run macos-upgrade
 ```
 
-## 开发环境和应用配置候选快照
+## 跨平台开发环境和应用配置
 
-`dotfiles/` 保存了 2026-09-04 从当前 Mac 盘点得到的候选配置，但目前没有任何文件映射处于启用状态，也没有启用全局 `[tools]`、`[env]` 或 `_.path`。本次纳入 Git 不会执行工具安装，不会修改 `~/.zshrc`、Claude、VS Code 或 `~/.config/mise/config.toml`。
+`dotfiles/` 已重构为公共模块和两个平台适配器：
 
-### 当前工具基线
+- `dotfiles/common/`：跨平台工具候选、zsh 主配置、Claude 全局说明和 Hook；
+- `dotfiles/macos/`：Homebrew、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
+- `dotfiles/linux/`：Linux Android SDK、可选 Linuxbrew，以及不含 macOS 外部 Hook 的 Claude/VS Code 模板；
+- `mise.macos.toml` 与 `mise.linux.toml`：相同 `config-*` 命令背后的两个平台适配器。
 
-| 工具 | 当前来源 | 盘点版本 | 候选处理 |
-|---|---|---:|---|
-| Node | nvm 0.40.7 | 24.15.0 | 已写入注释的 `[tools]`；启用时停用 nvm |
-| Python | Apple / Xcode | 3.9.6 | 仅记录当前版本，正式迁移前应重新选择版本 |
-| Ruby | Homebrew | 4.0.6 | 已写入注释的 `[tools]`；启用时从 Brewfile 和手工 PATH 移交 |
-| Java | 本机 JDK，默认 JetBrains Runtime | 21.0.6 | 候选声明为 Java 21；mise 安装的发行版可能不同 |
-| Rust | rustup stable | 1.98.0 | 已写入注释的 `[tools]`；启用时决定是否继续保留 rustup |
-| Bun | Homebrew | 1.4.0 | 候选已注释；不得与 Brewfile 同时拥有 |
-| uv | Homebrew | 0.12.9 | 候选已注释；不得与 Brewfile 同时拥有 |
-| Yarn | Homebrew | 1.22.22 | 候选已注释；不得与 Brewfile 同时拥有 |
-| Flutter | 本地 stable checkout | 3.47.2，工作树有改动 | 只保留现有 PATH，不交给 mise，避免覆盖本地改动 |
+仓库和未来的全局 mise 配置都通过 `auto_env` 自动选择 `macos` 或 `linux`。公共模块不需要知道当前平台，平台路径也不会散落在公共调用入口中。
 
-当前 zsh 中还有 pyenv 初始化片段，但盘点时 `~/.pyenv/bin/pyenv` 不存在，所以没有把 pyenv 当成现有工具基线。Java 18、17 和 11 的已安装 JDK 也没有纳入全局默认工具声明；项目需要时应在各自的 `mise.toml` 中声明。
+目前所有 `[dotfiles]`、`[tools]`、`[env]` 和 `_.path` 仍被注释。`.miserc.toml` 只改变本仓库内的平台配置发现，不会安装工具、写入 HOME 或激活 shell。
+
+### 工具候选
+
+公共 `dotfiles/common/mise/config.toml` 记录以下候选版本：
+
+| 工具 | 版本 | 当前来源 / 注意事项 |
+|---|---:|---|
+| Node | 24.15.0 | 当前 Mac 由 nvm 管理；启用 mise 后停用 nvm |
+| Python | 3.9.6 | 来自 Apple/Xcode，较旧；Linux 和 macOS 启用前都应重新评估 |
+| Ruby | 4.0.6 | 当前 Mac 由 Homebrew 管理；迁移后从 Brewfile 和手工 PATH 移交 |
+| Java | 21 | 当前 Mac 默认 JBR 21.0.6；mise 选择的发行版可能不同 |
+| Rust | 1.98.0 | 当前由 rustup 管理；迁移时决定是否保留 rustup |
+| Bun | 1.4.0 | 当前在 Brewfile 中；不得同时由 Homebrew 和 mise 拥有 |
+| uv | 0.12.9 | 当前在 Brewfile 中；不得同时由 Homebrew 和 mise 拥有 |
+| Yarn | 1.22.22 | 当前在 Brewfile 中；不得同时由 Homebrew 和 mise 拥有 |
+
+这些版本来自当前 Mac，仅作为跨平台候选，不代表已经在真实 Linux 主机验证。Flutter 3.47.2 的本地工作树有改动，因此仍只保留 PATH 候选，不交给 mise。
+
+### zsh
+
+`dotfiles/common/zsh/zshrc` 现在只包含两个平台都能使用的 Zinit、Powerlevel10k、通用插件、OpenClaw 补全和本机私有配置入口。它会按需加载：
+
+```text
+~/.config/zsh/platform.zsh
+```
+
+两个平台分别提供这个文件：
+
+- macOS：Homebrew nvm、Homebrew Ruby、pyenv 和当前 locale；
+- Linux：存在时兼容 `~/.nvm` 与 `~/.pyenv`，不假定安装 Homebrew。
+
+`zprofile` 也按平台拆分：macOS 使用 `/opt/homebrew`、`~/Library/Android/sdk` 和 macOS Toolbox 路径；Linux 使用可选 Linuxbrew、`~/Android/Sdk` 和 Linux Toolbox 路径。所有用户目录都改用 `$HOME`，不再把 `/Users/sbwoan` 写进公共 shell 配置。
+
+公共 `zshenv` 只在目录真实存在时加入 `.local/bin`、git-ai、Gem、Cargo 和 Flutter 路径，并用 zsh 的唯一化数组消除重复 PATH。
+
+### Claude 和 VS Code
+
+Claude 的 `CLAUDE.md` 与自有 Hook 放在 `common`。Hook 运行环境会自动识别：
+
+- Apple Silicon Homebrew：`/opt/homebrew/bin`；
+- Linuxbrew：`/home/linuxbrew/.linuxbrew/bin`；
+- 系统 `/usr/bin`、`/bin` 和 `/usr/local/bin`；
+- macOS `shasum` 或 Linux `sha1sum`。
+
+macOS Claude 模板保留当前 PromLight、SBBars、git-ai 和项目权限；Linux 模板只保留可跨平台的 Claude Hook 与 Flutter/Rust 命令，不伪造 macOS 应用路径。认证令牌和私有服务地址仍只允许放在仓库外的 `~/.config/mise/secrets.env`。
+
+VS Code 分别映射到：
+
+- macOS：`~/Library/Application Support/Code/User/settings.json`；
+- Linux：`~/.config/Code/User/settings.json`。
+
+Claude 和 VS Code 使用 mise `template` 模式，将 `{{ env.HOME }}` 渲染为目标机器的真实 HOME。`config-dry-run` 不执行模板渲染，只会把模板标为可能变更；需要查看渲染后的真实差异时使用 `mise bootstrap dotfiles diff`。
 
 ### 环境变量和 PATH
 
-候选全局配置位于 `dotfiles/mise/config.toml`，其中所有有效行都以 `#` 注释。它记录：
+配置分为三个文件：
 
-- `LANG=zh`、`LC_ALL=en_US.UTF-8`、`ANDROID_HOME`；
-- Homebrew Ruby 当前使用的 `LDFLAGS` 和 `CPPFLAGS`，以及现有但暂时无可执行文件的 `PYENV_ROOT`；
-- `.local/bin`、git-ai、Homebrew Ruby、pyenv、Cargo、Flutter、Gem、JetBrains Toolbox 和 Android SDK 路径；
-- 当前 Node、Python、Ruby、Java、Rust、Bun、uv、Yarn 版本。
+- `dotfiles/common/mise/config.toml`：工具版本、密钥文件入口和输出脱敏规则；
+- `dotfiles/macos/mise/config.macos.toml`：macOS locale、Homebrew Ruby、Android 和 Toolbox；
+- `dotfiles/linux/mise/config.linux.toml`：Linux Android 和 Toolbox 常见位置。
 
-PATH 清单只取自持久的 zsh 配置，已经排除 Codex 会话临时目录、系统自动注入目录和重复项。启用某个 mise 工具时，应同时删除 nvm、rustup、Homebrew Ruby 等对应的手工初始化或 PATH，避免同一个工具存在两个所有者。
+Linux locale 不会照搬 macOS。应先用发行版工具确认已经生成的 locale，再取消注释 `LANG` / `LC_ALL`。
 
-### zsh、Claude 和 VS Code
-
-- `dotfiles/zsh/` 是当前三个 shell 入口文件的候选快照。个人姓名和内网地址没有进入 Git，未来通过 `~/.zshrc.local` 本机私有文件加载。Powerlevel10k 的 `~/.p10k.zsh` 暂未纳管。
-- `dotfiles/claude/` 保留当前 Claude Code 的全局说明、分支缓存/工作日志 Hook、模型、权限和插件设置，但从 `settings.json` 明确删除了 `ANTHROPIC_AUTH_TOKEN` 和私有 `ANTHROPIC_BASE_URL`。部分 Hook 仍指向本机安装的 PromLight、SBBars 和 git-ai，迁移到其他机器前要检查这些路径。
-- `dotfiles/vscode/settings.json` 是当前 macOS VS Code 用户设置快照。若继续使用 VS Code Settings Sync，不应同时启用这个文件的 mise copy 映射。
-- Claude 和 VS Code 使用 `copy` 候选模式，因为应用可能主动改写 JSON；zsh 和全局 mise 配置使用 `symlink` 候选模式。
-
-真实密钥只应放在仓库外的 `~/.config/mise/secrets.env`。仓库提供 `dotfiles/mise/secrets.env.example`，并忽略任意 `dotfiles/**/secrets.env` 和 `dotfiles/**/*.local`。`redactions` 只能减少 mise 输出泄漏，不能代替加密。
+真实密钥文件和 `*.local` 继续被 Git 忽略。`redactions` 只能降低输出泄漏风险，不是加密。
 
 ### 将来逐项启用
 
-不要一次打开全部映射。推荐顺序：
+1. 审阅公共工具版本以及当前平台的 mise 配置。
+2. 在根 `mise.toml` 中只启用公共映射，再在当前平台的 `mise.macos.toml` 或 `mise.linux.toml` 中启用对应映射。
+3. 运行 `mise run config-status` 和 `mise run config-dry-run`，确认目标和来源都属于当前平台。
+4. 处理已有真实文件与 symlink 的首次接管冲突后，再运行 `mise run config-sync`。
+5. 最后启用 `eval "$(mise activate zsh)"`，并且每次只把一个工具从 nvm、Homebrew、rustup 或其他旧管理器迁给 mise。
 
-1. 审阅 `dotfiles/mise/config.toml`，先只取消注释 `LANG`、`LC_ALL`、`ANDROID_HOME` 和没有冲突的 PATH。
-2. 在根 `mise.toml` 中只取消注释 `~/.config/mise/config.toml` 映射，运行 `mise run config-dry-run`；确认后才运行 `mise run config-sync`。
-3. 在现有 `~/.zshrc` 中手工加入 `eval "$(mise activate zsh)"`，重新打开终端并验证。
-4. 每次只迁移一个工具。先启用对应 `[tools]`，验证版本，再从 nvm、Homebrew、rustup 或手工 PATH 移除旧所有权。
-5. 最后分别考虑 zsh、Claude 和 VS Code 映射。启用 whole-file 映射前必须先看 dry-run；mise 默认会拒绝覆盖未管理的现有文件，不要为了省事直接使用 `--force`。
-
-从 `[dotfiles]` 删除条目不会自动删除已经应用的目标文件。如果将来需要取消管理，应先运行 `mise bootstrap dotfiles unapply --dry-run`，确认后执行 `mise bootstrap dotfiles unapply`，再删除映射。
+从 `[dotfiles]` 删除条目不会自动删除已经应用的目标。取消管理时先执行 `mise bootstrap dotfiles unapply --dry-run`，确认后执行 `mise bootstrap dotfiles unapply`，再删除映射。
 
 ## 风险、取消和恢复
 
@@ -368,7 +418,7 @@ brew bundle install --no-upgrade --file=platforms/macos/Brewfile
 
 ## Git 管理
 
-建议提交 `mise.toml`、`platforms/`、`scripts/` 和 `README.md`。每次修改声明先查看 diff 和 dry-run：
+建议提交 `.miserc.toml`、`mise*.toml`、`dotfiles/`、`platforms/`、`scripts/` 和 `README.md`。每次修改声明先查看 diff 和 dry-run：
 
 ```bash
 git diff
@@ -381,6 +431,7 @@ mise run dry-run
 
 - [mise Bootstrap Packages](https://mise.jdx.dev/bootstrap/packages/)
 - [mise Environments](https://mise.jdx.dev/environments/)
+- [mise Configuration Environments](https://mise.jdx.dev/configuration/environments.html)
 - [mise Dotfiles](https://mise.jdx.dev/dotfiles.html)
 - [mise config trust](https://mise.jdx.dev/cli/trust.html)
 - [mise monorepo tasks](https://mise.jdx.dev/tasks/monorepo.html)

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # SessionStart hook：按「仓库身份(origin)+分支」注入最近 3 份快照；
 # 并记录本会话当前分支，供 UserPromptSubmit 检测会话内分支切换。
-export PATH="/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-export LANG="${LANG:-en_US.UTF-8}"
-. "$HOME/.claude/hooks/branch-cache-lib.sh" 2>/dev/null || exit 0
+CLAUDE_HOOK_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+. "$CLAUDE_HOOK_DIR/branch-cache-lib.sh" 2>/dev/null || exit 0
+unset CLAUDE_HOOK_DIR
 
 input=$(cat)
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)
