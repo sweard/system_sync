@@ -1,0 +1,61 @@
+dotfiles/mise/secrets.env.example
+  s_a9ce9d3bef3048::t_a179b04aad43d1 3
+  s_a9ce9d3bef3048::t_d5552d12cf8211 1-2,4-6
+dotfiles/claude/hooks/branch-cache-lib.sh
+  s_a9ce9d3bef3048::t_cbc9b7a52b3b9a 1-59
+dotfiles/vscode/settings.json
+  s_a9ce9d3bef3048::t_02b78356671f50 1-19
+dotfiles/zsh/zshrc
+  s_a9ce9d3bef3048::t_a1528e46ea49d4 87
+  s_a9ce9d3bef3048::t_b49d96704ac7f9 88,92-94
+  s_a9ce9d3bef3048::t_f0168f5d1c6ca6 1-86,89-91
+mise.toml
+  s_a9ce9d3bef3048::t_a80524cb7c39b1 36
+  s_a9ce9d3bef3048::t_d5552d12cf8211 2-4,33-35,37-49,53-58,60,62
+  s_a9ce9d3bef3048::t_2a590e23ef90b7 50-52
+  s_a9ce9d3bef3048::t_7380204af0a330 59,61
+dotfiles/claude/hooks/branch-cache-load.sh
+  s_a9ce9d3bef3048::t_cbc9b7a52b3b9a 1-25
+dotfiles/claude/hooks/log-work.sh
+  s_a9ce9d3bef3048::t_cbc9b7a52b3b9a 1-32
+README.md
+  s_a9ce9d3bef3048::t_ee76db19519ced 327-328
+  s_a9ce9d3bef3048::t_bb8d96644912ab 33-34
+  s_a9ce9d3bef3048::t_a9ca8b18997155 24-32,35-37,93-102,303-326,329-336,338-354,383-384
+  s_a9ce9d3bef3048::t_a179b04aad43d1 337
+  s_a9ce9d3bef3048::t_3f77f884408077 1,3
+dotfiles/claude/settings.json
+  s_a9ce9d3bef3048::t_b7584e1866b2d5 1-285
+dotfiles/claude/hooks/branch-context-watch.sh
+  s_a9ce9d3bef3048::t_cbc9b7a52b3b9a 1-29
+dotfiles/claude/hooks/branch-cache-save.sh
+  s_a9ce9d3bef3048::t_cbc9b7a52b3b9a 1-43
+dotfiles/zsh/zshenv
+  s_a9ce9d3bef3048::t_f0168f5d1c6ca6 1-5
+dotfiles/mise/config.toml
+  s_a9ce9d3bef3048::t_ee76db19519ced 32-34
+  s_a9ce9d3bef3048::t_d5552d12cf8211 1-31,35-54
+dotfiles/zsh/zprofile
+  s_a9ce9d3bef3048::t_f0168f5d1c6ca6 1-13
+dotfiles/claude/CLAUDE.md
+  s_a9ce9d3bef3048::t_cbc9b7a52b3b9a 1-13
+  s_a9ce9d3bef3048::t_54273235e923b5 14
+.gitignore
+  s_a9ce9d3bef3048::t_d5552d12cf8211 3-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "464e95b19e3f709275fb47e7cc5f87637f6ecb68",
+  "prompts": {},
+  "sessions": {
+    "s_a9ce9d3bef3048": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06a23-f7d9-7e72-9d30-31b66df038f9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
