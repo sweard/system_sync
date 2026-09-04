@@ -2,7 +2,7 @@
 # 所有映射当前保持注释，尚未启用。
 #
 # [dotfiles]
-# "~/.config/mise/config.linux.toml" = { source = "dotfiles/linux/mise/config.linux.toml", mode = "symlink" }
+# "~/.config/mise/config.linux.toml" = { source = "dotfiles/linux/mise/config.toml", mode = "symlink" }
 # "~/.zprofile" = { source = "dotfiles/linux/zsh/zprofile", mode = "symlink" }
 # "~/.config/zsh/platform.zsh" = { source = "dotfiles/linux/zsh/platform.zsh", mode = "symlink" }
 # "~/.claude/settings.json" = { source = "dotfiles/linux/claude/settings.json.tmpl", mode = "template" }

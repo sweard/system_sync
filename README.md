@@ -4,11 +4,11 @@
 
 | 平台 / profile | 声明来源 | 收敛方式 |
 |---|---|---|
-| macOS | `platforms/macos/Brewfile` | Homebrew Bundle 安装和 cleanup |
-| Arch / Manjaro 系 | `platforms/linux/arch/mise.toml` | pacman/AUR 安装，再降级未声明 explicit 包并清理 orphan |
-| Debian / Ubuntu 系 | `platforms/linux/debian/mise.toml` | APT 安装，再调整 manual/auto 并 autoremove |
-| Fedora / RHEL 系 | `platforms/linux/fedora/mise.toml` | DNF 安装，再调整 user/dependency 原因并 autoremove |
-| openSUSE / SLE | `platforms/linux/opensuse/packages.txt` | zypper 查询 user-installed/unneeded，预演后 `remove --clean-deps` |
+| macOS | `packages/macos/Brewfile` | Homebrew Bundle 安装和 cleanup |
+| Arch / Manjaro 系 | `packages/linux/arch/mise.toml` | pacman/AUR 安装，再降级未声明 explicit 包并清理 orphan |
+| Debian / Ubuntu 系 | `packages/linux/debian/mise.toml` | APT 安装，再调整 manual/auto 并 autoremove |
+| Fedora / RHEL 系 | `packages/linux/fedora/mise.toml` | DNF 安装，再调整 user/dependency 原因并 autoremove |
+| openSUSE / SLE | `packages/linux/opensuse/packages.txt` | zypper 查询 user-installed/unneeded，预演后 `remove --clean-deps` |
 
 mise 当前原生支持 `apt`、`dnf`、`pacman` 和 `aur`，但没有内置 `zypper` manager；因此 openSUSE 使用单独的文本清单和 zypper 脚本。
 
@@ -37,20 +37,20 @@ system_sync/
 │   │       ├── CLAUDE.md
 │   │       └── hooks/
 │   ├── macos/                        # 当前 Mac 脱敏快照与平台路径
-│   │   ├── mise/config.macos.toml
+│   │   ├── mise/config.toml
 │   │   ├── zsh/
 │   │   │   ├── zprofile
 │   │   │   └── platform.zsh
 │   │   ├── claude/settings.json.tmpl
 │   │   └── vscode/settings.json.tmpl
 │   └── linux/                        # 安全的 Linux 候选模板
-│       ├── mise/config.linux.toml
+│       ├── mise/config.toml
 │       ├── zsh/
 │       │   ├── zprofile
 │       │   └── platform.zsh
 │       ├── claude/settings.json.tmpl
 │       └── vscode/settings.json.tmpl
-├── platforms/
+├── packages/                         # 系统软件包声明与收敛策略
 │   ├── macos/
 │   │   ├── Brewfile
 │   │   ├── protected-packages.txt
@@ -139,7 +139,7 @@ pacman -Qqen | LC_ALL=C sort -u > native-explicit.txt
 pacman -Qqem | LC_ALL=C sort -u > foreign-explicit.txt
 ```
 
-生成 `platforms/linux/arch/mise.toml` 的片段：
+生成 `packages/linux/arch/mise.toml` 的片段：
 
 ```bash
 awk '{ printf "\"pacman:%s\" = \"latest\"\n", $0 }' native-explicit.txt
@@ -157,7 +157,7 @@ apt-mark showmanual | LC_ALL=C sort -u > apt-manual.txt
 awk '{ printf "\"apt:%s\" = \"latest\"\n", $0 }' apt-manual.txt
 ```
 
-用生成结果替换 `platforms/linux/debian/mise.toml` 的示例项，并确保保留 `apt:base-files`。
+用生成结果替换 `packages/linux/debian/mise.toml` 的示例项，并确保保留 `apt:base-files`。
 
 ### Fedora / RHEL 系
 
@@ -169,7 +169,7 @@ dnf repoquery --installed --userinstalled --queryformat '%{name}' \
 awk '{ printf "\"dnf:%s\" = \"latest\"\n", $0 }' dnf-user-installed.txt
 ```
 
-DNF4 上若没有 `repoquery`，需先安装发行版提供的 `dnf-plugins-core`。用生成结果替换 `platforms/linux/fedora/mise.toml` 的示例项，并确保保留 `dnf:filesystem`。
+DNF4 上若没有 `repoquery`，需先安装发行版提供的 `dnf-plugins-core`。用生成结果替换 `packages/linux/fedora/mise.toml` 的示例项，并确保保留 `dnf:filesystem`。
 
 ### openSUSE / SLE
 
@@ -181,7 +181,7 @@ zypper --xmlout --no-refresh packages --userinstalled \
   | LC_ALL=C sort -u > zypper-user-installed.txt
 ```
 
-将结果审阅后写入 `platforms/linux/opensuse/packages.txt`，每行一个包，并保留 `filesystem`。这个 profile 只管理 package 根，不管理 pattern、product 或 repository 配置。
+将结果审阅后写入 `packages/linux/opensuse/packages.txt`，每行一个包，并保留 `filesystem`。这个 profile 只管理 package 根，不管理 pattern、product 或 repository 配置。
 
 ### baseline 验收
 
@@ -249,7 +249,7 @@ zypper 能查询 user-installed 和 unneeded，但本方案没有一个与 `apt-
 
 ## macOS Homebrew
 
-`platforms/macos/Brewfile` 是当前 Mac 经过审核的 formula 根意图、cask 和第三方 tap baseline。它只声明真正想保留的根 formula，不把 Homebrew 自动维护的整棵依赖树写入配置。Brewfile 本身是当前清单的唯一真实来源，README 不复制容易过期的数量和名称。
+`packages/macos/Brewfile` 是当前 Mac 经过审核的 formula 根意图、cask 和第三方 tap baseline。它只声明真正想保留的根 formula，不把 Homebrew 自动维护的整棵依赖树写入配置。Brewfile 本身是当前清单的唯一真实来源，README 不复制容易过期的数量和名称。
 
 macOS 不把现有 formula/cask 强行转移给 mise 所有权。Homebrew 继续管理它们，mise 只提供统一 task 入口。
 
@@ -265,7 +265,7 @@ cask "visual-studio-code"
 删除软件时，删除对应 `brew` / `cask` 行，然后：
 
 ```bash
-git diff -- platforms/macos/Brewfile
+git diff -- packages/macos/Brewfile
 mise run dry-run
 mise run system-sync
 ```
@@ -287,14 +287,14 @@ mise run system-sync
 
 ```bash
 brew bundle cleanup \
-  --file="/Users/sbwoan/Documents/系统配置管理/system_sync/platforms/macos/Brewfile"
+  --file="/Users/sbwoan/Documents/系统配置管理/system_sync/packages/macos/Brewfile"
 ```
 
 不指定 `--file` 时，Homebrew 只会在当前目录寻找默认 `Brewfile`。不建议手工加 `--force` 跳过确认；日常应使用本仓库的 `mise run` 入口，因为它额外执行保护校验和审计。
 
 ### 保护项和第三方 formula 信任
 
-macOS 保护清单位于 `platforms/macos/protected-packages.txt`：
+macOS 保护清单位于 `packages/macos/protected-packages.txt`：
 
 ```text
 formula:git
@@ -305,7 +305,7 @@ tap:owner/repository
 
 保护项必须同时存在于 Brewfile；只从 Brewfile 删除时，apply 会失败关闭。确实要删除保护项时，两个文件要同时修改。
 
-`platforms/macos/trusted-formulae.txt` 只列出已审核的完整第三方 formula 名。它必须与 Brewfile 中的 `trusted: true` 精确对应；不会将整个 tap 泛化为受信。
+`packages/macos/trusted-formulae.txt` 只列出已审核的完整第三方 formula 名。它必须与 Brewfile 中的 `trusted: true` 精确对应；不会将整个 tap 泛化为受信。
 
 如果 Homebrew cleanup 报告 formula 依赖图循环，并且同时提出移除受管项目，脚本会要求额外的 `ALLOW HOMEBREW GRAPH WARNING` 精确确认。应先审阅事务，必要时修复 Homebrew 旧 keg 收据后再继续。
 
@@ -320,7 +320,7 @@ mise run macos-upgrade
 `dotfiles/` 已重构为公共模块和两个平台适配器：
 
 - `dotfiles/common/`：跨平台工具候选、zsh 主配置、Claude 全局说明和 Hook；
-- `dotfiles/macos/`：Homebrew、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
+- `dotfiles/macos/`：Homebrew 相关路径、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
 - `dotfiles/linux/`：Linux Android SDK、可选 Linuxbrew，以及不含 macOS 外部 Hook 的 Claude/VS Code 模板；
 - `mise.macos.toml` 与 `mise.linux.toml`：相同 `config-*` 命令背后的两个平台适配器。
 
@@ -385,8 +385,8 @@ Claude 和 VS Code 使用 mise `template` 模式，将 `{{ env.HOME }}` 渲染�
 配置分为三个文件：
 
 - `dotfiles/common/mise/config.toml`：工具版本、密钥文件入口和输出脱敏规则；
-- `dotfiles/macos/mise/config.macos.toml`：macOS locale、Homebrew Ruby、Android 和 Toolbox；
-- `dotfiles/linux/mise/config.linux.toml`：Linux Android 和 Toolbox 常见位置。
+- `dotfiles/macos/mise/config.toml`：macOS locale、Homebrew Ruby、Android 和 Toolbox；
+- `dotfiles/linux/mise/config.toml`：Linux Android 和 Toolbox 常见位置。
 
 Linux locale 不会照搬 macOS。应先用发行版工具确认已经生成的 locale，再取消注释 `LANG` / `LC_ALL`。
 
@@ -412,13 +412,13 @@ Linux locale 不会照搬 macOS。应先用发行版工具确认已经生成的 
 macOS 恢复 Brewfile 示例：
 
 ```bash
-git restore platforms/macos/Brewfile
-brew bundle install --no-upgrade --file=platforms/macos/Brewfile
+git restore packages/macos/Brewfile
+brew bundle install --no-upgrade --file=packages/macos/Brewfile
 ```
 
 ## Git 管理
 
-建议提交 `.miserc.toml`、`mise*.toml`、`dotfiles/`、`platforms/`、`scripts/` 和 `README.md`。每次修改声明先查看 diff 和 dry-run：
+建议提交 `.miserc.toml`、`mise*.toml`、`dotfiles/`、`packages/`、`scripts/` 和 `README.md`。每次修改声明先查看 diff 和 dry-run：
 
 ```bash
 git diff

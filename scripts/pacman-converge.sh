@@ -5,7 +5,7 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
-PROFILE_DIR="${SYSTEM_SYNC_PROFILE_DIR:-$PROJECT_ROOT/platforms/linux/arch}"
+PROFILE_DIR="${SYSTEM_SYNC_PROFILE_DIR:-$PROJECT_ROOT/packages/linux/arch}"
 ALLOWLIST_FILE="$PROFILE_DIR/protected-packages.txt"
 STATE_ROOT="$PROJECT_ROOT/.system-sync/history"
 MAX_DEMOTIONS=25

@@ -1,4 +1,4 @@
-# 公共任务入口。各平台的软件声明位于 platforms/ 下。
+# 公共任务入口。各平台的软件声明位于 packages/ 下。
 #
 # 开发工具、环境变量、PATH 和 dotfiles 的候选配置目前全部保持注释，
 # 不会改变当前电脑。公共候选位于 dotfiles/common，平台差异分别位于
@@ -7,9 +7,9 @@ monorepo_root = true
 
 [monorepo]
 config_roots = [
-  "platforms/linux/arch",
-  "platforms/linux/debian",
-  "platforms/linux/fedora",
+  "packages/linux/arch",
+  "packages/linux/debian",
+  "packages/linux/fedora",
 ]
 
 [tasks.status]

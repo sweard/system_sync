@@ -55,7 +55,7 @@ case "$(uname -s)" in
   Linux)
     [[ "$MODE" != "upgrade" ]] || die "统一升级任务尚未覆盖 Linux；请使用发行版的常规升级流程"
     PROFILE="$("$SCRIPT_DIR/detect-linux-profile.sh")"
-    PROFILE_DIR="$PROJECT_ROOT/platforms/linux/$PROFILE"
+    PROFILE_DIR="$PROJECT_ROOT/packages/linux/$PROFILE"
     [[ -d "$PROFILE_DIR" ]] || die "Linux profile 目录不存在：$PROFILE_DIR"
     export SYSTEM_SYNC_PROFILE="$PROFILE"
     export SYSTEM_SYNC_PROFILE_DIR="$PROFILE_DIR"
