@@ -1,0 +1,59 @@
+# macOS Homebrew baseline
+#
+# 2026-09-04 从本机 Homebrew 6.0.18 手工核对生成：
+# - 28 个当前主动安装的 formula（含两个第三方 tap formula）；
+# - 12 个当前 cask；
+# - 2 个当前第三方 tap；
+# - 额外加入 mise，作为本项目的任务运行器和启动依赖。
+#
+# 这里只声明根 formula，不列出 Homebrew 自动维护的依赖树。
+
+tap "antoniorodr/memo"
+tap "oven-sh/bun"
+
+# 仅信任已经安装并纳入本基线的具体 formula，不信任整个第三方 tap。
+brew "antoniorodr/memo/memo", trusted: true
+brew "oven-sh/bun/bun", trusted: true
+
+brew "cmake"
+brew "cocoapods"
+brew "colima"
+brew "docker"
+brew "fastfetch"
+brew "fd"
+brew "gh"
+brew "git"
+brew "git-lfs"
+brew "gitui"
+brew "herdr"
+brew "htop"
+brew "librsvg"
+brew "llama.cpp"
+brew "lsd"
+brew "neovim"
+brew "nvm"
+brew "openclaw-cli", link: false
+brew "poppler"
+brew "ruby", link: false
+brew "scrcpy"
+brew "sevenzip"
+brew "tlrc"
+brew "uv"
+brew "yarn"
+brew "zeroclaw"
+
+# 当前机器尚未安装；用于从本 Brewfile 启动 mise 工作流。
+brew "mise"
+
+cask "codex"
+cask "firefox"
+cask "font-maple-mono"
+cask "font-maple-mono-nf"
+cask "font-maple-mono-nf-cn"
+cask "ghostty"
+cask "google-chrome"
+cask "iterm2"
+cask "keka"
+cask "openclaw"
+cask "raycast"
+cask "zed"

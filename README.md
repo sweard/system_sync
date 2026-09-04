@@ -1,15 +1,13 @@
-# Arch Linux + mise 声明式系统包同步
+# Arch Linux + macOS 声明式系统包同步
 
-这套配置把 `mise.toml` 中的 `pacman:` / `aur:` 条目当作系统的“显式根包”：
+这个仓库用一组统一的 mise task 管理两套平台，但保留各自最可靠的包管理语义：
 
-1. mise 安装声明但缺失的包；
-2. 脚本读取当前目录中 **最终生效、已合并** 的 mise 包状态；
-3. 只把 `pacman -Qqe` 的显式安装包与声明集比较；
-4. 未声明且未受保护的显式包先经 `pacman -D --asdeps` 降级，不直接卸载；
-5. 声明包和保护包会被标记为 explicit root；
-6. 再用 `pacman -Qdtq` 找真正 orphan，经第二次确认后用 `pacman -Rs` 清理。
+| 平台 | 声明来源 | 收敛方式 |
+|---|---|---|
+| Arch Linux | `mise.toml` 中的 `pacman:` / `aur:` 根包 | 降级未声明 explicit 包，再用 `pacman -Qdtq` + `pacman -Rs` 清理 orphan |
+| macOS | `platforms/macos/Brewfile` | `brew bundle install` 安装，再由 `brew bundle cleanup` 计算 formula/cask/tap 事务 |
 
-脚本默认是 dry-run，并且明确不使用 `-Rns`。本项目补上的是“从最终生效配置删掉条目后，让 pacman 的显式根包集合随之收敛”这一层语义。
+macOS 不把既有 cask 强行转移给 mise。Homebrew 继续拥有和管理现有 formula/cask；mise 只是统一任务入口。这样从 Brewfile 删除 cask 后，Homebrew 能可靠预演和卸载，而不是依赖 mise 对既有 cask 的有限 prune 支持。
 
 ## 文件结构
 
@@ -19,218 +17,290 @@ system_sync/
 ├── README.md
 ├── mise.toml
 ├── config/
+│   ├── homebrew-protected.txt
 │   └── protected-packages.txt
+├── platforms/
+│   └── macos/
+│       ├── Brewfile
+│       └── trusted-formulae.txt
 └── scripts/
     ├── extract-mise-packages.py
-    └── pacman-converge.sh
+    ├── homebrew-converge.sh
+    ├── pacman-converge.sh
+    └── system-sync.sh
 ```
 
-运行时会把每次 apply 前后的清单保存到 `.system-sync/history/<UTC 时间>/`；该目录已被 Git 忽略。
+运行时审计清单保存在 `.system-sync/history/<UTC 时间>/`，该目录已被 Git 忽略。
 
-## 前置条件
+## 统一入口
 
-- Arch Linux 或兼容且由 pacman 管理的系统；
-- `mise`，并支持 `mise bootstrap packages status --json`；
-- Bash、Python 3、coreutils、pacman；
-- 非 root 用户需要 `sudo`；
-- 使用 `aur:` 条目时，`PATH` 中必须已有 `yay` 或 `paru`；helper 缺失时本脚本会失败关闭。
-
-先检查：
+安装并信任 mise 后，两端命令相同：
 
 ```bash
-mise --version
-python3 --version
-pacman --version
-command -v yay || command -v paru
+mise run status
+mise run dry-run
+mise run system-sync
 ```
 
-进入目录后信任配置：
+`scripts/system-sync.sh` 根据 `uname` 自动选择 Homebrew 或 pacman 流程。脚本本身默认 dry-run，因此也可以直接运行：
 
 ```bash
-cd system_sync
+./scripts/system-sync.sh
+./scripts/system-sync.sh --status
+```
+
+## macOS：当前机器基线
+
+`platforms/macos/Brewfile` 已在 2026-09-04 根据当前机器手工核对：
+
+- 28 个当前主动安装的 formula 根包；
+- 12 个当前 Homebrew cask；
+- 2 个当前第三方 tap；
+- 另外加入当前尚未安装的 `mise`，作为本仓库启动依赖。
+
+因此 Brewfile 当前共有 29 个 formula 声明。Homebrew 自动安装的库依赖没有被误写为根包。
+
+当前 formula 根包：
+
+```text
+bun                 cmake          cocoapods       colima
+docker              fastfetch      fd              gh
+git                 git-lfs        gitui           herdr
+htop                librsvg        llama.cpp       lsd
+memo                neovim         nvm             openclaw-cli
+poppler             ruby           scrcpy          sevenzip
+tlrc                uv             yarn            zeroclaw
+```
+
+`mise` 是新增的启动依赖，不在上面的原始 28 项中。
+
+当前 `openclaw-cli` 和 `ruby` 均已安装但未链接，Brewfile 用 `link: false` 保留这一状态。当前根 formula 没有非默认安装选项，Homebrew service 也没有正在运行的项目，因此基线没有写入额外 `args` 或 `restart_service`。
+
+当前 cask：
+
+```text
+codex               firefox              font-maple-mono
+font-maple-mono-nf  font-maple-mono-nf-cn ghostty
+google-chrome       iterm2               keka
+openclaw            raycast              zed
+```
+
+当前 tap：
+
+```text
+antoniorodr/memo
+oven-sh/bun
+```
+
+`bun` 和 `memo` 的 Homebrew 安装收据均标记为 `installed_on_request: true`。Homebrew 6 因这两个 tap 尚未受信，普通查询会漏掉它们；本 Brewfile 明确保留两项，并仅用 `trusted: true` 信任两个完整 formula 名，不授予整个 tap 的信任。
+
+`platforms/macos/trusted-formulae.txt` 保存相同的两个完整名称，供 cleanup 预演创建一次性的临时信任库。临时库位于系统临时目录，不读取、不覆盖用户的真实 Homebrew 信任库，脚本结束即删除。如果以后新增受信第三方 formula，需要同时更新 Brewfile 的 `trusted: true` 条目和这份清单；两边不一致时脚本失败关闭。
+
+## macOS：首次启用
+
+当前机器尚未安装 mise。先运行只读预览，此命令不依赖 mise：
+
+```bash
+./scripts/system-sync.sh --dry-run
+```
+
+然后只安装 Brewfile 中缺失的项目。这个步骤不会删除未声明软件，也不会主动升级已安装软件：
+
+```bash
+brew bundle install \
+  --no-upgrade \
+  --file=platforms/macos/Brewfile
+```
+
+这会安装 `mise`，并应用 Brewfile 中对 `bun`、`memo` 两个具体 formula 的最小信任声明。随后：
+
+```bash
 mise trust
+mise run status
+mise run dry-run
 ```
 
-## 首次迁移现有 Arch：建立 baseline
+逐项确认输出后再执行：
 
-不要直接拿示例包清单执行 apply。先导出现有系统的显式根包：
+```bash
+mise run system-sync
+```
+
+实际 apply 有三层防护：
+
+1. mise task 先询问是否进入修改流程；
+2. 脚本要求输入精确短语 `APPLY HOMEBREW`；
+3. 安装完成后，Homebrew 自己再次列出完整 cleanup 内容并询问。
+
+脚本不向 cleanup 传 `--force`，不自动回答 Homebrew 的确认，也不使用 `--zap`。
+
+## macOS：status、dry-run 和 apply 的范围
+
+脚本只管理以下三类：
+
+- formula；
+- cask；
+- tap。
+
+它明确不会收敛 MAS 应用、Cargo/npm/uv 工具、VS Code 扩展、Go 包等其他 Brew Bundle 类型。
+
+`--status` 和 `--dry-run` 会显示：
+
+- Brewfile 声明；
+- 尚未安装的 formula/cask/tap；
+- 可识别的未声明根 formula、cask 和 tap；
+- `brew bundle check` 结果；
+- Homebrew 自己计算的精确 cleanup 预演。
+
+cleanup 预演将标准输入断开，因此 Homebrew 无法获得确认，只会打印 `Would uninstall` / `Would untap`，不会修改系统。
+
+若 Homebrew 同时报告 formula 依赖图循环，并提出移除 formula、cask 或 tap，脚本会拒绝 apply；先修复 Homebrew 元数据再收敛。只有缓存、旧版本等 `brew cleanup` 项时会保留警告并继续交给最终人工确认。
+
+`--apply` 顺序为：
+
+1. `brew bundle install --no-upgrade`；
+2. `brew bundle check --no-upgrade`；
+3. 安装后重新生成一次 cleanup 精确预演并重新执行安全检查；
+4. 交互式 `brew bundle cleanup --formula --cask --tap`。
+
+## macOS：日常维护
+
+新增 formula：
+
+```ruby
+brew "jq"
+```
+
+新增 cask：
+
+```ruby
+cask "visual-studio-code"
+```
+
+编辑 `platforms/macos/Brewfile` 后：
+
+```bash
+mise run dry-run
+mise run system-sync
+```
+
+删除软件时，从 Brewfile 删除对应行，先看 dry-run，再运行 system-sync。不要直接把所有 `brew list --formula` 输出写回 Brewfile；其中大多数是依赖，不是根包。
+
+保护项放在 `config/homebrew-protected.txt`，格式为：
+
+```text
+formula:git
+formula:mise
+cask:some-critical-app
+tap:owner/repository
+```
+
+保护项必须同时存在于 Brewfile。若只从 Brewfile 删除，apply 会失败关闭；真正删除保护项时必须同时修改两个文件。
+
+升级与收敛分开。只升级 Brewfile 声明项、不执行 cleanup：
+
+```bash
+mise run macos-upgrade
+```
+
+它还会要求输入 `UPGRADE HOMEBREW`。
+
+## macOS：风险和恢复
+
+Homebrew cleanup 的 dry-run 输出是最终判断依据。它会根据 Brewfile 保留声明 formula、cask 及其依赖，并清理其他受管项目。执行 cleanup 还会：
+
+- 把 Homebrew 全局信任存储重置为 Brewfile 中声明的信任；
+- 在接受确认后运行 Homebrew 自身 cleanup；
+- 删除 cask 应用本体，但本项目不使用 `--zap`，不会主动要求删除其全部用户数据。
+
+每次 apply/upgrade 前，脚本保存 Brewfile、formula、cask、tap 和 cleanup 预演。取消 Homebrew 最后一层 cleanup 时，前面的缺失软件安装可能已经完成，但不会继续清理。
+
+误删后先从 Git 恢复 Brewfile 条目，再重新同步：
+
+```bash
+git restore platforms/macos/Brewfile
+brew bundle install --no-upgrade --file=platforms/macos/Brewfile
+```
+
+若 Brewfile 的删除本身已经提交，应恢复对应历史版本或手工加回条目。Git 管理的是软件清单，不是应用数据备份；重要应用数据仍需独立备份。
+
+## macOS：在其他机器使用
+
+不要直接把本机完整基线应用到另一台 Mac。先复制 Brewfile，再按机器需求删减，尤其检查：
+
+- 专用开发工具和大型模型工具；
+- 浏览器、终端和编辑器是否需要全部安装；
+- 第三方 tap 及其具体 formula 是否愿意信任；
+- Intel 与 Apple Silicon 的兼容性。
+
+先运行 `brew bundle check` 和脚本 dry-run，确认 cleanup 预演为空或完全符合预期，再 apply。
+
+## Arch Linux：建立 baseline
+
+Arch 仍以 `mise.toml` 中的 `pacman:` / `aur:` 项为显式根包。首次使用前先导出：
 
 ```bash
 pacman -Qqen | LC_ALL=C sort -u > native-explicit.txt
 pacman -Qqem | LC_ALL=C sort -u > foreign-explicit.txt
 ```
 
-- `native-explicit.txt`：来自当前同步仓库的显式安装包，对应 `pacman:`；
-- `foreign-explicit.txt`：显式安装的 foreign 包，通常包含 AUR 包，对应候选 `aur:`。
+- `native-explicit.txt` 对应 `pacman:`；
+- `foreign-explicit.txt` 通常是 AUR 候选，但也可能包含本地构建或 `pacman -U` 包，必须逐项确认。
 
-`pacman -Qqem` 的结果不保证都来自 AUR：本地自建包、手工 `pacman -U` 安装的包也会在里面。逐项确认；不能由 yay/paru 重建的包应先放进 `config/protected-packages.txt`，或另建可靠的安装来源，不能盲目写成 `aur:`。
-
-可生成便于粘贴的 TOML 片段：
+生成 TOML 片段：
 
 ```bash
-awk '{ printf "\"pacman:%s\" = \"latest\"\n", $0 }' native-explicit.txt
-awk '{ printf "\"aur:%s\" = \"latest\"\n", $0 }' foreign-explicit.txt
+awk '{ printf "\"pacman:%s\" = { version = \"latest\", os = \"linux\" }\n", $0 }' native-explicit.txt
+awk '{ printf "\"aur:%s\" = { version = \"latest\", os = \"linux\" }\n", $0 }' foreign-explicit.txt
 ```
 
-把确认后的输出合并到 `mise.toml` 的同一个 `[bootstrap.packages]` 表中，并删除不需要的示例项。必须保留：
+最终配置必须保留 `pacman:base`。再按本机启动、磁盘、内核、网络和显卡环境审阅 `config/protected-packages.txt`。
 
-```toml
-"pacman:base" = "latest"
-```
+## Arch Linux：收敛语义
 
-然后逐项审阅 `config/protected-packages.txt`，至少覆盖本机实际使用的：
+Linux 分支执行：
 
-- 内核、固件、CPU microcode 与 initramfs；
-- bootloader；
-- 根文件系统、加密、LVM/RAID 工具；
-- 网络、Wi-Fi、VPN 和远程救援入口；
-- 专有显卡驱动或其他机器启动必需包；
-- 暂时无法转成 mise 声明的本地包。
+1. mise 安装声明但缺失的软件；
+2. `pacman-converge.sh` 从 `mise bootstrap packages status --json` 读取最终合并声明；
+3. 只比较 `pacman -Qqe` 显式包；
+4. 未声明且未保护的 explicit 包先用 `pacman -D --asdeps` 降级；
+5. 声明/保护包提升为 explicit root；
+6. 再用 `pacman -Qdtq` 找 orphan；
+7. 预演完整 `pacman -Rs` 事务并再次确认。
 
-保护清单不是正常期望状态的替代品：长期需要的软件仍应写进 `mise.toml`。保护清单只是一道避免把机器变得不可启动/不可联网的保险丝。
+它默认 dry-run，不使用 `-Rns`。空声明、缺失 `base`、JSON 结构变化、virtual provider 无法映射、事务触及保护包等情况都会失败关闭。详细恢复记录同样保存在 `.system-sync/history/`。
 
-## 首次核对顺序
-
-第一步，只读检查 mise 与 pacman 视图：
-
-```bash
-mise run status
-```
-
-第二步，预览 mise 会安装什么，以及脚本会调整什么：
-
-```bash
-mise run dry-run
-```
-
-重点检查这三组输出：
-
-- “未声明、但受保护而保留”：确认这些确实应保护，或把长期需要项移入 `mise.toml`；
-- “会从 explicit 降级为 dependency”：baseline 漏项会在这里暴露；
-- “真正 orphan 中可清理”：确认没有可选功能、驱动或临时救援工具。
-
-只有输出完全符合预期，才执行：
-
-```bash
-mise run system-sync
-```
-
-实际流程会先经过 mise task 确认，再要求输入 `APPLY <数量>` 才调整安装原因。调整后脚本重新查询 orphan，用 pacman 的只打印模式展开 `-Rs` 完整递归事务，确认其中没有声明/保护包；随后要求输入 `REMOVE <完整事务包数>`，最后 pacman 还会展示事务并询问一次。脚本会先安装缺失声明包，再进入上述收敛流程。
-
-如果 baseline 明显不完整，脚本会在一次拟降级超过 25 个显式包，或至少 5 个且占显式包 50% 以上时停止。确实需要大范围收敛时，先再次核对清单，再直接运行：
+若拟降级超过安全阈值，脚本会停止。确认 Arch baseline 完整后才可直接运行：
 
 ```bash
 ./scripts/pacman-converge.sh --apply --allow-large-change
 ```
 
-这不会绕过交互确认。
+## Git 管理
 
-## 日常使用
-
-新增软件：先把条目加入 `[bootstrap.packages]`，再同步。例如：
-
-```toml
-"pacman:jq" = "latest"
-"aur:visual-studio-code-bin" = "latest"
-```
-
-```bash
-mise run dry-run
-mise run system-sync
-```
-
-删除软件：从 `mise.toml` 删除对应条目，先 dry-run，再 system-sync。它不会立刻对该包执行删除；脚本先把它从 explicit 降级成 dependency，只有 pacman 随后认定它是真正 orphan 才会清理。
-
-只运行脚本而不让 mise 安装缺失包时：
-
-```bash
-./scripts/pacman-converge.sh              # 默认 dry-run
-./scripts/pacman-converge.sh --status
-./scripts/pacman-converge.sh --apply
-```
-
-通常更推荐 mise task，因为 `system-sync` 会先确保声明包已安装。
-
-## 最终配置读取与兼容策略
-
-脚本没有 grep TOML，也没有只读本地 `mise.toml`。它在项目目录运行：
-
-```bash
-LC_ALL=C mise bootstrap packages status --json
-```
-
-这是 mise 已经合并全局、父目录、当前目录及当前环境后的有效包集合。`scripts/extract-mise-packages.py` 支持当前官方结构，以及少量可严格验证的兼容结构。
-
-以下任何情况都会失败关闭，不会把空集合当成“全部删除”：
-
-- JSON 为空、损坏或结构无法识别；
-- pacman/AUR manager 被 mise 报告为 unavailable；
-- 没有解析到任何 pacman/AUR 包；
-- 最终集合没有 `pacman:base`；
-- apply 前仍有声明包没有以同名具体包安装；
-- 包名含不可安全传给 pacman 的字符；
-- 已安装的 virtual package 请求无法映射到同名具体 provider。
-- pacman 对 `-Rs` 的只读预演无法完成，或完整递归事务触及声明/保护包。
-
-因此，如果 mise 以后改变 JSON schema，预期结果是脚本报错并停下，而不是误删。升级 mise 后先运行 `mise run status`。
-
-## Git 版本管理与多机同步
-
-适合提交到 Git 的文件：
+建议提交：
 
 - `mise.toml`；
-- `config/protected-packages.txt`；
+- `platforms/macos/Brewfile`；
+- `config/`；
 - `scripts/`；
 - `README.md`。
 
-示例：
+`.system-sync/` 和任意目录下的 `.DS_Store` 已忽略。
+
+每次改动包清单都先查看 diff，再 dry-run：
 
 ```bash
-git init
-git add mise.toml config scripts README.md .gitignore
-git commit -m "add Arch package baseline"
+git diff
+mise run dry-run
 ```
 
-在另一台机器 clone 后，不要马上 apply。不同机器的内核、bootloader、显卡、网络和本地/AUR 包可能不同。先为该机器补齐声明或保护清单，依次运行 `mise trust`、`mise run status`、`mise run dry-run`，再决定是否同步。
-
-若多台机器差异较大，建议按机器维护独立分支/环境文件，或把这里只作为公共 baseline；不要依赖保护清单无限累积机器差异。
-
-## 风险、审计与恢复
-
-`pacman -D --asdeps` 只改变安装原因，不会删除文件。若在第二次确认前取消，可从最近日志恢复原来的显式标记：
-
-```bash
-latest_log="$(find .system-sync/history -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort | tail -n 1)"
-xargs -r sudo pacman -D --asexplicit < "$latest_log/demoted.txt"
-```
-
-也可以只恢复单个包：
-
-```bash
-sudo pacman -D --asexplicit package_name
-```
-
-一旦 `pacman -Rs` 完成，恢复方式是重新安装。仓库包可用：
-
-```bash
-sudo pacman -S package_name
-```
-
-AUR 包用 yay/paru 重装。还可查看：
-
-```bash
-grep '\[ALPM\] removed' /var/log/pacman.log
-ls /var/cache/pacman/pkg/
-```
-
-若缓存里仍有对应包，可用 `sudo pacman -U /var/cache/pacman/pkg/<包文件>` 恢复。配置文件、数据库和重要数据仍应使用独立备份；Git 中的软件清单不是系统备份。
-
-`pacman -Rs` 会递归处理变成不再需要的依赖；ArchWiki 也提醒，递归清理可能涉及仍作为其他软件可选依赖的包。因此脚本会先把声明包和保护包提升为 explicit，使用 `pacman -Rsp --print-format '%n'` 取得完整事务并做冲突检查，再让 pacman 在最终事务前展示一次。需要保留的可选功能包应写入声明或保护清单，不要用自动输入绕过最后核对。
+不要把 Git 中的软件清单当作系统或用户数据备份。
 
 ## 参考
 
 - [mise Bootstrap Packages](https://mise.jdx.dev/bootstrap/packages/)
-- [mise AUR manager](https://mise.jdx.dev/bootstrap/packages/aur.html)
-- [mise tasks](https://mise.jdx.dev/tasks/)
+- [mise Brew manager](https://mise.jdx.dev/bootstrap/packages/brew.html)
+- [Homebrew Bundle](https://docs.brew.sh/Brew-Bundle-and-Brewfile)
+- [Homebrew Manpage](https://docs.brew.sh/Manpage)
 - [ArchWiki：pacman Tips and tricks](https://wiki.archlinux.org/title/Pacman/Tips_and_tricks)
-- [ArchWiki：迁移到新硬件](https://wiki.archlinux.org/title/Migrate_installation_to_new_hardware)

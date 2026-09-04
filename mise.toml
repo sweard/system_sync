@@ -1,36 +1,33 @@
-# 这是“显式根包”示例，不是通用 Arch 软件清单。
-# 首次使用前，请按 README 的 baseline 步骤替换为你自己的完整列表。
+# 这是 Arch Linux 的“显式根包”示例，不是通用软件清单。
+# macOS 的 formula/cask 基线位于 platforms/macos/Brewfile。
 [bootstrap.packages]
-"pacman:base" = "latest"
-"pacman:base-devel" = "latest"
-"pacman:git" = "latest"
-"pacman:openssh" = "latest"
-"pacman:python" = "latest"
-"pacman:ripgrep" = "latest"
+"pacman:base" = { version = "latest", os = "linux" }
+"pacman:base-devel" = { version = "latest", os = "linux" }
+"pacman:git" = { version = "latest", os = "linux" }
+"pacman:openssh" = { version = "latest", os = "linux" }
+"pacman:python" = { version = "latest", os = "linux" }
+"pacman:ripgrep" = { version = "latest", os = "linux" }
 
 # AUR 由 yay 或 paru 执行。先在系统中准备其中一个 helper，再取消注释并换成你需要的包。
-# "aur:visual-studio-code-bin" = "latest"
-# "aur:google-chrome" = "latest"
+# "aur:visual-studio-code-bin" = { version = "latest", os = "linux" }
+# "aur:google-chrome" = { version = "latest", os = "linux" }
 
 [tasks.status]
-description = "查看 mise 包状态、显式根包差异和当前 orphan（只读）"
-run = [
-  "LC_ALL=C mise bootstrap packages status",
-  "./scripts/pacman-converge.sh --status",
-]
+description = "查看当前系统的声明状态和差异（只读）"
+run = "./scripts/system-sync.sh --status"
 
 [tasks.dry-run]
-description = "预览缺失包安装和未声明包收敛（默认安全入口）"
-run = [
-  "LC_ALL=C mise bootstrap packages apply --dry-run",
-  "./scripts/pacman-converge.sh --dry-run",
-]
+description = "预览当前系统将安装、收敛或清理的内容"
+run = "./scripts/system-sync.sh --dry-run"
 
 [tasks.system-sync]
-description = "安装声明包，再经双重确认收敛显式包并清理真正 orphan"
-confirm = { message = "这会修改系统包状态。是否先安装缺失包并进入收敛确认流程？", default = "no" }
+description = "按当前系统配置安装缺失项，并经交互确认后收敛"
+confirm = { message = "这会修改系统包状态。是否进入平台对应的确认流程？", default = "no" }
 raw = true
-run = [
-  "LC_ALL=C mise bootstrap packages apply",
-  "./scripts/pacman-converge.sh --apply",
-]
+run = "./scripts/system-sync.sh --apply"
+
+[tasks.macos-upgrade]
+description = "单独升级 macOS Brewfile 中声明的软件，不执行 cleanup"
+confirm = { message = "这会升级 Brewfile 中的软件。是否继续进入升级确认流程？", default = "no" }
+raw = true
+run = "./scripts/homebrew-converge.sh --upgrade"

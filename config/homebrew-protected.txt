@@ -1,0 +1,6 @@
+# 每行格式为 type:name；支持 formula、cask、tap。
+# 这里的项目必须同时出现在 Brewfile 中，否则 apply/upgrade 会失败关闭。
+# 需要删除保护项时，必须同时修改本文件和 Brewfile，以降低误删概率。
+
+formula:git
+formula:mise

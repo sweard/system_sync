@@ -1,0 +1,5 @@
+# cleanup dry-run 使用的临时信任清单；每行必须是完整的 owner/tap/formula 名称。
+# 这里的项目也必须以 `trusted: true` 出现在 Brewfile 中。
+
+antoniorodr/memo/memo
+oven-sh/bun/bun
