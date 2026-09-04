@@ -1,0 +1,16 @@
+README.md
+  h_74ac6e576b13a5 129,135-136,159
+scripts/homebrew-converge.sh
+  h_74ac6e576b13a5 180,187,189-196,400
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "6c9acf5cb4ccb44a670fc8c114d895c218507d70",
+  "prompts": {},
+  "humans": {
+    "h_74ac6e576b13a5": {
+      "author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
