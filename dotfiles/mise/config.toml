@@ -1,0 +1,54 @@
+# 全局 mise 配置候选快照（2026-09-04，macOS arm64）。
+#
+# 当前所有设置均被注释：即使误打开这个文件，也不会安装工具、修改环境变量或 PATH。
+# 启用前请逐组审阅，并阅读仓库 README 中的迁移顺序和冲突说明。
+
+# 只负责在 mise 输出中隐藏匹配名称；这不是加密。
+# redactions = ["*_TOKEN", "*_SECRET", "*_PASSWORD", "*_API_KEY"]
+
+# 当前语言/工具版本候选：
+# - Node 24.15.0：当前由 nvm 提供；启用后应停用 zsh 中的 nvm 初始化。
+# - Python 3.9.6：当前是 Apple/Xcode Python；启用前建议重新选择受支持版本。
+# - Ruby 4.0.6：当前由 Homebrew 提供；启用后应从 Brewfile 和 zsh PATH 中移交。
+# - Java 21：当前默认是 JetBrains Runtime 21.0.6；mise 选择的发行版可能不同。
+# - Rust 1.98.0：当前由 rustup 提供；启用后应决定是否保留 rustup。
+# - Bun、uv、Yarn：当前由 Homebrew 提供；不要与 Brewfile 同时拥有。
+# [tools]
+# node = "24.15.0"
+# python = "3.9.6"
+# ruby = "4.0.6"
+# java = "21"
+# rust = "1.98.0"
+# bun = "1.4.0"
+# uv = "0.12.9"
+# yarn = "1.22.22"
+
+# 当前稳定且非敏感的环境变量候选。
+# NVM_DIR 故意未迁入：如果 Node 交给 mise，就不应继续初始化 nvm。
+# [env]
+# LANG = "zh"
+# LC_ALL = "en_US.UTF-8"
+# ANDROID_HOME = "{{env.HOME}}/Library/Android/sdk"
+# LDFLAGS = "-L/opt/homebrew/opt/ruby/lib"
+# CPPFLAGS = "-I/opt/homebrew/opt/ruby/include"
+# PYENV_ROOT = "{{env.HOME}}/.pyenv"
+
+# 私密值必须放在 Git 仓库外。先复制 secrets.env.example，再填入真实值。
+# _.file = "{{env.HOME}}/.config/mise/secrets.env"
+
+# 仅保留由现有 zsh 配置明确声明的稳定路径；已去掉 Codex 临时目录和重复项。
+# 若某个工具改由 mise 管理，应删除它对应的手工 PATH，以避免双重所有权。
+# _.path = [
+#   "{{env.HOME}}/.local/bin",
+#   "{{env.HOME}}/.git-ai/bin",
+#   "/opt/homebrew/opt/ruby/bin",
+#   "{{env.HOME}}/.pyenv/bin",
+#   "{{env.HOME}}/.cargo/bin",
+#   "{{env.HOME}}/development/flutter/bin",
+#   "{{env.HOME}}/.gem/bin",
+#   "{{env.HOME}}/Library/Application Support/JetBrains/Toolbox/scripts",
+#   "{{env.HOME}}/Library/Android/sdk/emulator",
+#   "{{env.HOME}}/Library/Android/sdk/tools",
+#   "{{env.HOME}}/Library/Android/sdk/platform-tools",
+#   "{{env.HOME}}/Library/Android/sdk/build-tools",
+# ]

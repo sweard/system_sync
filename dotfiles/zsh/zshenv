@@ -1,0 +1,5 @@
+. "$HOME/.cargo/env"
+export PATH=$HOME/.gem/bin:$PATH
+export LDFLAGS="-L/opt/homebrew/opt/ruby/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/ruby/include"
+export PATH=$HOME/development/flutter/bin:$PATH

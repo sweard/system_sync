@@ -1,4 +1,7 @@
 # 公共任务入口。各平台的软件声明位于 platforms/ 下。
+#
+# 开发工具、环境变量、PATH 和 dotfiles 的候选配置目前全部保持注释，
+# 不会改变当前电脑。候选值见 dotfiles/mise/config.toml。
 monorepo_root = true
 
 [monorepo]
@@ -27,3 +30,33 @@ description = "单独升级 macOS Brewfile 中声明的软件，不执行 cleanu
 confirm = { message = "这会升级 Brewfile 中的软件。是否继续进入升级确认流程？", default = "no" }
 raw = true
 run = "./scripts/homebrew-converge.sh --upgrade"
+
+# dotfiles 命令入口可以安全保留；由于下方映射均被注释，当前不会接管任何文件。
+[tasks.config-status]
+description = "查看已启用 dotfiles 映射的状态"
+run = "mise bootstrap dotfiles status"
+
+[tasks.config-dry-run]
+description = "预览已启用 dotfiles 映射将产生的文件变更"
+run = "mise bootstrap dotfiles apply --dry-run"
+
+[tasks.config-sync]
+description = "应用已启用的 dotfiles 映射；默认需要确认"
+confirm = { message = "这会修改已启用映射对应的用户配置文件。是否继续？", default = "no" }
+run = "mise bootstrap dotfiles apply"
+
+# -----------------------------------------------------------------------------
+# 候选 dotfiles 映射（当前全部未启用）
+#
+# 工具、环境变量和 PATH 只在 dotfiles/mise/config.toml 保留一份候选定义，
+# 避免与根 task 配置重复。先审阅该文件，再启用全局 mise 配置映射。
+#
+# [dotfiles]
+# "~/.config/mise/config.toml" = { source = "dotfiles/mise/config.toml", mode = "symlink" }
+# "~/.zshenv" = { source = "dotfiles/zsh/zshenv", mode = "symlink" }
+# "~/.zprofile" = { source = "dotfiles/zsh/zprofile", mode = "symlink" }
+# "~/.zshrc" = { source = "dotfiles/zsh/zshrc", mode = "symlink" }
+# "~/.claude/CLAUDE.md" = { source = "dotfiles/claude/CLAUDE.md", mode = "copy" }
+# "~/.claude/settings.json" = { source = "dotfiles/claude/settings.json", mode = "copy" }
+# "~/.claude/hooks" = { source = "dotfiles/claude/hooks", mode = "symlink-each" }
+# "~/Library/Application Support/Code/User/settings.json" = { source = "dotfiles/vscode/settings.json", mode = "copy" }

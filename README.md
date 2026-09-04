@@ -1,6 +1,6 @@
-# macOS + 多发行版 Linux 声明式系统包同步
+# macOS + 多发行版 Linux 声明式系统配置同步
 
-这个仓库用统一的 mise task 作为入口，但把每个平台的配置和收敛逻辑分开。
+这个仓库用统一的 mise task 作为入口，把各平台的系统包收敛逻辑分开，并保存可逐项启用的开发环境与应用配置候选快照。
 
 | 平台 / profile | 声明来源 | 收敛方式 |
 |---|---|---|
@@ -21,6 +21,20 @@ system_sync/
 ├── .gitignore
 ├── README.md
 ├── mise.toml                         # 公共 task 入口
+├── dotfiles/                         # 当前电脑的脱敏候选快照；映射尚未启用
+│   ├── mise/
+│   │   ├── config.toml               # 已注释的 tools / env / PATH 候选
+│   │   └── secrets.env.example
+│   ├── zsh/
+│   │   ├── zshenv
+│   │   ├── zprofile
+│   │   └── zshrc
+│   ├── claude/
+│   │   ├── CLAUDE.md
+│   │   ├── hooks/
+│   │   └── settings.json             # 已移除认证令牌
+│   └── vscode/
+│       └── settings.json
 ├── platforms/
 │   ├── macos/
 │   │   ├── Brewfile
@@ -75,6 +89,16 @@ mise run system-sync
 - `status`：只读地显示声明、当前根包和差异。
 - `dry-run`：同时预览缺失包安装和收敛计划，不修改系统。
 - `system-sync`：经 mise 确认、脚本精确短语确认和包管理器自身确认后才修改系统。
+
+应用配置还提供三个独立入口：
+
+```bash
+mise run config-status
+mise run config-dry-run
+mise run config-sync
+```
+
+当前根配置中的全部 `[dotfiles]` 映射都被注释，因此这三个命令不会接管或修改任何用户文件。它们是为以后逐项启用映射预留的入口。
 
 Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 
@@ -276,6 +300,58 @@ tap:owner/repository
 mise run macos-upgrade
 ```
 
+## 开发环境和应用配置候选快照
+
+`dotfiles/` 保存了 2026-09-04 从当前 Mac 盘点得到的候选配置，但目前没有任何文件映射处于启用状态，也没有启用全局 `[tools]`、`[env]` 或 `_.path`。本次纳入 Git 不会执行工具安装，不会修改 `~/.zshrc`、Claude、VS Code 或 `~/.config/mise/config.toml`。
+
+### 当前工具基线
+
+| 工具 | 当前来源 | 盘点版本 | 候选处理 |
+|---|---|---:|---|
+| Node | nvm 0.40.7 | 24.15.0 | 已写入注释的 `[tools]`；启用时停用 nvm |
+| Python | Apple / Xcode | 3.9.6 | 仅记录当前版本，正式迁移前应重新选择版本 |
+| Ruby | Homebrew | 4.0.6 | 已写入注释的 `[tools]`；启用时从 Brewfile 和手工 PATH 移交 |
+| Java | 本机 JDK，默认 JetBrains Runtime | 21.0.6 | 候选声明为 Java 21；mise 安装的发行版可能不同 |
+| Rust | rustup stable | 1.98.0 | 已写入注释的 `[tools]`；启用时决定是否继续保留 rustup |
+| Bun | Homebrew | 1.4.0 | 候选已注释；不得与 Brewfile 同时拥有 |
+| uv | Homebrew | 0.12.9 | 候选已注释；不得与 Brewfile 同时拥有 |
+| Yarn | Homebrew | 1.22.22 | 候选已注释；不得与 Brewfile 同时拥有 |
+| Flutter | 本地 stable checkout | 3.47.2，工作树有改动 | 只保留现有 PATH，不交给 mise，避免覆盖本地改动 |
+
+当前 zsh 中还有 pyenv 初始化片段，但盘点时 `~/.pyenv/bin/pyenv` 不存在，所以没有把 pyenv 当成现有工具基线。Java 18、17 和 11 的已安装 JDK 也没有纳入全局默认工具声明；项目需要时应在各自的 `mise.toml` 中声明。
+
+### 环境变量和 PATH
+
+候选全局配置位于 `dotfiles/mise/config.toml`，其中所有有效行都以 `#` 注释。它记录：
+
+- `LANG=zh`、`LC_ALL=en_US.UTF-8`、`ANDROID_HOME`；
+- Homebrew Ruby 当前使用的 `LDFLAGS` 和 `CPPFLAGS`，以及现有但暂时无可执行文件的 `PYENV_ROOT`；
+- `.local/bin`、git-ai、Homebrew Ruby、pyenv、Cargo、Flutter、Gem、JetBrains Toolbox 和 Android SDK 路径；
+- 当前 Node、Python、Ruby、Java、Rust、Bun、uv、Yarn 版本。
+
+PATH 清单只取自持久的 zsh 配置，已经排除 Codex 会话临时目录、系统自动注入目录和重复项。启用某个 mise 工具时，应同时删除 nvm、rustup、Homebrew Ruby 等对应的手工初始化或 PATH，避免同一个工具存在两个所有者。
+
+### zsh、Claude 和 VS Code
+
+- `dotfiles/zsh/` 是当前三个 shell 入口文件的候选快照。个人姓名和内网地址没有进入 Git，未来通过 `~/.zshrc.local` 本机私有文件加载。Powerlevel10k 的 `~/.p10k.zsh` 暂未纳管。
+- `dotfiles/claude/` 保留当前 Claude Code 的全局说明、分支缓存/工作日志 Hook、模型、权限和插件设置，但从 `settings.json` 明确删除了 `ANTHROPIC_AUTH_TOKEN` 和私有 `ANTHROPIC_BASE_URL`。部分 Hook 仍指向本机安装的 PromLight、SBBars 和 git-ai，迁移到其他机器前要检查这些路径。
+- `dotfiles/vscode/settings.json` 是当前 macOS VS Code 用户设置快照。若继续使用 VS Code Settings Sync，不应同时启用这个文件的 mise copy 映射。
+- Claude 和 VS Code 使用 `copy` 候选模式，因为应用可能主动改写 JSON；zsh 和全局 mise 配置使用 `symlink` 候选模式。
+
+真实密钥只应放在仓库外的 `~/.config/mise/secrets.env`。仓库提供 `dotfiles/mise/secrets.env.example`，并忽略任意 `dotfiles/**/secrets.env` 和 `dotfiles/**/*.local`。`redactions` 只能减少 mise 输出泄漏，不能代替加密。
+
+### 将来逐项启用
+
+不要一次打开全部映射。推荐顺序：
+
+1. 审阅 `dotfiles/mise/config.toml`，先只取消注释 `LANG`、`LC_ALL`、`ANDROID_HOME` 和没有冲突的 PATH。
+2. 在根 `mise.toml` 中只取消注释 `~/.config/mise/config.toml` 映射，运行 `mise run config-dry-run`；确认后才运行 `mise run config-sync`。
+3. 在现有 `~/.zshrc` 中手工加入 `eval "$(mise activate zsh)"`，重新打开终端并验证。
+4. 每次只迁移一个工具。先启用对应 `[tools]`，验证版本，再从 nvm、Homebrew、rustup 或手工 PATH 移除旧所有权。
+5. 最后分别考虑 zsh、Claude 和 VS Code 映射。启用 whole-file 映射前必须先看 dry-run；mise 默认会拒绝覆盖未管理的现有文件，不要为了省事直接使用 `--force`。
+
+从 `[dotfiles]` 删除条目不会自动删除已经应用的目标文件。如果将来需要取消管理，应先运行 `mise bootstrap dotfiles unapply --dry-run`，确认后执行 `mise bootstrap dotfiles unapply`，再删除映射。
+
 ## 风险、取消和恢复
 
 - dry-run 只能精确显示当前状态下的 orphan。Linux 包的安装原因降级后，可能新出现 orphan，所以 apply 会重新计算并第二次确认。
@@ -304,6 +380,8 @@ mise run dry-run
 ## 参考
 
 - [mise Bootstrap Packages](https://mise.jdx.dev/bootstrap/packages/)
+- [mise Environments](https://mise.jdx.dev/environments/)
+- [mise Dotfiles](https://mise.jdx.dev/dotfiles.html)
 - [mise config trust](https://mise.jdx.dev/cli/trust.html)
 - [mise monorepo tasks](https://mise.jdx.dev/tasks/monorepo.html)
 - [Homebrew Bundle](https://docs.brew.sh/Brew-Bundle-and-Brewfile)

@@ -1,0 +1,285 @@
+{
+  "env": {
+    "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-8",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
+    "CLAUDE_CODE_AUTO_COMPACT_THRESHOLD": "400000"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(cp /tmp/write_xml_full.rs src/write_xml.rs && grep -c \"log::\" src/write_xml.rs && grep -c \"println!\" src/write_xml.rs)",
+      "Bash(git commit -m ' *)",
+      "Bash(flutter_rust_bridge_codegen --version)",
+      "Bash(flutter_rust_bridge_codegen generate *)",
+      "Bash(flutter analyze *)",
+      "Bash(cargo build *)",
+      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf remote -v)",
+      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf log --oneline -5)",
+      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf/rust/src/excel_to_xml remote -v)",
+      "Bash(git -C /Users/sbwoan/FlutterProjects/e2xf/rust/src/excel_to_xml log --oneline -5)",
+      "Bash(flutter pub *)",
+      "Bash(dart run *)",
+      "Read"
+    ],
+    "defaultMode": "auto",
+    "additionalDirectories": [
+      "/private/tmp"
+    ]
+  },
+  "model": "opus",
+  "availableModels": [
+    "claude-opus-4-8",
+    "claude-opus-4-7",
+    "claude-sonnet-5",
+    "claude-haiku-4-5-20251001",
+    "claude-fable-5"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sbwoan/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PostToolUse"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PostToolUse"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sbwoan/.git-ai/bin/git-ai checkpoint claude --hook-input stdin"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PreToolUse"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PreToolUse"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/log-work.sh"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/branch-context-watch.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude UserPromptSubmit"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude UserPromptSubmit"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/branch-cache-load.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude SessionStart"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude SessionStart"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/branch-cache-save.sh",
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude Stop"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude Stop"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PermissionRequest"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PermissionRequest"
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude PermissionDenied"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude PermissionDenied"
+          }
+        ]
+      }
+    ],
+    "Elicitation": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude Elicitation"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude Elicitation"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude StopFailure"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude StopFailure"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /Users/sbwoan/Applications/PromLight/agent_hook.py --agent claude SessionEnd"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 '/Users/sbwoan/Library/Application Support/SBBars/hooks/sbbars_agent_hook.py' --agent claude SessionEnd"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "effortLevel": "medium"
+}
