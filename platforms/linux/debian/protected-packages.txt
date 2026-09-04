@@ -1,0 +1,38 @@
+# 即使未在 mise.toml 声明，这些包也不会被改成 auto 或被 autoremove。
+# 首次 apply 前，按实际启动、存储、网络和远程救援环境补充。
+
+apt
+base-files
+base-passwd
+bash
+coreutils
+dash
+dpkg
+e2fsprogs
+findutils
+grep
+gzip
+hostname
+init-system-helpers
+libc6
+login
+mount
+passwd
+sed
+sudo
+systemd
+systemd-sysv
+tar
+util-linux
+
+# 常见启动、存储与网络组件
+grub-common
+grub-efi-amd64
+grub-pc
+initramfs-tools
+cryptsetup
+lvm2
+mdadm
+network-manager
+openssh-client
+openssh-server

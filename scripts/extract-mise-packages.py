@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从 `mise bootstrap packages status --json` 提取 pacman/AUR 声明。
+"""从 `mise bootstrap packages status --json` 提取指定 manager 的声明。
 
 当前官方结构是：
   {"pacman": {"available": true, "packages": [{"package": "base", ...}]}}
@@ -18,8 +18,8 @@ from pathlib import Path
 from typing import Any, Iterable, List, Tuple
 
 
-SUPPORTED_MANAGERS = ("pacman", "aur")
-PACKAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9@._+\-]*$")
+MANAGER_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+PACKAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9@._+:\-]*$")
 
 
 class StatusFormatError(ValueError):
@@ -74,11 +74,13 @@ def _parse_manager_section(manager: str, section: Any) -> Iterable[Tuple[str, st
         yield _package_from_item(manager, item)
 
 
-def parse_status(data: Any) -> List[Tuple[str, str, str]]:
+def parse_status(
+    data: Any, managers: Tuple[str, ...]
+) -> List[Tuple[str, str, str]]:
     entries: List[Tuple[str, str, str]] = []
 
-    if isinstance(data, dict) and any(manager in data for manager in SUPPORTED_MANAGERS):
-        for manager in SUPPORTED_MANAGERS:
+    if isinstance(data, dict) and any(manager in data for manager in managers):
+        for manager in managers:
             if manager in data:
                 entries.extend(_parse_manager_section(manager, data[manager]))
     else:
@@ -90,12 +92,12 @@ def parse_status(data: Any) -> List[Tuple[str, str, str]]:
             if not isinstance(item, dict):
                 raise StatusFormatError("扁平 packages 项必须是对象")
             manager = item.get("manager")
-            if manager in SUPPORTED_MANAGERS:
+            if manager in managers:
                 entries.append(_package_from_item(manager, item))
 
     if not entries:
         raise StatusFormatError(
-            "没有解析到任何 pacman/AUR 声明；拒绝把空结果用于系统包收敛"
+            f"没有解析到任何 {','.join(managers)} 声明；拒绝把空结果用于系统包收敛"
         )
 
     # 去重并保持确定性；同名包跨 manager 仍分别保留，shell 侧再取名称并集。
@@ -104,13 +106,28 @@ def parse_status(data: Any) -> List[Tuple[str, str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("json_file", type=Path, help="mise status JSON 文件")
+    parser.add_argument(
+        "--manager",
+        action="append",
+        required=True,
+        dest="managers",
+        help="需要提取的 manager；可重复指定",
+    )
+    parser.add_argument("json_file", help="mise status JSON 文件，或 - 表示标准输入")
     args = parser.parse_args()
 
+    managers = tuple(dict.fromkeys(args.managers))
+    for manager in managers:
+        if not MANAGER_RE.fullmatch(manager):
+            parser.error(f"manager 名称不合法：{manager!r}")
+
     try:
-        with args.json_file.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        entries = parse_status(data)
+        if args.json_file == "-":
+            data = json.load(sys.stdin)
+        else:
+            with Path(args.json_file).open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        entries = parse_status(data, managers)
     except (OSError, json.JSONDecodeError, StatusFormatError) as exc:
         print(f"错误：无法安全解析 mise 包状态：{exc}", file=sys.stderr)
         return 2

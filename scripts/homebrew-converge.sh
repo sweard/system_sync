@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 BREWFILE="$PROJECT_ROOT/platforms/macos/Brewfile"
 TRUSTED_FORMULAE_FILE="$PROJECT_ROOT/platforms/macos/trusted-formulae.txt"
-PROTECTED_FILE="$PROJECT_ROOT/config/homebrew-protected.txt"
+PROTECTED_FILE="$PROJECT_ROOT/platforms/macos/protected-packages.txt"
 STATE_ROOT="$PROJECT_ROOT/.system-sync/history"
 
 MODE="dry-run"

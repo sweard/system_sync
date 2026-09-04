@@ -1,0 +1,12 @@
+# Debian / Ubuntu 及其衍生发行版的手工根包示例。
+[settings]
+system_packages.managers = ["apt"]
+
+[bootstrap.packages]
+"apt:base-files" = "latest"
+"apt:apt" = "latest"
+"apt:build-essential" = "latest"
+"apt:git" = "latest"
+"apt:openssh-client" = "latest"
+"apt:python3" = "latest"
+"apt:ripgrep" = "latest"

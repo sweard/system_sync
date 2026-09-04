@@ -1,0 +1,25 @@
+# 即使未在 packages.txt 声明，这些包也不会进入 zypper 移除事务。
+# 首次 apply 前，按实际产品、pattern、启动、存储和网络环境补充。
+
+bash
+coreutils
+filesystem
+glibc
+grub2
+openSUSE-release
+rpm
+shadow
+sudo
+systemd
+systemd-sysvinit
+util-linux
+zypper
+
+# 常见启动、存储与网络组件
+dracut
+cryptsetup
+lvm2
+mdadm
+NetworkManager
+openssh
+shim

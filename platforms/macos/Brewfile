@@ -1,10 +1,7 @@
 # macOS Homebrew baseline
 #
-# 2026-09-04 从本机 Homebrew 6.0.18 手工核对生成：
-# - 28 个当前主动安装的 formula（含两个第三方 tap formula）；
-# - 12 个当前 cask；
-# - 2 个当前第三方 tap；
-# - 额外加入 mise，作为本项目的任务运行器和启动依赖。
+# 2026-09-04 从本机 Homebrew 状态手工核对生成，之后随 Git 维护。
+# mise 作为本项目的任务运行器，也纳入 Brewfile。
 #
 # 这里只声明根 formula，不列出 Homebrew 自动维护的依赖树。
 
@@ -40,7 +37,7 @@ brew "tlrc"
 brew "uv"
 brew "yarn"
 
-# 当前机器尚未安装；用于从本 Brewfile 启动 mise 工作流。
+# 任务运行器；新机可用 Brew Bundle 先安装它。
 brew "mise"
 
 cask "codex"

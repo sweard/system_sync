@@ -1,0 +1,9 @@
+# mise 当前没有内置 zypper manager，因此这里每行直接声明一个根包。
+# 空行和 # 注释会被忽略。
+
+filesystem
+git
+openssh
+python3
+ripgrep
+zypper

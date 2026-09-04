@@ -5,11 +5,13 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
-ALLOWLIST_FILE="$PROJECT_ROOT/config/protected-packages.txt"
+PROFILE_DIR="${SYSTEM_SYNC_PROFILE_DIR:-$PROJECT_ROOT/platforms/linux/arch}"
+ALLOWLIST_FILE="$PROFILE_DIR/protected-packages.txt"
 STATE_ROOT="$PROJECT_ROOT/.system-sync/history"
 MAX_DEMOTIONS=25
 
 MODE="dry-run"
+MODE_EXPLICIT=0
 ALLOW_LARGE_CHANGE=0
 
 usage() {
@@ -109,16 +111,25 @@ copy_if_present() {
   fi
 }
 
+set_mode() {
+  local requested="$1"
+  if [[ "$MODE_EXPLICIT" -eq 1 && "$MODE" != "$requested" ]]; then
+    die "一次只能指定一种运行模式"
+  fi
+  MODE="$requested"
+  MODE_EXPLICIT=1
+}
+
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --status)
-      MODE="status"
+      set_mode "status"
       ;;
     --dry-run)
-      MODE="dry-run"
+      set_mode "dry-run"
       ;;
     --apply)
-      MODE="apply"
+      set_mode "apply"
       ;;
     --allow-large-change)
       ALLOW_LARGE_CHANGE=1
@@ -143,6 +154,7 @@ command -v pacman >/dev/null 2>&1 || die "找不到 pacman"
 command -v mise >/dev/null 2>&1 || die "找不到 mise"
 command -v python3 >/dev/null 2>&1 || die "找不到 python3；先安装 Arch 的 python 包"
 command -v comm >/dev/null 2>&1 || die "找不到 comm（通常由 coreutils 提供）"
+[[ -r "$PROFILE_DIR/mise.toml" ]] || die "profile 配置不可读：$PROFILE_DIR/mise.toml"
 [[ -r "$ALLOWLIST_FILE" ]] || die "保护清单不可读：$ALLOWLIST_FILE"
 
 TMP_DIR="$(mktemp -d)"
@@ -168,8 +180,8 @@ CURRENT_ORPHAN_ERROR="$TMP_DIR/orphans-current.stderr"
 CURRENT_REMOVABLE_FILE="$TMP_DIR/orphans-current-removable"
 CURRENT_PROTECTED_ORPHANS_FILE="$TMP_DIR/orphans-current-protected"
 
-info "读取当前目录最终生效的 mise pacman/AUR 配置"
-if ! (cd -- "$PROJECT_ROOT" && LC_ALL=C mise bootstrap packages status --json) \
+info "读取 Arch profile 最终生效的 mise pacman/AUR 配置"
+if ! (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status --json) \
   > "$STATUS_JSON" 2> "$STATUS_ERROR"; then
   sed 's/^/  /' "$STATUS_ERROR" >&2
   die "mise 无法生成 packages status JSON；没有可靠声明集时绝不继续"
@@ -184,7 +196,8 @@ if [[ -s "$STATUS_ERROR" ]]; then
   warn "mise status 产生了附加诊断；请确认上面的信息无异常"
 fi
 
-if ! python3 "$SCRIPT_DIR/extract-mise-packages.py" "$STATUS_JSON" > "$DECLARED_TSV"; then
+if ! python3 "$SCRIPT_DIR/extract-mise-packages.py" \
+  --manager pacman --manager aur "$STATUS_JSON" > "$DECLARED_TSV"; then
   die "无法从 mise 最终生效配置中取得可靠的 pacman/AUR 声明"
 fi
 
@@ -206,7 +219,7 @@ while IFS=$'\t' read -r manager package state; do
   case "$state" in
     installed|version_mismatch|needs_repair)
       if ! grep -Fxq "$package" "$INSTALLED_FILE"; then
-        warn "${manager}:${package} 状态为 ${state}，但 pacman 中没有同名包；请在 mise.toml 中改用具体 provider 包名"
+        warn "${manager}:${package} 状态为 ${state}，但 pacman 中没有同名包；请在 $PROFILE_DIR/mise.toml 中改用具体 provider 包名"
         VIRTUAL_ERROR=1
       fi
       ;;
@@ -328,14 +341,14 @@ while IFS= read -r package; do
   [[ -n "$package" ]] && PROMOTE_PACKAGES+=("$package")
 done < "$PROMOTE_FILE"
 
-if [[ "${#DEMOTE_PACKAGES[@]}" -gt 0 ]]; then
-  info "将未声明显式包降级为 dependency（此步骤不卸载文件）"
-  "${ROOT_COMMAND[@]}" pacman -D --asdeps "${DEMOTE_PACKAGES[@]}"
-fi
-
 if [[ "${#PROMOTE_PACKAGES[@]}" -gt 0 ]]; then
   info "将声明/保护包提升为 explicit root"
   "${ROOT_COMMAND[@]}" pacman -D --asexplicit "${PROMOTE_PACKAGES[@]}"
+fi
+
+if [[ "${#DEMOTE_PACKAGES[@]}" -gt 0 ]]; then
+  info "将未声明显式包降级为 dependency（此步骤不卸载文件）"
+  "${ROOT_COMMAND[@]}" pacman -D --asdeps "${DEMOTE_PACKAGES[@]}"
 fi
 
 FINAL_ORPHANS_FILE="$TMP_DIR/orphans-final"

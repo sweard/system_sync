@@ -1,0 +1,10 @@
+# Fedora / RHEL / CentOS Stream / Rocky / AlmaLinux 的手工根包示例。
+[settings]
+system_packages.managers = ["dnf"]
+
+[bootstrap.packages]
+"dnf:filesystem" = "latest"
+"dnf:git" = "latest"
+"dnf:openssh-clients" = "latest"
+"dnf:python3" = "latest"
+"dnf:ripgrep" = "latest"

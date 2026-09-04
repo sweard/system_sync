@@ -53,26 +53,51 @@ case "$(uname -s)" in
     exec "$SCRIPT_DIR/homebrew-converge.sh" "$@"
     ;;
   Linux)
-    [[ "$MODE" != "upgrade" ]] || die "统一升级任务尚未覆盖 Arch；请使用 pacman 的常规升级流程"
+    [[ "$MODE" != "upgrade" ]] || die "统一升级任务尚未覆盖 Linux；请使用发行版的常规升级流程"
+    PROFILE="$("$SCRIPT_DIR/detect-linux-profile.sh")"
+    PROFILE_DIR="$PROJECT_ROOT/platforms/linux/$PROFILE"
+    [[ -d "$PROFILE_DIR" ]] || die "Linux profile 目录不存在：$PROFILE_DIR"
+    export SYSTEM_SYNC_PROFILE="$PROFILE"
+    export SYSTEM_SYNC_PROFILE_DIR="$PROFILE_DIR"
+
+    case "$PROFILE" in
+      arch)
+        CONVERGE_SCRIPT="$SCRIPT_DIR/pacman-converge.sh"
+        ;;
+      debian)
+        CONVERGE_SCRIPT="$SCRIPT_DIR/apt-converge.sh"
+        ;;
+      fedora)
+        CONVERGE_SCRIPT="$SCRIPT_DIR/dnf-converge.sh"
+        ;;
+      opensuse)
+        exec "$SCRIPT_DIR/zypper-converge.sh" "$@"
+        ;;
+      *)
+        die "检测脚本返回了未知 profile：$PROFILE"
+        ;;
+    esac
+
     if [[ "$MODE" == "help" ]]; then
-      exec "$SCRIPT_DIR/pacman-converge.sh" --help
+      exec "$CONVERGE_SCRIPT" --help
     fi
     command -v mise >/dev/null 2>&1 || die "找不到 mise"
+    printf '==> Linux 发行版 profile：%s\n' "$PROFILE"
     case "$MODE" in
       status)
-        (cd -- "$PROJECT_ROOT" && LC_ALL=C mise bootstrap packages status)
+        (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status)
         ;;
       dry-run)
-        (cd -- "$PROJECT_ROOT" && LC_ALL=C mise bootstrap packages apply --dry-run)
+        (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --dry-run)
         ;;
       apply)
-        (cd -- "$PROJECT_ROOT" && LC_ALL=C mise bootstrap packages apply)
+        (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply)
         ;;
       *)
         die "无法识别运行模式"
         ;;
     esac
-    exec "$SCRIPT_DIR/pacman-converge.sh" "$@"
+    exec "$CONVERGE_SCRIPT" "$@"
     ;;
   *)
     die "不支持的操作系统：$(uname -s)"

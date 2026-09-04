@@ -1,5 +1,12 @@
-# 公共任务入口。Linux 包声明位于 mise.linux.toml，macOS 软件声明位于
-# platforms/macos/Brewfile。
+# 公共任务入口。各平台的软件声明位于 platforms/ 下。
+monorepo_root = true
+
+[monorepo]
+config_roots = [
+  "platforms/linux/arch",
+  "platforms/linux/debian",
+  "platforms/linux/fedora",
+]
 
 [tasks.status]
 description = "查看当前系统的声明状态和差异（只读）"

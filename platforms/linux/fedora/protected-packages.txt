@@ -1,0 +1,29 @@
+# 即使未在 mise.toml 声明，这些包也不会被改成 dependency 或被 autoremove。
+# 首次 apply 前，按实际启动、存储、网络和远程救援环境补充。
+
+bash
+coreutils
+dnf
+dnf5
+filesystem
+glibc
+grub2-common
+grub2-efi-x64
+grub2-pc
+passwd
+rpm
+setup
+shadow-utils
+sudo
+systemd
+util-linux
+
+# 常见启动、存储与网络组件
+dracut
+cryptsetup
+lvm2
+mdadm
+NetworkManager
+openssh-clients
+openssh-server
+shim-x64
