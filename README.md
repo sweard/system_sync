@@ -126,11 +126,13 @@ mise run dry-run
 mise run system-sync
 ```
 
-实际 apply 有三层防护：
+实际 apply 至少有三层防护：
 
 1. mise task 先询问是否进入修改流程；
 2. 脚本要求输入精确短语 `APPLY HOMEBREW`；
 3. 安装完成后，Homebrew 自己再次列出完整 cleanup 内容并询问。
+
+如果 Homebrew 同时报告依赖图循环并提出移除受管项目，在 Homebrew 最终确认前还必须输入 `ALLOW HOMEBREW GRAPH WARNING`。
 
 脚本不向 cleanup 传 `--force`，不自动回答 Homebrew 的确认，也不使用 `--zap`。
 
@@ -154,7 +156,7 @@ mise run system-sync
 
 cleanup 预演将标准输入断开，因此 Homebrew 无法获得确认，只会打印 `Would uninstall` / `Would untap`，不会修改系统。
 
-若 Homebrew 同时报告 formula 依赖图循环，并提出移除 formula、cask 或 tap，脚本会拒绝 apply；先修复 Homebrew 元数据再收敛。只有缓存、旧版本等 `brew cleanup` 项时会保留警告并继续交给最终人工确认。
+若 Homebrew 同时报告 formula 依赖图循环，并提出移除 formula、cask 或 tap，脚本会显示醒目警告，并要求输入额外的精确确认短语。这样不会因无关的旧依赖收据永久阻断收敛，同时仍保留 cleanup 精确预演、专用确认和 Homebrew 自身确认。若预演包含循环中的包或其他非预期项目，应取消操作并先修复 Homebrew 元数据。
 
 `--apply` 顺序为：
 

@@ -177,16 +177,23 @@ preview_cleanup() {
   if grep -Fq 'Formulae dependency graph sorting found a circular dependency:' \
     "$CLEANUP_PREVIEW_FILE"; then
     CLEANUP_GRAPH_WARNING=1
-    warn "Homebrew 报告 formula 依赖图循环；若预演包含受管项目卸载，apply 将失败关闭"
+    warn "Homebrew 报告 formula 依赖图循环；若预演包含受管项目卸载，apply 将要求额外确认"
   fi
   if grep -Eq '^Would uninstall (casks|formulae):|^Would untap:' "$CLEANUP_PREVIEW_FILE"; then
     CLEANUP_HAS_MANAGED_REMOVALS=1
   fi
 }
 
-guard_cleanup_graph() {
+confirm_cleanup_graph_warning() {
   if [[ "$CLEANUP_GRAPH_WARNING" -eq 1 && "$CLEANUP_HAS_MANAGED_REMOVALS" -eq 1 ]]; then
-    die "依赖图循环警告下出现 formula/cask/tap 移除计划；修复 Homebrew 元数据后再 apply"
+    warn "依赖图循环警告下存在 formula/cask/tap 移除计划"
+    warn "请只在上面的最终预演内容完全符合预期时继续"
+    printf '请输入精确短语 “ALLOW HOMEBREW GRAPH WARNING” 继续 cleanup：'
+    IFS= read -r GRAPH_WARNING_CONFIRMATION
+    if [[ "$GRAPH_WARNING_CONFIRMATION" != "ALLOW HOMEBREW GRAPH WARNING" ]]; then
+      warn "额外确认不匹配，未执行 cleanup；此前的安装步骤可能已经完成"
+      exit 2
+    fi
   fi
 }
 
@@ -372,7 +379,6 @@ if [[ "$MODE" == "dry-run" ]]; then
 fi
 
 [[ ! -s "$MISSING_PROTECTED_FILE" ]] || die "保护项缺少声明，拒绝 apply"
-guard_cleanup_graph
 [[ -t 0 ]] || die "--apply 必须在交互式终端运行"
 
 printf '\n即将安装缺失项；随后 Homebrew 会再次显示完整 cleanup 清单并询问。\n'
@@ -391,7 +397,7 @@ brew bundle check --no-upgrade --verbose --file="$BREWFILE"
 info "安装后重新计算 cleanup 事务"
 preview_cleanup
 cp -- "$CLEANUP_PREVIEW_FILE" "$RUN_LOG_DIR/cleanup.after-install.preview.txt"
-guard_cleanup_graph
+confirm_cleanup_graph_warning
 
 printf '\nHomebrew 将列出最终 cleanup 事务并要求确认。\n'
 printf '脚本未使用 --zap，也不会自动回答 Homebrew 的确认问题。\n'
