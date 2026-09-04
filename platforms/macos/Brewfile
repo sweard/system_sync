@@ -39,7 +39,6 @@ brew "sevenzip"
 brew "tlrc"
 brew "uv"
 brew "yarn"
-brew "zeroclaw"
 
 # 当前机器尚未安装；用于从本 Brewfile 启动 mise 工作流。
 brew "mise"
@@ -55,4 +54,3 @@ cask "iterm2"
 cask "keka"
 cask "openclaw"
 cask "raycast"
-cask "zed"
