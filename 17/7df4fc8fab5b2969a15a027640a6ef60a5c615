@@ -1,0 +1,30 @@
+README.md
+  s_a9ce9d3bef3048::t_094b6621edcc84 74,129-191
+  s_a9ce9d3bef3048::t_b4c3d1b688b86f 192
+mise.toml
+  s_a9ce9d3bef3048::t_731cad1ab686f5 29-38
+tests/test_package_command.py
+  s_a9ce9d3bef3048::t_989318f9920d04 1-63,68-79,104-131,133-150,159-211,217,222-337,345,383-386
+  s_a9ce9d3bef3048::t_a0051e935f1249 132,368-382
+  s_a9ce9d3bef3048::t_6253c64b3033fb 64-67,80-103,151-158,212-216,218-221,338-344,346-367
+scripts/package-command.py
+  s_a9ce9d3bef3048::t_731cad1ab686f5 1-23,25-203,211-241,246-294,298-302,307-380,393-468,471-477,487-554
+  s_a9ce9d3bef3048::t_6253c64b3033fb 24,242-245,381-392
+  s_a9ce9d3bef3048::t_094b6621edcc84 204-210,295-297,303-306,469-470,478-486
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "177df4fc8fab5b2969a15a027640a6ef60a5c615",
+  "prompts": {},
+  "sessions": {
+    "s_a9ce9d3bef3048": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06a23-f7d9-7e72-9d30-31b66df038f9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
