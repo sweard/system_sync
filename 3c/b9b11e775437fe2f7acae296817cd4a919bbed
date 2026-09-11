@@ -1,0 +1,34 @@
+tests/test_homebrew_preview.py
+  s_a9ce9d3bef3048::t_b03ac6d602bdc9 1-202
+README.md
+  s_a9ce9d3bef3048::t_5555c12c558049 57-58,296,311-320
+  s_a9ce9d3bef3048::t_1385c3dafd4523 321
+packages/macos/Brewfile
+  h_74ac6e576b13a5 10
+  s_a9ce9d3bef3048::t_d563cefb4a04ec 55-57
+packages/macos/trusted-casks.txt
+  s_a9ce9d3bef3048::t_5555c12c558049 1-4
+scripts/homebrew-converge.sh
+  s_a9ce9d3bef3048::t_5555c12c558049 10,83-118,186-199,299,320-321,344-347
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3cb9b11e775437fe2f7acae296817cd4a919bbed",
+  "prompts": {},
+  "humans": {
+    "h_74ac6e576b13a5": {
+      "author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  },
+  "sessions": {
+    "s_a9ce9d3bef3048": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06a23-f7d9-7e72-9d30-31b66df038f9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
