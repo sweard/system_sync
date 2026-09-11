@@ -7,6 +7,7 @@
 
 tap "antoniorodr/memo"
 tap "oven-sh/bun"
+tap "abue-ammar/tinycast"
 
 # 仅信任已经安装并纳入本基线的具体 formula，不信任整个第三方 tap。
 brew "antoniorodr/memo/memo", trusted: true
@@ -51,3 +52,6 @@ cask "iterm2"
 cask "keka"
 cask "openclaw"
 cask "raycast"
+
+# TinyCast 仅提供 cask；只信任完整名称对应的这一项。
+cask "abue-ammar/tinycast/tinycast", trusted: true

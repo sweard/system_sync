@@ -54,7 +54,8 @@ system_sync/
 │   ├── macos/
 │   │   ├── Brewfile
 │   │   ├── protected-packages.txt
-│   │   └── trusted-formulae.txt
+│   │   ├── trusted-formulae.txt
+│   │   └── trusted-casks.txt
 │   └── linux/
 │       ├── arch/
 │       │   ├── mise.toml
@@ -292,7 +293,7 @@ brew bundle cleanup \
 
 不指定 `--file` 时，Homebrew 只会在当前目录寻找默认 `Brewfile`。不建议手工加 `--force` 跳过确认；日常应使用本仓库的 `mise run` 入口，因为它额外执行保护校验和审计。
 
-### 保护项和第三方 formula 信任
+### 保护项和第三方 formula / cask 信任
 
 macOS 保护清单位于 `packages/macos/protected-packages.txt`：
 
@@ -306,6 +307,17 @@ tap:owner/repository
 保护项必须同时存在于 Brewfile；只从 Brewfile 删除时，apply 会失败关闭。确实要删除保护项时，两个文件要同时修改。
 
 `packages/macos/trusted-formulae.txt` 只列出已审核的完整第三方 formula 名。它必须与 Brewfile 中的 `trusted: true` 精确对应；不会将整个 tap 泛化为受信。
+
+第三方 cask 同样需要在 `packages/macos/trusted-casks.txt` 中列出完整名称，并在 Brewfile 中使用对应的精确信任声明。例如 TinyCast：
+
+```ruby
+tap "abue-ammar/tinycast"
+cask "abue-ammar/tinycast/tinycast", trusted: true
+```
+
+`trusted-casks.txt` 中对应一行 `abue-ammar/tinycast/tinycast`。两个清单中的项目必须在 Brewfile 中声明；信任行采用示例所示的独立一行格式。`brew bundle list --cask` 虽然返回短名称，临时信任仍使用完整名称。
+
+cleanup 预演使用独立的临时信任库，每次都初始化 formula 和 cask 信任，覆盖安装前、安装后两次预演。仅在真实 Homebrew 信任库中执行 `brew trust` 不会影响这个临时库。若日志显示安装已成功、随后预演失败，先修正对应信任清单，再重新运行 `mise run dry-run`；已安装且满足声明的软件无需重装。
 
 如果 Homebrew cleanup 报告 formula 依赖图循环，并且同时提出移除受管项目，脚本会要求额外的 `ALLOW HOMEBREW GRAPH WARNING` 精确确认。应先审阅事务，必要时修复 Homebrew 旧 keg 收据后再继续。
 

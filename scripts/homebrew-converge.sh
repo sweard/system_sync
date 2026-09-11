@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 BREWFILE="$PROJECT_ROOT/packages/macos/Brewfile"
 TRUSTED_FORMULAE_FILE="$PROJECT_ROOT/packages/macos/trusted-formulae.txt"
+TRUSTED_CASKS_FILE="$PROJECT_ROOT/packages/macos/trusted-casks.txt"
 PROTECTED_FILE="$PROJECT_ROOT/packages/macos/protected-packages.txt"
 STATE_ROOT="$PROJECT_ROOT/.system-sync/history"
 
@@ -79,6 +80,42 @@ bundle_list() {
   LC_ALL=C sort -u -o "$output_file" "$output_file"
 }
 
+read_trusted_packages() {
+  local type="$1"
+  local source_file="$2"
+  local output_file="$3"
+  local desired_file="$4"
+  local package declared_name declaration
+
+  awk '
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      sub(/[[:space:]]*#.*/, "", line)
+      sub(/^[[:space:]]+/, "", line)
+      sub(/[[:space:]]+$/, "", line)
+      if (line != "") print line
+    }
+  ' "$source_file" | LC_ALL=C sort -u > "$output_file"
+
+  while IFS= read -r package; do
+    if [[ ! "$package" =~ ^[A-Za-z0-9][A-Za-z0-9@._+-]*/[A-Za-z0-9][A-Za-z0-9@._+-]*/[A-Za-z0-9][A-Za-z0-9@._+-]*$ ]]; then
+      die "临时信任清单必须使用完整 owner/tap/${type} 名称：$package"
+    fi
+    declaration="brew"
+    declared_name="$package"
+    if [[ "$type" == "cask" ]]; then
+      declaration="cask"
+      # brew bundle list --cask 返回短名称；信任仍使用完整 owner/tap/cask。
+      declared_name="${package##*/}"
+    fi
+    grep -Fxq "$declared_name" "$desired_file" \
+      || die "临时信任 ${type} 未在 Brewfile 声明：$package"
+    grep -Fxq "$declaration \"$package\", trusted: true" "$BREWFILE" \
+      || die "Brewfile 中的临时信任 ${type} 缺少精确 trusted: true 声明：$package"
+  done < "$output_file"
+}
+
 read_protected() {
   awk '
     {
@@ -146,13 +183,20 @@ preview_cleanup() {
   : > "$CLEANUP_PREVIEW_FILE"
   mkdir -p -- "$PREVIEW_CONFIG_HOME/homebrew"
 
-  # Homebrew cleanup 计算依赖闭包时需要加载第三方 formula。先在临时 XDG
-  # 配置中授予精确 formula 信任；不会读取或改写用户的真实信任库。
-  local formula
-  while IFS= read -r formula; do
-    XDG_CONFIG_HOME="$PREVIEW_CONFIG_HOME" HOMEBREW_NO_AUTO_UPDATE=1 \
-      brew trust --formula "$formula" >/dev/null
-  done < "$TRUSTED_NORMALIZED_FILE"
+  # Homebrew cleanup 会加载第三方 formula 和已安装 cask 来计算依赖闭包。
+  # 每次预演都在临时 XDG 配置中初始化两类精确信任，包括安装后的再次预演。
+  # 只使用已核对的清单，不读取或改写用户真实信任库，也不信任整个 tap。
+  local type package trusted_file
+  for type in formula cask; do
+    trusted_file="$TRUSTED_FORMULAE_NORMALIZED_FILE"
+    [[ "$type" != "cask" ]] || trusted_file="$TRUSTED_CASKS_NORMALIZED_FILE"
+    while IFS= read -r package; do
+      if ! XDG_CONFIG_HOME="$PREVIEW_CONFIG_HOME" HOMEBREW_NO_AUTO_UPDATE=1 \
+        brew trust "--$type" "$package" >/dev/null; then
+        die "无法初始化 cleanup 临时 ${type} 信任：$package"
+      fi
+    done < "$trusted_file"
+  done
 
   set +e
   XDG_CONFIG_HOME="$PREVIEW_CONFIG_HOME" HOMEBREW_NO_AUTO_UPDATE=1 \
@@ -252,6 +296,7 @@ command -v comm >/dev/null 2>&1 || die "找不到 comm"
 [[ -r "$BREWFILE" && -s "$BREWFILE" ]] || die "Brewfile 不存在或为空：$BREWFILE"
 [[ -r "$PROTECTED_FILE" ]] || die "保护清单不可读：$PROTECTED_FILE"
 [[ -r "$TRUSTED_FORMULAE_FILE" ]] || die "临时信任清单不可读：$TRUSTED_FORMULAE_FILE"
+[[ -r "$TRUSTED_CASKS_FILE" ]] || die "临时信任清单不可读：$TRUSTED_CASKS_FILE"
 
 TMP_DIR="$(mktemp -d)"
 [[ -n "$TMP_DIR" && -d "$TMP_DIR" ]] || die "无法创建临时目录"
@@ -272,7 +317,8 @@ EXTRA_CASKS_FILE="$TMP_DIR/extra-casks"
 EXTRA_TAPS_FILE="$TMP_DIR/extra-taps"
 PROTECTED_NORMALIZED_FILE="$TMP_DIR/protected"
 MISSING_PROTECTED_FILE="$TMP_DIR/missing-protected"
-TRUSTED_NORMALIZED_FILE="$TMP_DIR/trusted-formulae"
+TRUSTED_FORMULAE_NORMALIZED_FILE="$TMP_DIR/trusted-formulae"
+TRUSTED_CASKS_NORMALIZED_FILE="$TMP_DIR/trusted-casks"
 BUNDLE_CHECK_FILE="$TMP_DIR/bundle-check"
 CLEANUP_PREVIEW_FILE="$TMP_DIR/cleanup-preview"
 PREVIEW_CONFIG_HOME="$TMP_DIR/xdg-config"
@@ -295,26 +341,10 @@ DESIRED_TOTAL=$((
 read_protected
 find_missing_protected
 
-awk '
-  {
-    line = $0
-    sub(/\r$/, "", line)
-    sub(/[[:space:]]*#.*/, "", line)
-    sub(/^[[:space:]]+/, "", line)
-    sub(/[[:space:]]+$/, "", line)
-    if (line != "") print line
-  }
-' "$TRUSTED_FORMULAE_FILE" | LC_ALL=C sort -u > "$TRUSTED_NORMALIZED_FILE"
-
-while IFS= read -r formula; do
-  if [[ ! "$formula" =~ ^[A-Za-z0-9][A-Za-z0-9@._+-]*/[A-Za-z0-9][A-Za-z0-9@._+-]*/[A-Za-z0-9][A-Za-z0-9@._+-]*$ ]]; then
-    die "临时信任清单必须使用完整 owner/tap/formula 名称：$formula"
-  fi
-  grep -Fxq "$formula" "$DESIRED_FORMULAE_FILE" \
-    || die "临时信任 formula 未在 Brewfile 声明：$formula"
-  grep -Fxq "brew \"$formula\", trusted: true" "$BREWFILE" \
-    || die "Brewfile 中的临时信任 formula 缺少精确 trusted: true 声明：$formula"
-done < "$TRUSTED_NORMALIZED_FILE"
+read_trusted_packages formula "$TRUSTED_FORMULAE_FILE" \
+  "$TRUSTED_FORMULAE_NORMALIZED_FILE" "$DESIRED_FORMULAE_FILE"
+read_trusted_packages cask "$TRUSTED_CASKS_FILE" \
+  "$TRUSTED_CASKS_NORMALIZED_FILE" "$DESIRED_CASKS_FILE"
 
 HOMEBREW_NO_AUTO_UPDATE=1 brew list --formula --full-name \
   | LC_ALL=C sort -u > "$INSTALLED_FORMULAE_FILE"
