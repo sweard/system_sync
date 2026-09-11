@@ -26,6 +26,16 @@ confirm = { message = "这会修改系统包状态。是否进入平台对应的
 raw = true
 run = "./scripts/system-sync.sh --apply"
 
+[tasks.install]
+description = "安装一个系统根包，成功后加入当前平台清单；支持 --dry-run"
+raw = true
+run = "python3 ./scripts/package-command.py install"
+
+[tasks.uninstall]
+description = "卸载一个系统根包，成功后移出当前平台清单；支持 --dry-run"
+raw = true
+run = "python3 ./scripts/package-command.py uninstall"
+
 [tasks.macos-upgrade]
 description = "单独升级 macOS Brewfile 中声明的软件，不执行 cleanup"
 confirm = { message = "这会升级 Brewfile 中的软件。是否继续进入升级确认流程？", default = "no" }

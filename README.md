@@ -71,6 +71,7 @@ system_sync/
 │           └── protected-packages.txt
 └── scripts/
     ├── system-sync.sh               # 统一调度入口
+    ├── package-command.py           # install/uninstall：原生操作成功后记录一个根包
     ├── detect-linux-profile.sh      # 解析 /etc/os-release
     ├── homebrew-converge.sh
     ├── pacman-converge.sh
@@ -124,6 +125,70 @@ Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 - openSUSE Leap/Tumbleweed、SLES、SLED → `opensuse`。
 
 其他发行版不会猜测执行，而是失败关闭。Linux 统一升级暂未实现；请继续使用发行版自身的升级流程。
+
+## 日常添加 / 删除一个包
+
+使用仓库提供的 **`mise run install` / `mise run uninstall`**。这里的 `install` 是本仓库 task；不要省略 `run`，`mise install` 是 mise 自带的开发工具安装命令，并不是这个入口。
+
+在仓库根目录运行，例如：
+
+```bash
+# 先预览：不会安装、卸载或写入清单
+mise run install --dry-run gitui
+mise run uninstall --dry-run gitui
+
+# macOS 默认为 Homebrew formula；Linux 自动选择本机的包管理器
+mise run install gitui
+mise run uninstall gitui
+
+# Homebrew cask 必须明确指定类型
+mise run install --cask zed
+mise run uninstall --cask zed
+
+# Arch AUR；先准备 paru 或 yay
+mise run install --aur visual-studio-code-bin
+mise run uninstall visual-studio-code-bin
+
+# 第三方 Homebrew 包：先审核来源，再明确授权这一个完整包名
+mise run install --cask --trust abue-ammar/tinycast/tinycast
+```
+
+每次处理**一个准确包名**，先展示原生命令与清单 diff；输入屏幕上显示的 `INSTALL 包名` 或 `UNINSTALL 包名` 后才执行，其他输入取消。保留原生包管理器自身的依赖检查和确认，不自动传递 `--yes`。请用普通用户运行，不要 `sudo mise`；需要提权的 Linux 原生命令会自行调用 `sudo`。
+
+| 检测到的平台 | 安装 / 卸载入口 | 成功后更新 |
+|---|---|---|
+| macOS | `brew install/uninstall --formula` 或 `--cask` | `packages/macos/Brewfile`；第三方包还维护精确信任清单 |
+| Arch 系 | `pacman -S --needed --asexplicit` / `pacman -R`；AUR 安装使用 paru/yay | `packages/linux/arch/mise.toml` 中的 `pacman:` / `aur:` |
+| Debian 系 | `apt-get install` / `apt-get remove` | `packages/linux/debian/mise.toml` 中的 `apt:` |
+| Fedora 系 | `dnf install` / `dnf remove` | `packages/linux/fedora/mise.toml` 中的 `dnf:` |
+| openSUSE 系 | `zypper install` / `zypper remove` | `packages/linux/opensuse/packages.txt` |
+
+工作规则：
+
+- **成功后才改清单**：同时检查原生命令退出状态与实际安装状态。失败、取消、返回成功但目标仍未达到，都不会提交计划中的配置修改。包已卸载但仍有声明时，确认后可以仅移除该声明。
+- 只记录你点名的根包，不把安装时顺带拉取的依赖写进清单。不会顺便运行 `system-sync`、`cleanup`、`autoremove` 或卸载 tap。
+- Homebrew 关闭隐式升级、安装后 cleanup 和卸载后 autoremove；APT 安装使用 `--no-upgrade --no-remove`，卸载关闭 autoremove/purge。Arch 不执行 `-Sy`、`-Rns`；DNF/zypper 卸载关闭依赖自动清理。升级仍走各平台正常流程，孤立依赖以后用 `mise run dry-run` 单独审阅。
+- 卸载目标必须通过现有 `protected-packages.txt` 和内置关键包检查。APT 预演如果将连带删除其他包就停止；RPM 系先用 `rpm -e --test` 检查反向依赖，检查失败也停止。不要为绕过保护而添加 force/ignore-dependencies 参数。原生事务若建议额外删除或替换包，请取消并人工处理；脚本会对比操作前后状态，发现额外移除时报错并保留审计。
+- 第三方 Homebrew 包使用准确的 `owner/tap/name`；首次添加必须 `--trust`，不是全 tap 信任。成功后自动补充 `tap`、完整的 `brew/cask ..., trusted: true` 以及对应的 `trusted-formulae.txt` / `trusted-casks.txt`。卸载时删除对应声明和信任清单项，保留 tap。已有精确信任的完整声明再次安装无需重复 `--trust`。
+- 修改会保留其他条目、注释和支持的单行选项。例如已有 `brew "ruby", link: false` 会保留该选项，并向安装命令传递 `--skip-link`。
+
+**支持边界：**需要 Python 3.9+。Homebrew 自动编辑器支持本仓库当前的静态单行 `tap` / `brew` / `cask` 声明及 `trusted`、`link` 布尔选项，不执行或猜测动态 Ruby。Linux TOML 由 `mise config get --file` 的官方解析器校验（不依赖特定 status JSON 或 Python `tomllib`），然后仅编辑 `[bootstrap.packages]` 下的单行条目；目标安装声明限 `"latest"` 或 `{ version = "latest" }`。多行包声明、其他选项、版本固定、虚拟包、包组、URL/本地文件、通配符或任意原生参数不由此入口处理，遇到不支持格式会停止。必要的元数据查询可能读取网络或刷新包管理器自身缓存，但 `--dry-run` 不运行原生安装/卸载命令，也不修改仓库清单或真实信任库。
+
+直接执行 `brew install`、`apt install`、`pacman -S` 等原生命令**不会被监听**，它们的卸载命令也不会自动删清单。本方案没有修改 shell 启动文件、注册 hook 或后台轮询。以后从统一 mise 入口操作，或继续手工编辑清单后运行 `system-sync`；不要在两种习惯间切换时忘记同步声明。Linux 初次迁移的 baseline 导入仍不可省略，单包入口不会自动接管其余已安装软件。
+
+### 中断与写入失败的恢复
+
+确认后，操作前后的清单副本和事务阶段保存在 `.system-sync/history/<时间>-package-<随机值>/`：`*.before` 是原文件，`*.after` 是候选结果，`transaction.json` 记录命令与状态。该目录被 Git 忽略。
+
+清单采用临时文件原子替换；同一入口有进程锁，也会检测操作期间的人工编辑并拒绝覆盖。多个文件无法与系统包事务组成一个跨文件/跨进程的原子事务，突然断电或写盘失败仍可能需要人工恢复。不要并行运行本入口、`system-sync` 和手工包管理操作。
+
+如果原生安装/卸载已经发生，但配置写入失败，脚本不会擅自反向安装或删除软件。先检查包管理器实际状态、审计副本和 `git diff`，解决权限/格式/并发修改问题后再用相同入口重试；必要时人工合并 `*.after`。在声明和实际状态尚未对齐前，不要直接运行整机 `system-sync`。Git 只能恢复配置文件，不能回滚已经执行的系统包操作。
+
+测试（使用替身包管理器，不修改本机软件）：
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
+```
 
 ## 首次迁移 Linux baseline
 
