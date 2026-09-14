@@ -415,15 +415,39 @@ mise run macos-upgrade
 
 ### Espanso（已启用）
 
-已将 `Snippets 2026-09-11 10.19.05.json` 中的 18 条片段转换为 Espanso YAML，保留原触发词及大小写，以原 `name` 作为搜索标签：
+已将 `Snippets 2026-09-11 10.19.05.json` 中的 18 条片段转换为 Espanso YAML。触发词统一使用英文冒号 `:` 前缀和全小写，以原 `name` 作为搜索标签，展开内容保持不变：
 
 - `dotfiles/common/espanso/match/snippets.yml`：12 条公共片段。
 - `dotfiles/macos/espanso/match/macos.yml`：4 条 macOS 菜单栏间距/内边距命令，不部署到 Linux。
 - `dotfiles/common/espanso/private.local/match/private-snippets.yml`：2 条含调试口令的片段，文件权限为 `0600`，所在 `private.local` 目录被 Git 忽略。通过同样被忽略的根目录 `mise.local.toml` 单独映射。来源和目标都保留 `.yml` 扩展名，避免 Espanso 在解析链接来源时跳过文件。
 
-这些命令片段只展开为文字，导入过程和触发片段本身都不会通过 Espanso shell 扩展执行它们。输入到终端后按回车仍会执行，请先核对内容。字母开头的触发词使用 `left_word: true`，只在词首匹配，例如避免 `yst` 在 `system` 中误触；不用额外按空格才能展开。
+这些命令片段只展开为文字，导入过程和触发片段本身都不会通过 Espanso shell 扩展执行它们。输入到终端后按回车仍会执行，请先核对内容。
 
-原占位符已转换为 Espanso 原生语法：`{date}` → 本地日期 `YYYY-MM-DD`，`{datetime}` → 本地日期时间 `YYYY-MM-DD HH:mm:ss`，`{cursor}` → 光标标记 `$|$`。因此 `:date` 输出日期时间，`clsdsc` 中的日期动态生成；单独的 `:cursor` 会移除触发词并将光标留在原位。默认 `base.yml` 中重复的 `:date` 示例已移除，`:espanso` 和 `:shell` 仍保留。详见 [Espanso 日期扩展](https://espanso.org/docs/matches/extensions/#date-extension)和[光标标记](https://espanso.org/docs/matches/basics/#cursor-hints)。
+所有受管触发词均不设置 `left_word`、`right_word` 或 `word`，与 `:date` 一致，不依赖前面的空格或换行，也不需要输入后再按空格。用冒号前缀区分普通文字，例如 `:yst` 会展开，而 `system` 不会误触发。旧的无前缀触发词不再保留；冒号使用英文半角 `:`，不是中文全角 `：`。
+
+触发词变更对照：
+
+| 原触发词 | 新触发词 |
+| --- | --- |
+| `getrnip` | `:getrnip` |
+| `topAct` | `:act` |
+| `clsdsc` | `:clsdsc` |
+| `coli` | `:coli` |
+| `topactcn` | `:topactcn` |
+| `adbRNFix` | `:adbrnfix` |
+| `yst` | `:yst` |
+| `setDebugApp` | `:setdebugapp` |
+| `clearDebugApp` | `:cleardebugapp` |
+| `Tbs` | `:tbs` |
+| `Tbp` | `:tbp` |
+| `RstTbs` | `:rsttbs` |
+| `RstTbp` | `:rsttbp` |
+| `pdkit`（本机私有） | `:pdkit` |
+| `ddkit`（本机私有） | `:ddkit` |
+
+`:date`、`:cursor`、`:rnlang` 及默认示例 `:espanso`、`:shell` 已符合格式，保持不变。新增触发词时应检查重复和前缀冲突：例如已有 `:act` 时不要再添加 `:actcn`，否则输入到 `:act` 就会提前展开；国区片段因此保留为 `:topactcn`。
+
+原占位符已转换为 Espanso 原生语法：`{date}` → 本地日期 `YYYY-MM-DD`，`{datetime}` → 本地日期时间 `YYYY-MM-DD HH:mm:ss`，`{cursor}` → 光标标记 `$|$`。因此 `:date` 输出日期时间，`:clsdsc` 中的日期动态生成；单独的 `:cursor` 会移除触发词并将光标留在原位。默认 `base.yml` 中重复的 `:date` 示例已移除，`:espanso` 和 `:shell` 仍保留。详见 [Espanso 日期扩展](https://espanso.org/docs/matches/extensions/#date-extension)和[光标标记](https://espanso.org/docs/matches/basics/#cursor-hints)。
 
 原有 `config/default.yml` 的配置选项保持不变；与处理过日期冲突的 `match/base.yml` 一起交给 mise。公共目录使用 `symlink-each`，只接管来源中列出的文件，保留本机的其他片段和 `match/packages/`。公共目录映射明确排除 `*.local` 与 `*.example.toml`，私有文件由本机映射单独链接。
 

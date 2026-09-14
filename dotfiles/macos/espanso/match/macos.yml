@@ -1,23 +1,20 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
 # 从 Snippets 2026-09-11 10.19.05.json 导入；之后直接维护本文件。
 # 命令只作为文本展开，不作为 shell 扩展执行。
+# 触发词统一使用英文冒号前缀和全小写，不依赖词首边界。
 matches:
-  - trigger: "Tbs"
+  - trigger: ":tbs"
     label: "TopBarItemSpace"
-    left_word: true
     replace: "defaults -currentHost write -globalDomain NSStatusItemSpacing -int"
 
-  - trigger: "Tbp"
+  - trigger: ":tbp"
     label: "TopBarItemPadding"
-    left_word: true
     replace: "defaults -currentHost write -globalDomain NSStatusItemSelectionPadding -int "
 
-  - trigger: "RstTbs"
+  - trigger: ":rsttbs"
     label: "ResetTopBarItemSpace"
-    left_word: true
     replace: "defaults -currentHost delete -globalDomain NSStatusItemSpacing"
 
-  - trigger: "RstTbp"
+  - trigger: ":rsttbp"
     label: "ResetTopBarItemPadding"
-    left_word: true
     replace: "defaults -currentHost delete -globalDomain NSStatusItemSelectionPadding"
