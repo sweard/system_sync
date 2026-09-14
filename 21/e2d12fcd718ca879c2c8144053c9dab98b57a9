@@ -1,0 +1,41 @@
+.gitignore
+  s_a9ce9d3bef3048::t_2bbe983c574f42 7-10
+dotfiles/macos/espanso/match/macos.yml
+  s_a9ce9d3bef3048::t_109add44431ac3 1-23
+README.md
+  s_a9ce9d3bef3048::t_982b20b13bae75 34,422,446
+  s_a9ce9d3bef3048::t_4422cdd65793c2 25-27,30-33,35,47,126,407-408,414-421,423-445,447-448
+mise.linux.toml
+  s_a9ce9d3bef3048::t_2bbe983c574f42 2-7
+packages/macos/Brewfile
+  s_a9ce9d3bef3048::t_2bbe983c574f42 45
+dotfiles/common/espanso/config/default.yml
+  s_a9ce9d3bef3048::t_109add44431ac3 1-52
+dotfiles/common/espanso/match/snippets.yml
+  s_a9ce9d3bef3048::t_109add44431ac3 1-70
+dotfiles/common/espanso/match/base.yml
+  s_a9ce9d3bef3048::t_109add44431ac3 1-32
+mise.macos.toml
+  s_a9ce9d3bef3048::t_2bbe983c574f42 1-7
+dotfiles/common/espanso/mise.local.example.toml
+  s_a9ce9d3bef3048::t_109add44431ac3 1-4,6-10
+  s_a9ce9d3bef3048::t_982b20b13bae75 5
+mise.toml
+  s_a9ce9d3bef3048::t_2bbe983c574f42 3-5,45,60,63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "21e2d12fcd718ca879c2c8144053c9dab98b57a9",
+  "prompts": {},
+  "sessions": {
+    "s_a9ce9d3bef3048": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06a23-f7d9-7e72-9d30-31b66df038f9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
