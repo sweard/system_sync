@@ -42,6 +42,7 @@ brew "yarn"
 brew "mise"
 
 cask "codex"
+cask "espanso"
 cask "firefox"
 cask "font-maple-mono"
 cask "font-maple-mono-nf"

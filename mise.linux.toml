@@ -1,7 +1,11 @@
 # Linux dotfiles 适配器，适用于当前已支持的 Arch、Debian、Fedora 和 openSUSE profile。
-# 所有映射当前保持注释，尚未启用。
+# 目前只启用 espanso 的公共配置，不加载 macOS defaults 命令。
+# 使用非默认 XDG_CONFIG_HOME 或 ESPANSO_CONFIG_DIR 时，请按 espanso path 修改目标。
+[dotfiles]
+"~/.config/espanso" = { source = "dotfiles/common/espanso", mode = "symlink-each", exclude = ["*.local", "*.example.toml"] }
+
+# 其他候选映射保持注释。
 #
-# [dotfiles]
 # "~/.config/mise/config.linux.toml" = { source = "dotfiles/linux/mise/config.toml", mode = "symlink" }
 # "~/.zprofile" = { source = "dotfiles/linux/zsh/zprofile", mode = "symlink" }
 # "~/.config/zsh/platform.zsh" = { source = "dotfiles/linux/zsh/platform.zsh", mode = "symlink" }

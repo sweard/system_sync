@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+# 从 Snippets 2026-09-11 10.19.05.json 导入；之后直接维护本文件。
+# 命令只作为文本展开，不作为 shell 扩展执行。
+matches:
+  - trigger: "getrnip"
+    label: "获取RN调试IP端口"
+    left_word: true
+    replace: "~/get_wifi_ip.sh"
+
+  - trigger: "topAct"
+    label: "topActivity"
+    left_word: true
+    replace: "adb shell dumpsys activity com.theswitchbot.switchbot | grep ACTIVITY"
+
+  - trigger: "clsdsc"
+    label: "classDesc"
+    left_word: true
+    replace: "/**\n * @author fangjian\n * @date {{snippet_date}}\n * @desc\n */\n\n"
+    vars:
+      - name: snippet_date
+        type: date
+        params:
+          format: "%Y-%m-%d"
+
+  - trigger: "coli"
+    label: "copilot-api"
+    left_word: true
+    replace: "npx copilot-api@latest start"
+
+  - trigger: "topactcn"
+    label: "国区顶部页面"
+    left_word: true
+    replace: "adb shell dumpsys activity cn.theswitchbot.switchbot | grep ACTIVITY"
+
+  - trigger: "adbRNFix"
+    label: "adbRNFix"
+    left_word: true
+    replace: "adb reverse tcp:8081 tcp:8081"
+
+  - trigger: "yst"
+    label: "yarn start"
+    left_word: true
+    replace: "yarn start"
+
+  - trigger: "setDebugApp"
+    label: "setDebugApp"
+    left_word: true
+    replace: "adb shell am set-debug-app -w --persistent "
+
+  - trigger: "clearDebugApp"
+    label: "clearDebugApp"
+    left_word: true
+    replace: "adb shell am clear-debug-app"
+
+  - trigger: ":date"
+    label: "date"
+    replace: "{{snippet_datetime}}"
+    vars:
+      - name: snippet_datetime
+        type: date
+        params:
+          format: "%Y-%m-%d %H:%M:%S"
+
+  - trigger: ":cursor"
+    label: "cursor"
+    replace: "$|$"
+
+  - trigger: ":rnlang"
+    label: "导入RN文案"
+    replace: "npx wrn-cli language -s ./APP文案翻译汇总表2.0_App文案汇总表_RollerShade.xlsx -n \"App文案汇总表\" -t ./"

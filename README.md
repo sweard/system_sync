@@ -22,10 +22,17 @@ system_sync/
 ├── .gitignore
 ├── README.md
 ├── mise.toml                         # 公共 task 入口
-├── mise.macos.toml                   # macOS dotfiles 适配器；映射尚未启用
-├── mise.linux.toml                   # Linux dotfiles 适配器；映射尚未启用
+├── mise.macos.toml                   # macOS dotfiles 适配器；目前只启用 espanso
+├── mise.linux.toml                   # Linux dotfiles 适配器；目前只启用 espanso
+├── mise.local.toml                   # 本机私有映射（Git 忽略，不随仓库同步）
 ├── dotfiles/
 │   ├── common/                       # 两个平台共用
+│   │   ├── espanso/                 # 已启用：设置、默认示例与公共片段
+│   │   │   ├── config/default.yml
+│   │   │   ├── match/base.yml
+│   │   │   ├── match/snippets.yml
+│   │   │   ├── private.local/match/private-snippets.yml  # 私有目录，Git 忽略
+│   │   │   └── mise.local.example.toml
 │   │   ├── mise/
 │   │   │   ├── config.toml           # 已注释的跨平台 tools 候选
 │   │   │   ├── miserc.toml
@@ -37,6 +44,7 @@ system_sync/
 │   │       ├── CLAUDE.md
 │   │       └── hooks/
 │   ├── macos/                        # 当前 Mac 脱敏快照与平台路径
+│   │   ├── espanso/match/macos.yml  # 已启用：仅在 macOS 使用的 defaults 命令片段
 │   │   ├── mise/config.toml
 │   │   ├── zsh/
 │   │   │   ├── zprofile
@@ -115,7 +123,7 @@ mise run config-dry-run
 mise run config-sync
 ```
 
-当前公共配置和两个平台适配器中的全部 `[dotfiles]` 映射都被注释，因此这三个命令不会接管或修改任何用户文件。启用后，命令接口保持不变，mise 会在内部选择当前平台适配器。
+当前仅启用 espanso 的 `[dotfiles]` 映射；这些命令会检查或应用 espanso 配置。其他应用映射仍被注释，不会接管 zsh、Claude、VS Code 或开发工具环境。mise 会在内部选择当前平台适配器。
 
 Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 
@@ -396,14 +404,48 @@ mise run macos-upgrade
 
 `dotfiles/` 已重构为公共模块和两个平台适配器：
 
-- `dotfiles/common/`：跨平台工具候选、zsh 主配置、Claude 全局说明和 Hook；
-- `dotfiles/macos/`：Homebrew 相关路径、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
+- `dotfiles/common/`：已启用的 espanso 公共配置，以及跨平台工具候选、zsh 主配置、Claude 全局说明和 Hook；
+- `dotfiles/macos/`：espanso 的 macOS 专用片段、Homebrew 相关路径、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
 - `dotfiles/linux/`：Linux Android SDK、可选 Linuxbrew，以及不含 macOS 外部 Hook 的 Claude/VS Code 模板；
 - `mise.macos.toml` 与 `mise.linux.toml`：相同 `config-*` 命令背后的两个平台适配器。
 
 仓库和未来的全局 mise 配置都通过 `auto_env` 自动选择 `macos` 或 `linux`。公共模块不需要知道当前平台，平台路径也不会散落在公共调用入口中。
 
-目前所有 `[dotfiles]`、`[tools]`、`[env]` 和 `_.path` 仍被注释。`.miserc.toml` 只改变本仓库内的平台配置发现，不会安装工具、写入 HOME 或激活 shell。
+目前仅启用 espanso 的 `[dotfiles]`。其他应用映射以及 `[tools]`、`[env]` 和 `_.path` 候选仍被注释。`.miserc.toml` 本身只控制配置发现；`config-sync` 会应用已启用的 espanso 文件，不会激活其他应用或 shell 配置。
+
+### Espanso（已启用）
+
+已将 `Snippets 2026-09-11 10.19.05.json` 中的 18 条片段转换为 Espanso YAML，保留原触发词及大小写，以原 `name` 作为搜索标签：
+
+- `dotfiles/common/espanso/match/snippets.yml`：12 条公共片段。
+- `dotfiles/macos/espanso/match/macos.yml`：4 条 macOS 菜单栏间距/内边距命令，不部署到 Linux。
+- `dotfiles/common/espanso/private.local/match/private-snippets.yml`：2 条含调试口令的片段，文件权限为 `0600`，所在 `private.local` 目录被 Git 忽略。通过同样被忽略的根目录 `mise.local.toml` 单独映射。来源和目标都保留 `.yml` 扩展名，避免 Espanso 在解析链接来源时跳过文件。
+
+这些命令片段只展开为文字，导入过程和触发片段本身都不会通过 Espanso shell 扩展执行它们。输入到终端后按回车仍会执行，请先核对内容。字母开头的触发词使用 `left_word: true`，只在词首匹配，例如避免 `yst` 在 `system` 中误触；不用额外按空格才能展开。
+
+原占位符已转换为 Espanso 原生语法：`{date}` → 本地日期 `YYYY-MM-DD`，`{datetime}` → 本地日期时间 `YYYY-MM-DD HH:mm:ss`，`{cursor}` → 光标标记 `$|$`。因此 `:date` 输出日期时间，`clsdsc` 中的日期动态生成；单独的 `:cursor` 会移除触发词并将光标留在原位。默认 `base.yml` 中重复的 `:date` 示例已移除，`:espanso` 和 `:shell` 仍保留。详见 [Espanso 日期扩展](https://espanso.org/docs/matches/extensions/#date-extension)和[光标标记](https://espanso.org/docs/matches/basics/#cursor-hints)。
+
+原有 `config/default.yml` 的配置选项保持不变；与处理过日期冲突的 `match/base.yml` 一起交给 mise。公共目录使用 `symlink-each`，只接管来源中列出的文件，保留本机的其他片段和 `match/packages/`。公共目录映射明确排除 `*.local` 与 `*.example.toml`，私有文件由本机映射单独链接。
+
+目标位置：macOS 为 `~/Library/Application Support/espanso`，Linux 为 `~/.config/espanso`。如果使用自定义 `XDG_CONFIG_HOME` 或 `ESPANSO_CONFIG_DIR`，先运行 `espanso path`，再将平台适配器和私有映射的目标改成实际路径。跨系统配置目录的依据见 [Espanso 官方入门文档](https://espanso.org/docs/get-started/#configuration)。
+
+后续编辑仓库中的 YAML，已建立的链接会直接指向修改后的内容：
+
+```bash
+mise run config-status
+mise run config-dry-run
+mise run config-sync
+espanso match list --only-triggers
+
+# 如果修改链接来源后没有自动重载，可手动重启
+espanso service restart
+```
+
+首次接管已有普通文件时，mise 会报告冲突。先备份 Espanso 配置并检查 `mise bootstrap dotfiles apply --dry-run --force`；确实需要替换时，只对 `espanso path` 对应的目标执行 `apply --force`，不要顺带强制覆盖其他应用。此次迁移的原文件备份位于 `.system-sync/history/*-espanso-*/`。mise 的链接/冲突行为见[官方 dotfiles 文档](https://mise.jdx.dev/dotfiles.html)。
+
+新的机器只从 Git 取得 16 条非私密片段（Linux 使用其中 12 条），没有私有来源也不会影响公共配置部署。需要私有片段时，通过安全渠道复制 `private.local/match/private-snippets.yml` 并设置 `chmod 600`，再将 `dotfiles/common/espanso/mise.local.example.toml` **合并**到仓库根 `mise.local.toml`。不要把原始 JSON 或含口令的 YAML 加入 Git；`0600` 和 Git 忽略都不是加密，也不能代替私有备份。
+
+当前 Mac 已安装的 `espanso` cask 已加入 Brewfile，仅记录声明，本次未安装或升级软件。其他 Linux 机器仍需按发行版准备 Espanso；这里的配置部署不安装应用，也不授予 macOS 辅助功能权限。若原片段管理器仍在运行且启用了同名关键词，请手动停用重叠片段，避免两边同时展开。
 
 ### 工具候选
 

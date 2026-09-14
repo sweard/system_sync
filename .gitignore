@@ -4,3 +4,7 @@
 # 本机私有覆盖和密钥只保留在本地，不进入 Git。
 dotfiles/**/*.local
 dotfiles/**/secrets.env
+
+# 本机私有 dotfiles 映射；共享配置中不要写入凭据。
+mise.local.toml
+mise.*.local.toml

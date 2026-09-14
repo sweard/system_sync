@@ -1,0 +1,10 @@
+# 合并到仓库根的 mise.local.toml，不要覆盖已有的本机配置。
+# 本机私有 espanso 映射，已被 .gitignore 忽略。
+# 新机器没有此文件时只部署公共片段，不会因私有来源缺失而失败。
+[dotfiles."espanso/private-snippets.yml"]
+source = "dotfiles/common/espanso/private.local/match/private-snippets.yml"
+mode = "symlink"
+variants = [
+  { os = "macos", target = "~/Library/Application Support/espanso/match/private-snippets.yml" },
+  { os = "linux", target = "~/.config/espanso/match/private-snippets.yml" },
+]

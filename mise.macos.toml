@@ -1,6 +1,11 @@
-# macOS dotfiles 适配器。所有映射当前保持注释，尚未启用。
+# macOS dotfiles 适配器。目前只启用 espanso；其他候选保持注释。
+# symlink-each 只接管来源中列出的文件，保留现有 packages 和其他自定义文件。
+[dotfiles]
+"~/Library/Application Support/espanso" = { source = "dotfiles/common/espanso", mode = "symlink-each", exclude = ["*.local", "*.example.toml"] }
+"~/Library/Application Support/espanso/match/macos.yml" = { source = "dotfiles/macos/espanso/match/macos.yml", mode = "symlink" }
+
+# 含口令的片段通过本机 mise.local.toml 单独映射，不进入 Git。
 #
-# [dotfiles]
 # "~/.config/mise/config.macos.toml" = { source = "dotfiles/macos/mise/config.toml", mode = "symlink" }
 # "~/.zprofile" = { source = "dotfiles/macos/zsh/zprofile", mode = "symlink" }
 # "~/.config/zsh/platform.zsh" = { source = "dotfiles/macos/zsh/platform.zsh", mode = "symlink" }
