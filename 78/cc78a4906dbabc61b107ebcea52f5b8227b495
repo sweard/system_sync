@@ -1,0 +1,28 @@
+dotfiles/macos/espanso/match/macos.yml
+  s_a9ce9d3bef3048::t_51e368439ac1a7 4,6,10,14,18
+dotfiles/common/espanso/match/snippets.yml
+  s_a9ce9d3bef3048::t_51e368439ac1a7 4,6,10,14,23,27,31,35,39,43
+README.md
+  s_a9ce9d3bef3048::t_51e368439ac1a7 418,424-450
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "78cc78a4906dbabc61b107ebcea52f5b8227b495",
+  "prompts": {},
+  "humans": {
+    "h_74ac6e576b13a5": {
+      "author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  },
+  "sessions": {
+    "s_a9ce9d3bef3048": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06a23-f7d9-7e72-9d30-31b66df038f9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
