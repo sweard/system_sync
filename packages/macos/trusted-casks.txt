@@ -1,4 +1,3 @@
 # cleanup dry-run 使用的临时 cask 信任清单；每行必须是完整的 owner/tap/cask 名称。
 # 对应 Brewfile 行必须精确写为：cask "owner/tap/cask", trusted: true
-
-abue-ammar/tinycast/tinycast
+# 当前没有需要临时信任的第三方 cask。

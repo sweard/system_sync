@@ -5,14 +5,18 @@
 #
 # 这里只声明根 formula，不列出 Homebrew 自动维护的依赖树。
 
-tap "antoniorodr/memo"
-tap "oven-sh/bun"
-tap "abue-ammar/tinycast"
-
+# 第三方 tap 与对应的 formula / cask 放在一起。
 # 仅信任已经安装并纳入本基线的具体 formula，不信任整个第三方 tap。
+tap "antoniorodr/memo"
 brew "antoniorodr/memo/memo", trusted: true
+
+tap "oven-sh/bun"
 brew "oven-sh/bun/bun", trusted: true
 
+tap "android/tap"
+cask "android/tap/android-cli"
+
+# 官方 formula
 brew "cmake"
 brew "cocoapods"
 brew "colima"
@@ -29,7 +33,6 @@ brew "llama.cpp"
 brew "lsd"
 brew "neovim"
 brew "nvm"
-brew "openclaw-cli", link: false
 brew "poppler"
 brew "ruby", link: false
 brew "scrcpy"
@@ -41,6 +44,7 @@ brew "yarn"
 # 任务运行器；新机可用 Brew Bundle 先安装它。
 brew "mise"
 
+# 官方 cask
 cask "codex"
 cask "espanso"
 cask "firefox"
@@ -51,8 +55,4 @@ cask "ghostty"
 cask "google-chrome"
 cask "iterm2"
 cask "keka"
-cask "openclaw"
-cask "raycast"
-
-# TinyCast 仅提供 cask；只信任完整名称对应的这一项。
-cask "abue-ammar/tinycast/tinycast", trusted: true
+cask "homebrew-app"
