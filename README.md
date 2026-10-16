@@ -8,9 +8,9 @@
 | Arch / Manjaro 系 | `packages/linux/arch/mise.toml` | pacman/AUR 安装，再降级未声明 explicit 包并清理 orphan |
 | Debian / Ubuntu 系 | `packages/linux/debian/mise.toml` | APT 安装，再调整 manual/auto 并 autoremove |
 | Fedora / RHEL 系 | `packages/linux/fedora/mise.toml` | DNF 安装，再调整 user/dependency 原因并 autoremove |
-| openSUSE / SLE | `packages/linux/opensuse/packages.txt` | zypper 查询 user-installed/unneeded，预演后 `remove --clean-deps` |
+| openSUSE / SLE | `packages/linux/opensuse/mise.toml` | mise 原生 zypper 安装，脚本校验后 `remove --clean-deps` |
 
-mise 当前原生支持 `apt`、`dnf`、`pacman` 和 `aur`，但没有内置 `zypper` manager；因此 openSUSE 使用单独的文本清单和 zypper 脚本。
+mise 原生支持 `apt`、`dnf`、`pacman`、`aur` 和 `zypper`，负责读取声明与安装缺失项；本仓库的 Linux 脚本补充未声明根包的收敛、保护校验和移除事务审阅。
 
 > **重要：** Linux 下的清单只是结构示例，不是你已有系统的 baseline。首次 `apply` 前必须按本文导入本机的手工根包。
 
@@ -75,10 +75,12 @@ system_sync/
 │       │   ├── mise.toml
 │       │   └── protected-packages.txt
 │       └── opensuse/
-│           ├── packages.txt
+│           ├── mise.toml
 │           └── protected-packages.txt
 └── scripts/
     ├── system-sync.sh               # 统一调度入口
+    ├── sync-runtime.sh              # Shell 入口共用的执行保护
+    ├── sync_runtime.py              # 版本预检、共享锁与全程审计
     ├── package-command.py           # install/uninstall：原生操作成功后记录一个根包
     ├── detect-linux-profile.sh      # 解析 /etc/os-release
     ├── homebrew-converge.sh
@@ -91,7 +93,7 @@ system_sync/
     └── parse-zypper-xml.py
 ```
 
-`mise.toml` 设置了 `monorepo_root = true`，并在 `[monorepo].config_roots` 中显式列出 Arch、Debian 和 Fedora 的包 profile。`.miserc.toml` 只负责启用 mise 的 `auto_env`：在 macOS 自动叠加 `mise.macos.toml`，在 Linux 自动叠加 `mise.linux.toml`。包 profile 与 dotfiles 平台适配器是两条独立配置链，不依赖自动目录扫描。
+`mise.toml` 设置了 `monorepo_root = true`，并在 `[monorepo].config_roots` 中显式列出 Arch、Debian、Fedora 和 openSUSE 的包 profile。`.miserc.toml` 只负责启用 mise 的 `auto_env`：在 macOS 自动叠加 `mise.macos.toml`，在 Linux 自动叠加 `mise.linux.toml`。包 profile 与 dotfiles 平台适配器是两条独立配置链，不依赖自动目录扫描。
 
 运行时审计清单保存在 `.system-sync/history/<UTC 时间>/`；该目录和任意层级的 `.DS_Store` 都已被 Git 忽略。
 
@@ -103,6 +105,14 @@ system_sync/
 mise trust --all
 ```
 
+本仓库的验证基线为 **mise 2026.10.11+、Python 3.9+ 和 Bash**。根配置通过 `min_version` 限定 mise 版本；直接执行脚本或单包入口也会预检版本和本机必需命令。前置依赖必须先由系统准备，仓库没有启用开发工具版本迁移。
+
+```bash
+mise run check
+```
+
+`check` 依次检查运行前置条件、验证 mise 任务并运行隔离测试，不修改系统软件。Linux 的示例清单仍须先完成 baseline 导入，测试通过不代表本机清单已经适合整机收敛。
+
 然后使用同一组命令：
 
 ```bash
@@ -113,7 +123,11 @@ mise run system-sync
 
 - `status`：只读地显示声明、当前根包和差异。
 - `dry-run`：同时预览缺失包安装和收敛计划，不修改系统。
-- `system-sync`：经 mise 确认、脚本精确短语确认和包管理器自身确认后才修改系统。
+- `system-sync`：经 mise 和脚本精确确认后安装缺失项；删除阶段另行审阅，并交给包管理器确认。
+
+所有包写入口共用操作锁。Linux apply 的顺序是：**终端/版本预检 → 加锁并建立审计 → 读取声明和当前状态 → 校验保护项及变更阈值 → 精确确认 → 保存安装前状态 → 原生 mise 安装 → 重新校验 → 调整安装原因及再次审阅删除事务 → 执行删除**。直接运行平台脚本同样经过保护；mise 原生安装阶段可能使用非交互参数，因此本仓库的精确确认始终在它之前。
+
+整机操作和升级的 `transaction.json` 记录 `preflight`、`installing` / `upgrading`、`marking`、`removing` 等阶段，以及最终 `complete` / `cancelled` / `failed` / `interrupted` 状态。安装失败也会保留 `.before` 清单和安装前包列表；包装层要求平台脚本明确记录完成，不能只凭退出码 0 判定成功。审计不是系统事务回滚，失败后应先检查 `last_phase` 与实际包状态。
 
 应用配置还提供三个独立入口：
 
@@ -169,7 +183,7 @@ mise run install --cask --trust abue-ammar/tinycast/tinycast
 | Arch 系 | `pacman -S --needed --asexplicit` / `pacman -R`；AUR 安装使用 paru/yay | `packages/linux/arch/mise.toml` 中的 `pacman:` / `aur:` |
 | Debian 系 | `apt-get install` / `apt-get remove` | `packages/linux/debian/mise.toml` 中的 `apt:` |
 | Fedora 系 | `dnf install` / `dnf remove` | `packages/linux/fedora/mise.toml` 中的 `dnf:` |
-| openSUSE 系 | `zypper install` / `zypper remove` | `packages/linux/opensuse/packages.txt` |
+| openSUSE 系 | `zypper install` / `zypper remove` | `packages/linux/opensuse/mise.toml` |
 
 工作规则：
 
@@ -188,7 +202,7 @@ mise run install --cask --trust abue-ammar/tinycast/tinycast
 
 确认后，操作前后的清单副本和事务阶段保存在 `.system-sync/history/<时间>-package-<随机值>/`：`*.before` 是原文件，`*.after` 是候选结果，`transaction.json` 记录命令与状态。该目录被 Git 忽略。
 
-清单采用临时文件原子替换；同一入口有进程锁，也会检测操作期间的人工编辑并拒绝覆盖。多个文件无法与系统包事务组成一个跨文件/跨进程的原子事务，突然断电或写盘失败仍可能需要人工恢复。不要并行运行本入口、`system-sync` 和手工包管理操作。
+清单采用临时文件原子替换，也会检测操作期间的人工编辑并拒绝覆盖。`install` / `uninstall`、整机 `system-sync`、macOS 升级和直接调用的平台写操作共用 `.system-sync/operation.lock`，冲突时立即停止。多个文件无法与系统包事务组成一个跨文件/跨进程的原子事务，突然断电或写盘失败仍可能需要人工恢复。手工包管理命令、直接运行的 mise bootstrap 命令和编辑器不会参与此锁，仍不要与这些入口并行操作。
 
 如果原生安装/卸载已经发生，但配置写入失败，脚本不会擅自反向安装或删除软件。先检查包管理器实际状态、审计副本和 `git diff`，解决权限/格式/并发修改问题后再用相同入口重试；必要时人工合并 `*.after`。在声明和实际状态尚未对齐前，不要直接运行整机 `system-sync`。Git 只能恢复配置文件，不能回滚已经执行的系统包操作。
 
@@ -198,9 +212,104 @@ mise run install --cask --trust abue-ammar/tinycast/tinycast
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
+## 从当前系统反向校正清单漂移
+
+`system-sync` 的方向是“声明 → 系统”。如果希望保留当前机器的软件状态，应先按下面的命令导出“系统 → 声明”的候选，再核对差异；这些导出命令不安装或卸载软件，也不直接覆盖受管清单。请在仓库根目录执行，且不要与包操作并行运行。
+
+macOS 使用 Homebrew 自己的快照命令，仅导出本项目管理的 formula、cask 和 tap：
+
+```bash
+(
+  set -euo pipefail
+  mkdir -p .system-sync/capture
+  HOMEBREW_NO_AUTO_UPDATE=1 brew bundle dump \
+    --file=.system-sync/capture/Brewfile --force \
+    --formula --cask --tap --no-describe --no-restart
+  diff -u packages/macos/Brewfile .system-sync/capture/Brewfile
+)
+```
+
+`diff` 返回 1 表示存在差异。核对后将新增、删除项合并到 `packages/macos/Brewfile`，保留仍然需要的 `link: false` 等选项。第三方包必须使用完整名称，并同步核对 `trusted-formulae.txt` / `trusted-casks.txt`；不要把快照里未知的全 tap 信任直接带入配置。已声明但未安装的软件可能是未来安装意图，是否删除应逐项决定。Homebrew 的 requested 标记也可能包含手工重装的依赖，导出后仍应核对根包意图。
+
+例如，当前已安装且确实要保留的 `android-cli`、`homebrew-app` 和 `android/tap`，应加入对应声明，避免下次 cleanup 将它们列为移除对象。这里的 `--force` 只覆盖 `.system-sync/capture/Brewfile` 快照，不能加到 cleanup 命令上。
+
+Linux 按本机发行版导出手工根包，生成包含 manager 限定的候选配置：
+
+Arch / Manjaro（foreign 包须逐项确认来自 AUR，本地构建包需人工处理）：
+
+```bash
+(
+  set -euo pipefail
+  mkdir -p .system-sync/capture
+  pacman -Qqen | LC_ALL=C sort -u > .system-sync/capture/arch-native.txt
+  pacman -Qqem | LC_ALL=C sort -u > .system-sync/capture/arch-foreign.txt
+  {
+    printf '[settings]\nsystem_packages.managers = ["pacman", "aur"]\n\n[bootstrap.packages]\n'
+    awk '{ printf "\"pacman:%s\" = \"latest\"\n", $0 }' .system-sync/capture/arch-native.txt
+  } > .system-sync/capture/arch.toml
+)
+```
+
+Debian / Ubuntu：
+
+```bash
+(
+  set -euo pipefail
+  mkdir -p .system-sync/capture
+  apt-mark showmanual | LC_ALL=C sort -u > .system-sync/capture/debian-roots.txt
+  {
+    printf '[settings]\nsystem_packages.managers = ["apt"]\n\n[bootstrap.packages]\n'
+    awk '{ printf "\"apt:%s\" = \"latest\"\n", $0 }' .system-sync/capture/debian-roots.txt
+  } > .system-sync/capture/debian.toml
+)
+```
+
+Fedora / RHEL（DNF4 需要发行版提供的 repoquery 插件）：
+
+```bash
+(
+  set -euo pipefail
+  mkdir -p .system-sync/capture
+  dnf repoquery --installed --userinstalled --queryformat '%{name}' \
+    | LC_ALL=C sort -u > .system-sync/capture/fedora-roots.txt
+  {
+    printf '[settings]\nsystem_packages.managers = ["dnf"]\n\n[bootstrap.packages]\n'
+    awk '{ printf "\"dnf:%s\" = \"latest\"\n", $0 }' .system-sync/capture/fedora-roots.txt
+  } > .system-sync/capture/fedora.toml
+)
+```
+
+openSUSE / SLE：
+
+```bash
+(
+  set -euo pipefail
+  mkdir -p .system-sync/capture
+  zypper --xmlout --no-refresh packages --userinstalled \
+    | ./scripts/parse-zypper-xml.py solvables - \
+    | LC_ALL=C sort -u > .system-sync/capture/opensuse-roots.txt
+  {
+    printf '[settings]\nsystem_packages.managers = ["zypper"]\n\n[bootstrap.packages]\n'
+    awk '{ printf "\"zypper:%s\" = \"latest\"\n", $0 }' .system-sync/capture/opensuse-roots.txt
+  } > .system-sync/capture/opensuse.toml
+)
+```
+
+**只执行本机对应的一段**。每段通过独立子 shell 的 `set -euo pipefail` 在查询失败时停止，不将失败输出作为完整 baseline；失败后不要使用以前遗留的候选。用 `diff -u packages/linux/<profile>/mise.toml .system-sync/capture/<profile>.toml` 核对后，将候选合并回对应 profile；保留必要的根包、版本选项和 `protected-packages.txt`。Arch 审阅 foreign 列表后，再按需补充 `aur:` 声明。
+
+更新清单后运行：
+
+```bash
+git diff -- packages
+mise run status
+mise run dry-run
+```
+
+确认没有意外的补装、降级或删除项后，再决定是否运行 `mise run system-sync`。官方 `mise bootstrap packages import` 当前仅导入 Homebrew formula，本项目 macOS 使用 Brewfile，因此不能用它同时导入本项目的 cask、tap 和 Linux profile。
+
 ## 首次迁移 Linux baseline
 
-所有 Linux profile 都需要 Bash、Python 3、mise 和对应的包管理器。APT/DNF/Arch 可先由 mise 安装 profile 中缺失的 Python；openSUSE 脚本自身需要 Python 解析 zypper XML，因此首次运行前必须已安装 `python3`。为了支撑公共 shell 与 Claude Hook，各 Linux profile 还声明了 `zsh` 和 `jq`，并将 `zsh` 加入保护清单。
+所有 Linux profile 都需要先准备 Bash、Python 3.9+、mise 2026.10.11+ 和对应的包管理器。Python 是共享锁、版本预检和审计的前置依赖，不能等本仓库的安装阶段再补装。为了支撑公共 shell 与 Claude Hook，各 Linux profile 还声明了 `zsh` 和 `jq`，并将 `zsh` 加入保护清单。
 
 导入后要逐项审阅 `protected-packages.txt`，根据本机的内核、引导、磁盘/加密、网络、远程救援和显卡环境补充保护项。
 
@@ -247,15 +356,16 @@ DNF4 上若没有 `repoquery`，需先安装发行版提供的 `dnf-plugins-core
 
 ### openSUSE / SLE
 
-mise 没有内置 zypper manager。用仓库自带的 XML 解析器导出 user-installed 包：
+使用 mise 原生 `zypper:` 声明；用仓库自带的 XML 解析器导出 user-installed 包：
 
 ```bash
 zypper --xmlout --no-refresh packages --userinstalled \
   | ./scripts/parse-zypper-xml.py solvables - \
   | LC_ALL=C sort -u > zypper-user-installed.txt
+awk '{ printf "\"zypper:%s\" = \"latest\"\n", $0 }' zypper-user-installed.txt
 ```
 
-将结果审阅后写入 `packages/linux/opensuse/packages.txt`，每行一个包，并保留 `filesystem`。这个 profile 只管理 package 根，不管理 pattern、product 或 repository 配置。
+将结果审阅后写入 `packages/linux/opensuse/mise.toml` 的 `[bootstrap.packages]`，保留 `zypper:filesystem` 和 manager 限定。这个 profile 只管理 package 根，不管理 pattern、product 或 repository 配置。
 
 ### baseline 验收
 
@@ -273,7 +383,7 @@ mise run dry-run
 
 ### Arch
 
-1. mise 安装缺失的 pacman/AUR 声明。
+1. 先校验声明、保护项与变更阈值，经精确确认并保存安装前状态后，再由 mise 安装缺失的 pacman/AUR 声明。
 2. 脚本只比较 `pacman -Qqe` 的 explicit 包，不把整棵依赖树当成根包。
 3. 先用 `pacman -D --asexplicit` 保护声明/保护根，再用 `--asdeps` 降级未声明根。
 4. 重新查询 `pacman -Qdtq`，用 `pacman -Rsp` 预演完整递归事务。
@@ -286,7 +396,7 @@ mise run dry-run
 APT 用 `apt-mark manual/auto`，DNF5 用 `dnf mark user/dependency`，DNF4 用对应的 `dnf mark install/remove`。两者都会：
 
 1. 只把 manual/user-installed 包与 mise 声明比较；
-2. 先提升声明和保护根，再降级未声明根；
+2. 前置校验和精确确认后，保存安装前状态，由 mise 安装缺失声明并重新计算计划，再提升声明和保护根、降级未声明根；
 3. 在安装原因变更后重新计算 autoremove；
 4. 若事务触及声明或保护包，立即停止；
 5. 最后交给 APT/DNF 显示自身事务和确认。
@@ -294,6 +404,8 @@ APT 用 `apt-mark manual/auto`，DNF5 用 `dnf mark user/dependency`，DNF4 用�
 APT 使用 `apt-get autoremove` 且不传 `--purge`。
 
 ### openSUSE
+
+声明来自 `packages/linux/opensuse/mise.toml` 的 `[bootstrap.packages]`。缺失项由 `mise bootstrap packages apply --manager zypper` 安装，安装前后都通过 mise 状态和 RPM 数据库核对完整声明。原生 manager 的版本、退出码和平台边界见 [mise zypper 文档](https://mise.jdx.dev/bootstrap/packages/zypper.html)；不适用于依赖 `transactional-update` 的只读根文件系统（例如 MicroOS / Aeon）。
 
 zypper 能查询 user-installed 和 unneeded，但本方案没有一个与 `apt-mark auto` / `dnf mark dependency` 等价且经验证的通用降级接口。因此它会把未声明 user-installed 包作为直接移除目标，然后：
 
@@ -310,6 +422,7 @@ zypper 能查询 user-installed 和 unneeded，但本方案没有一个与 `apt-
 
 - 声明为空，或缺少 `base` / `base-files` / `filesystem` 必备根；
 - mise JSON 或 zypper XML 结构无法可靠解析；
+- mise manager 不可用、条目被跳过、状态未知或声明为 `absent`；根清单只接受需要保留的包，删除通过单包入口或审阅后的根包收敛完成；
 - 包名含不安全字符，或 virtual provider 无法映射到具体已安装包；
 - 移除事务触及声明包、硬保护包、profile allowlist 或动态保护的内核/引导包；
 - 一次降级/移除超过数量或比例阈值，且没有显式传入 `--allow-large-change`；
@@ -573,6 +686,7 @@ mise run dry-run
 ## 参考
 
 - [mise Bootstrap Packages](https://mise.jdx.dev/bootstrap/packages/)
+- [mise zypper manager](https://mise.jdx.dev/bootstrap/packages/zypper.html)
 - [mise Environments](https://mise.jdx.dev/environments/)
 - [mise Configuration Environments](https://mise.jdx.dev/configuration/environments.html)
 - [mise Dotfiles](https://mise.jdx.dev/dotfiles.html)

@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 import unittest
 
+from test_converge import run_terminal
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TRUSTED_CASK = "abue-ammar/tinycast/tinycast"
@@ -36,6 +38,10 @@ case "$*" in
       exit 1
     fi
     ;;
+  "bundle install "*)
+    [[ -f "$SYSTEM_SYNC_RUN_LOG_DIR/Brewfile.before" && -f "$SYSTEM_SYNC_RUN_LOG_DIR/formulae.before.txt" ]] || exit 94
+    if [[ "${SYNC_TEST_INSTALL_ERROR:-0}" == 1 ]]; then exit 95; fi
+    ;;
   "trust --formula "*|"trust --cask "*)
     [[ -n "${XDG_CONFIG_HOME:-}" && "$XDG_CONFIG_HOME" != "$SYNC_TEST_REAL_CONFIG" ]] || exit 91
     if [[ "$2" == --cask && "${SYNC_TEST_TRUST_ERROR:-0}" == 1 ]]; then exit 92; fi
@@ -45,6 +51,10 @@ case "$*" in
   "bundle cleanup "*)
     # 预览绝不能向替身请求实际 cleanup。
     [[ "$*" != *--force* ]] || exit 93
+    if [[ "$XDG_CONFIG_HOME" == "$SYNC_TEST_REAL_CONFIG" ]]; then
+      [[ -f "$SYSTEM_SYNC_RUN_LOG_DIR/cleanup.after-install.preview.txt" ]] || exit 96
+      exit 0
+    fi
     trust_file="$XDG_CONFIG_HOME/homebrew/trusted-items.txt"
     if ! grep -Fxq -- '--formula fixture/tools/tool' "$trust_file"; then
       printf '%s\n' 'Error: Untrusted formula fixture/tools/tool.'
@@ -77,6 +87,8 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         scripts.mkdir()
         self.script = scripts / "homebrew-converge.sh"
         shutil.copy2(PROJECT_ROOT / "scripts/homebrew-converge.sh", self.script)
+        for name in ("sync-runtime.sh", "sync_runtime.py"):
+            shutil.copy2(PROJECT_ROOT / "scripts" / name, scripts / name)
 
         self.brewfile = self.packages / "Brewfile"
         self.brewfile.write_text(
@@ -196,6 +208,40 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         result = self.run_preview(SYNC_TEST_CLEANUP_ERROR="1")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Homebrew cleanup 预演失败", result.stdout)
+
+    def transaction(self):
+        import json
+        journals = list((self.project / ".system-sync/history").glob("*/transaction.json"))
+        self.assertEqual(len(journals), 1)
+        return json.loads(journals[0].read_text())
+
+    def test_apply_installs_and_cleans_inside_shared_audit(self):
+        result = run_terminal(["bash", str(self.script), "--apply"], self.environment,
+                              [("APPLY HOMEBREW", "APPLY HOMEBREW")])
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(self.transaction()["phase"], "complete")
+        calls = self.log.read_text().splitlines()
+        install = next(i for i,line in enumerate(calls) if "|bundle install " in line)
+        cleanup = next(i for i,line in enumerate(calls) if line.startswith(str(self.real_config) + "|bundle cleanup "))
+        self.assertLess(install, cleanup)
+
+    def test_failed_install_is_audited_without_actual_cleanup(self):
+        environment = dict(self.environment, SYNC_TEST_INSTALL_ERROR="1")
+        result = run_terminal(["bash", str(self.script), "--apply"], environment,
+                              [("APPLY HOMEBREW", "APPLY HOMEBREW")])
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(self.transaction()["last_phase"], "installing")
+        self.assertEqual(self.transaction()["phase"], "failed")
+        self.assertFalse(any(line.startswith(str(self.real_config) + "|bundle cleanup ")
+                             for line in self.log.read_text().splitlines()))
+
+    def test_upgrade_is_audited_and_does_not_cleanup(self):
+        result = run_terminal(["bash", str(self.script), "--upgrade"], self.environment,
+                              [("UPGRADE HOMEBREW", "UPGRADE HOMEBREW")])
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(self.transaction()["phase"], "complete")
+        self.assertIn("bundle install --upgrade", self.log.read_text())
+        self.assertNotIn("|bundle cleanup ", self.log.read_text())
 
 
 if __name__ == "__main__":

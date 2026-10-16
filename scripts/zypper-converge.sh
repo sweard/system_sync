@@ -5,8 +5,9 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+source "$SCRIPT_DIR/sync-runtime.sh"
 PROFILE_DIR="${SYSTEM_SYNC_PROFILE_DIR:-$PROJECT_ROOT/packages/linux/opensuse}"
-PACKAGES_FILE="$PROFILE_DIR/packages.txt"
+PROFILE_FILE="$PROFILE_DIR/mise.toml"
 ALLOWLIST_FILE="$PROFILE_DIR/protected-packages.txt"
 STATE_ROOT="$PROJECT_ROOT/.system-sync/history"
 MAX_REMOVALS=25
@@ -27,7 +28,7 @@ usage() {
   --allow-large-change  允许超过安全阈值的移除事务（仍需精确确认）
   -h, --help            显示帮助
 
-mise 暂无内置 zypper manager，因此本脚本读取 packages.txt，并直接使用 zypper。
+使用 mise 原生 zypper manager 读取声明和安装缺失项；本脚本补充受保护的根包收敛。
 它不会自动删除 orphaned（仓库已消失）包，只处理未声明根包及 unneeded 依赖。
 EOF
 }
@@ -174,7 +175,7 @@ preview_removal() {
   set -e
   if [[ "$rc" -ne 0 ]]; then
     sed 's/^/  /' "$REMOVE_ERROR_FILE" >&2
-    die "zypper remove dry-run 失败（退出码 $rc）"
+    die "zypper remove dry-run 失败（退出码 ${rc}）"
   fi
   if ! python3 "$SCRIPT_DIR/parse-zypper-xml.py" to-remove \
     "$REMOVE_XML_FILE" > "$REMOVE_TRANSACTION_FILE"; then
@@ -202,14 +203,38 @@ check_large_change() {
   transaction_count="$(count_lines "$REMOVE_TRANSACTION_FILE")"
   if [[ "$transaction_count" -gt "$MAX_REMOVALS" ]]; then
     if [[ "$ALLOW_LARGE_CHANGE" -ne 1 ]]; then
-      die "zypper 事务拟移除 $transaction_count 个包，超过安全阈值 $MAX_REMOVALS；核对 baseline 后使用 --apply --allow-large-change"
+      die "zypper 事务拟移除 $transaction_count 个包，超过安全阈值 ${MAX_REMOVALS}；核对 baseline 后使用 --apply --allow-large-change"
     fi
     warn "已显式允许大范围变更：zypper 拟移除 $transaction_count 个包"
   fi
 }
 
 refresh_plan() {
+  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status --json) \
+    > "$STATUS_JSON" 2> "$STATUS_ERROR"; then
+    sed 's/^/  /' "$STATUS_ERROR" >&2
+    die "mise 无法生成 zypper packages status JSON；拒绝继续"
+  fi
+  if [[ -s "$STATUS_ERROR" ]]; then
+    sed 's/^/  /' "$STATUS_ERROR" >&2
+    if grep -Eiq '(^|[^[:alpha:]])(warn(ing)?|error|invalid|unknown|skipp(ed|ing))([^[:alpha:]]|$)' "$STATUS_ERROR"; then
+      die "mise 在生成状态时报告警告/错误；拒绝继续"
+    fi
+  fi
+  python3 "$SCRIPT_DIR/extract-mise-packages.py" --manager zypper "$STATUS_JSON" > "$DECLARED_TSV" \
+    || die "无法取得可靠的 zypper 根包声明"
+  awk -F '\t' '{ print $2 }' "$DECLARED_TSV" | LC_ALL=C sort -u > "$DESIRED_FILE"
+  validate_package_file "$DESIRED_FILE" "openSUSE 声明"
+  [[ -s "$DESIRED_FILE" ]] || die "声明包集合为空，拒绝继续"
+  grep -Fxq 'filesystem' "$DESIRED_FILE" || die "最终生效配置未声明 zypper:filesystem，拒绝继续"
   query_state
+  while IFS=$'\t' read -r manager package state; do
+    case "$state" in
+      installed|version_mismatch|needs_repair)
+        grep -Fxq "$package" "$INSTALLED_FILE" || die "mise 声明无法映射到同名 RPM 包：$package"
+        ;;
+    esac
+  done < "$DECLARED_TSV"
   build_protected_list
   compute_diffs
   preview_removal
@@ -244,12 +269,15 @@ if [[ "$ALLOW_LARGE_CHANGE" -eq 1 && "$MODE" != "apply" ]]; then
   die "--allow-large-change 只可与 --apply 一起使用"
 fi
 
+system_sync_enter "$MODE"
+
 [[ "$(uname -s)" == "Linux" ]] || die "此脚本只允许在 Linux 上运行"
 command -v zypper >/dev/null 2>&1 || die "找不到 zypper"
+command -v mise >/dev/null 2>&1 || die "找不到 mise"
 command -v rpm >/dev/null 2>&1 || die "找不到 rpm"
 command -v python3 >/dev/null 2>&1 || die "找不到 python3"
 command -v comm >/dev/null 2>&1 || die "找不到 comm"
-[[ -r "$PACKAGES_FILE" && -s "$PACKAGES_FILE" ]] || die "软件清单不存在或为空：$PACKAGES_FILE"
+[[ -r "$PROFILE_FILE" && -s "$PROFILE_FILE" ]] || die "软件清单不存在或为空：$PROFILE_FILE"
 [[ -r "$ALLOWLIST_FILE" ]] || die "保护清单不可读：$ALLOWLIST_FILE"
 
 TMP_DIR="$(mktemp -d)"
@@ -257,6 +285,9 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf -- "$TMP_DIR"' EXIT
 
 DESIRED_FILE="$TMP_DIR/desired"
+STATUS_JSON="$TMP_DIR/mise-status.json"
+STATUS_ERROR="$TMP_DIR/mise-status.stderr"
+DECLARED_TSV="$TMP_DIR/declared.tsv"
 INSTALLED_FILE="$TMP_DIR/installed"
 EXPLICIT_FILE="$TMP_DIR/user-installed"
 UNNEEDED_FILE="$TMP_DIR/unneeded"
@@ -276,12 +307,7 @@ REMOVE_XML_FILE="$TMP_DIR/remove.xml"
 REMOVE_ERROR_FILE="$TMP_DIR/remove.stderr"
 RUN_LOG_DIR=""
 
-normalize_list "$PACKAGES_FILE" "$DESIRED_FILE"
-validate_package_file "$DESIRED_FILE" "openSUSE 声明"
-[[ -s "$DESIRED_FILE" ]] || die "声明包集合为空，拒绝继续"
-grep -Fxq 'filesystem' "$DESIRED_FILE" || die "packages.txt 未声明 filesystem，拒绝继续"
-
-info "读取 openSUSE packages.txt 与 zypper 状态"
+info "读取 openSUSE 最终生效的 mise zypper 声明与包状态"
 refresh_plan
 print_list "声明的根包" "$DESIRED_FILE"
 print_list "声明但尚未安装" "$MISSING_FILE"
@@ -304,7 +330,7 @@ fi
 check_large_change
 printf '\n即将安装缺失项，并重新计算 zypper 移除事务。请输入精确短语 “APPLY ZYPPER” 继续：'
 IFS= read -r FIRST_CONFIRMATION
-[[ "$FIRST_CONFIRMATION" == "APPLY ZYPPER" ]] || die "确认不匹配，未做任何修改"
+[[ "$FIRST_CONFIRMATION" == "APPLY ZYPPER" ]] || system_sync_cancel "确认不匹配，未做任何修改"
 
 if [[ "$EUID" -ne 0 ]]; then
   command -v sudo >/dev/null 2>&1 || die "需要 root 权限，但找不到 sudo"
@@ -315,9 +341,10 @@ else
 fi
 
 RUN_ID="$(date -u '+%Y%m%dT%H%M%SZ')-$$-zypper-apply"
-RUN_LOG_DIR="$STATE_ROOT/$RUN_ID"
+RUN_LOG_DIR="$SYSTEM_SYNC_RUN_LOG_DIR"
 mkdir -p -- "$RUN_LOG_DIR"
 copy_if_present "$DESIRED_FILE" "$RUN_LOG_DIR/desired.txt"
+copy_if_present "$STATUS_JSON" "$RUN_LOG_DIR/mise-status.json"
 copy_if_present "$INSTALLED_FILE" "$RUN_LOG_DIR/installed.before.txt"
 copy_if_present "$EXPLICIT_FILE" "$RUN_LOG_DIR/user-installed.before.txt"
 copy_if_present "$REMOVE_TARGETS_FILE" "$RUN_LOG_DIR/remove-targets.before.txt"
@@ -326,17 +353,15 @@ copy_if_present "$REMOVE_XML_FILE" "$RUN_LOG_DIR/remove-transaction.before.xml"
 printf 'mode=apply\nmanager=zypper\ncreated_utc=%s\n' "$RUN_ID" > "$RUN_LOG_DIR/run.meta"
 info "本次操作前清单已保存到 $RUN_LOG_DIR"
 
-MISSING_PACKAGES=()
-while IFS= read -r package; do
-  [[ -z "$package" ]] || MISSING_PACKAGES+=("$package")
-done < "$MISSING_FILE"
-if [[ "${#MISSING_PACKAGES[@]}" -gt 0 ]]; then
-  info "交给 zypper 安装缺失声明；请核对 zypper 自己显示的事务"
-  "${ROOT_COMMAND[@]}" zypper install "${MISSING_PACKAGES[@]}"
-fi
+system_sync_phase installing
+info "交给 mise 原生 zypper manager 安装缺失声明"
+(cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --manager zypper)
 
 info "安装后重新计算完整移除事务"
+system_sync_phase validating-after-install
 refresh_plan
+[[ ! -s "$MISSING_FILE" ]] || die "安装后仍有声明包未以同名具体包安装；拒绝卸载"
+copy_if_present "$INSTALLED_FILE" "$RUN_LOG_DIR/installed.after-install.txt"
 copy_if_present "$REMOVE_TARGETS_FILE" "$RUN_LOG_DIR/remove-targets.final.txt"
 copy_if_present "$REMOVE_TRANSACTION_FILE" "$RUN_LOG_DIR/remove-transaction.final.txt"
 copy_if_present "$REMOVE_XML_FILE" "$RUN_LOG_DIR/remove-transaction.final.xml"
@@ -345,6 +370,7 @@ check_large_change
 
 REMOVE_COUNT="$(count_lines "$REMOVE_TRANSACTION_FILE")"
 if [[ "$REMOVE_COUNT" -eq 0 ]]; then
+  system_sync_phase complete
   printf '\n完成：声明包均已安装，没有包需要移除。\n'
   exit 0
 fi
@@ -353,17 +379,19 @@ printf '\n即将用 zypper remove --clean-deps 移除上面 %s 个包。\n' "$RE
 printf '请输入精确短语 “REMOVE %s” 继续：' "$REMOVE_COUNT"
 IFS= read -r SECOND_CONFIRMATION
 [[ "$SECOND_CONFIRMATION" == "REMOVE $REMOVE_COUNT" ]] \
-  || die "确认不匹配；未执行卸载，缺失包安装可能已经完成"
+  || system_sync_cancel "确认不匹配；未执行卸载，缺失包安装可能已经完成"
 
 info "交给 zypper 显示并执行最终事务；请再次核对包管理器自己的确认列表"
+system_sync_phase removing
 set +e
 "${ROOT_COMMAND[@]}" zypper --no-refresh remove --clean-deps "${REMOVE_PACKAGES[@]}"
 CLEANUP_RC=$?
 set -e
 if [[ "$CLEANUP_RC" -ne 0 ]]; then
-  warn "zypper remove 已取消或失败（退出码 $CLEANUP_RC）"
+  warn "zypper remove 已取消或失败（退出码 ${CLEANUP_RC}）"
   exit "$CLEANUP_RC"
 fi
 
 LC_ALL=C rpm -qa --qf '%{NAME}\n' | LC_ALL=C sort -u > "$RUN_LOG_DIR/installed.after.txt"
+system_sync_phase complete
 printf '\n完成。审计清单：%s\n' "$RUN_LOG_DIR"

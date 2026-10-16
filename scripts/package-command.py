@@ -7,14 +7,12 @@ unsupported layouts fail before invoking a mutating package command.
 """
 
 import argparse
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from datetime import datetime, timezone
 import difflib
-import fcntl
 import json
 import os
 from pathlib import Path
-import platform
 import re
 import shlex
 import shutil
@@ -22,6 +20,8 @@ import subprocess
 import sys
 import tempfile
 from xml.etree import ElementTree
+
+from sync_runtime import RuntimeFailure, operation_lock, preflight
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,7 +32,7 @@ BREW_LINE = re.compile(
     rf'''\s*(tap|brew|cask)\s+(["'])({TOKEN}(?:/{TOKEN}){{0,2}})\2'''
     r"((?:\s*,\s*(?:trusted|link):\s*(?:true|false))*)\s*(?:#.*)?$"
 )
-TOML_LINE = re.compile(r'''\s*(["'])((?:pacman|aur|apt|dnf):[^"']+)\1\s*=\s*(.+)$''')
+TOML_LINE = re.compile(r'''\s*(["'])((?:pacman|aur|apt|dnf|zypper):[^"']+)\1\s*=\s*(.+)$''')
 MANAGERS = {"arch": "pacman", "debian": "apt", "fedora": "dnf", "opensuse": "zypper"}
 ESSENTIAL = {
     "macos": {"git", "mise"},
@@ -156,7 +156,7 @@ class PackageCommand:
         if profile != "macos" and (args.cask or args.formula or args.trust):
             raise Error("--cask、--formula、--trust 仅适用于 macOS Homebrew")
         self.directory = root / "packages" / ("macos" if profile == "macos" else f"linux/{profile}")
-        filename = "Brewfile" if profile == "macos" else ("packages.txt" if profile == "opensuse" else "mise.toml")
+        filename = "Brewfile" if profile == "macos" else "mise.toml"
         self.manifest = self.directory / filename
         self.before = {}
         self.after = {}
@@ -280,17 +280,6 @@ class PackageCommand:
         return result
 
     def edit_linux(self, source):
-        if self.profile == "opensuse":
-            names = read_lines(source)
-            if len(names) != len(set(names)) or any(not LINUX_NAME.fullmatch(n) for n in names):
-                raise Error("packages.txt 含重复或无效包名")
-            if self.args.action == "install":
-                result = source if self.name in names else append_line(source, self.name)
-            else:
-                result = replace_lines(source, {i for i, line in enumerate(source.splitlines()) if line.split("#", 1)[0].strip() == self.name})
-            if not read_lines(result):
-                raise Error("拒绝生成空的软件包清单")
-            return result
         entries, insertion = toml_entries(source)
         allowed = {"pacman", "aur"} if self.profile == "arch" else {self.manager}
         if any(k.split(":", 1)[0] not in allowed for k in entries):
@@ -323,11 +312,11 @@ class PackageCommand:
         if self.profile == "macos":
             brew_entries(source)  # Fail on unsupported input before any native operation.
             self.resolve_brew()
-        elif self.profile != "opensuse":
+        else:
             self.validate_toml(source)
         self.protected()
         candidate = self.edit_brew(source) if self.profile == "macos" else self.edit_linux(source)
-        if self.profile not in {"macos", "opensuse"}:
+        if self.profile != "macos":
             self.validate_toml(candidate)
         self.after[self.manifest] = candidate
         self.after = {path: content for path, content in self.after.items() if self.before[path] != content}
@@ -497,20 +486,6 @@ class PackageCommand:
         print(f"完成；只同步了指定根包，未运行整机 cleanup/autoremove。审计：{self.audit}")
 
 
-@contextmanager
-def operation_lock(root):
-    state = root / ".system-sync"
-    if state.is_symlink():
-        raise Error(".system-sync 不能是符号链接")
-    state.mkdir(exist_ok=True)
-    with (state / "package-command.lock").open("a") as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as error:
-            raise Error("另一条 install/uninstall 正在运行，请稍后重试") from error
-        yield
-
-
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="安装/卸载一个系统根包，确认成功后同步本平台清单。请勿 sudo mise。")
     parser.add_argument("action", choices=("install", "uninstall"))
@@ -529,16 +504,8 @@ def parse_args(argv=None):
 
 def main():
     args = parse_args()
+    profile = preflight(ROOT)
     runner = Runner()
-    system = platform.system()
-    if system == "Darwin":
-        profile = "macos"
-    elif system == "Linux":
-        profile = runner.run(["bash", str(ROOT / "scripts/detect-linux-profile.sh")]).strip()
-        if profile not in MANAGERS:
-            raise Error(f"未知的 Linux profile：{profile}")
-    else:
-        raise Error(f"不支持的平台：{system}")
     with nullcontext() if args.dry_run else operation_lock(ROOT):
         PackageCommand(ROOT, profile, args, runner).execute()
 
@@ -546,7 +513,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (Error, OSError, ValueError, KeyError, EOFError) as error:
+    except (Error, RuntimeFailure, OSError, ValueError, KeyError, EOFError) as error:
         print(f"错误：{error}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:

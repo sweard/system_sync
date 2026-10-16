@@ -3,6 +3,7 @@
 # 目前仅启用 espanso dotfiles。开发工具、环境变量、PATH 和其他应用的
 # 候选配置仍保持注释。公共候选位于 dotfiles/common，平台差异分别位于
 # dotfiles/macos 和 dotfiles/linux；启用映射在对应平台适配器中。
+min_version = "2026.10.11"
 monorepo_root = true
 
 [monorepo]
@@ -10,11 +11,20 @@ config_roots = [
   "packages/linux/arch",
   "packages/linux/debian",
   "packages/linux/fedora",
+  "packages/linux/opensuse",
 ]
 
 [tasks.status]
 description = "查看当前系统的声明状态和差异（只读）"
 run = "./scripts/system-sync.sh --status"
+
+[tasks.check]
+description = "检查前置版本、任务配置并运行隔离测试；不修改系统软件"
+run = [
+  "python3 ./scripts/sync_runtime.py --check",
+  "mise tasks validate",
+  "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v",
+]
 
 [tasks.dry-run]
 description = "预览当前系统将安装、收敛或清理的内容"

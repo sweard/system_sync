@@ -5,6 +5,7 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+source "$SCRIPT_DIR/sync-runtime.sh"
 PROFILE_DIR="${SYSTEM_SYNC_PROFILE_DIR:-$PROJECT_ROOT/packages/linux/arch}"
 ALLOWLIST_FILE="$PROFILE_DIR/protected-packages.txt"
 STATE_ROOT="$PROJECT_ROOT/.system-sync/history"
@@ -149,6 +150,8 @@ if [[ "$ALLOW_LARGE_CHANGE" -eq 1 && "$MODE" != "apply" ]]; then
   die "--allow-large-change 只可与 --apply 一起使用"
 fi
 
+system_sync_enter "$MODE"
+
 [[ "$(uname -s)" == "Linux" ]] || die "此脚本只允许在 Linux 上运行"
 command -v pacman >/dev/null 2>&1 || die "找不到 pacman"
 command -v mise >/dev/null 2>&1 || die "找不到 mise"
@@ -180,103 +183,108 @@ CURRENT_ORPHAN_ERROR="$TMP_DIR/orphans-current.stderr"
 CURRENT_REMOVABLE_FILE="$TMP_DIR/orphans-current-removable"
 CURRENT_PROTECTED_ORPHANS_FILE="$TMP_DIR/orphans-current-protected"
 
-info "读取 Arch profile 最终生效的 mise pacman/AUR 配置"
-if ! (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status --json) \
-  > "$STATUS_JSON" 2> "$STATUS_ERROR"; then
-  sed 's/^/  /' "$STATUS_ERROR" >&2
-  die "mise 无法生成 packages status JSON；没有可靠声明集时绝不继续"
-fi
-
-if [[ -s "$STATUS_ERROR" ]]; then
-  sed 's/^/  /' "$STATUS_ERROR" >&2
-  if grep -Eiq '(^|[^[:alpha:]])(warn(ing)?|error|invalid|unknown|skipp(ed|ing))([^[:alpha:]]|$)' \
-    "$STATUS_ERROR"; then
-    die "mise 在生成状态时报告警告/错误；配置可能有条目被跳过，拒绝继续"
+refresh_plan() {
+  info "读取 Arch profile 最终生效的 mise pacman/AUR 配置"
+  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status --json) \
+    > "$STATUS_JSON" 2> "$STATUS_ERROR"; then
+    sed 's/^/  /' "$STATUS_ERROR" >&2
+    die "mise 无法生成 packages status JSON；没有可靠声明集时绝不继续"
   fi
-  warn "mise status 产生了附加诊断；请确认上面的信息无异常"
-fi
 
-if ! python3 "$SCRIPT_DIR/extract-mise-packages.py" \
-  --manager pacman --manager aur "$STATUS_JSON" > "$DECLARED_TSV"; then
-  die "无法从 mise 最终生效配置中取得可靠的 pacman/AUR 声明"
-fi
+  if [[ -s "$STATUS_ERROR" ]]; then
+    sed 's/^/  /' "$STATUS_ERROR" >&2
+    if grep -Eiq '(^|[^[:alpha:]])(warn(ing)?|error|invalid|unknown|skipp(ed|ing))([^[:alpha:]]|$)' \
+      "$STATUS_ERROR"; then
+      die "mise 在生成状态时报告警告/错误；配置可能有条目被跳过，拒绝继续"
+    fi
+    warn "mise status 产生了附加诊断；请确认上面的信息无异常"
+  fi
 
-awk -F '\t' '{ print $2 }' "$DECLARED_TSV" | LC_ALL=C sort -u > "$DESIRED_FILE"
-validate_package_file "$DESIRED_FILE" "mise 声明"
-[[ -s "$DESIRED_FILE" ]] || die "声明包集合为空，拒绝继续"
-awk -F '\t' '$1 == "pacman" && $2 == "base" { found = 1 } END { exit !found }' \
-  "$DECLARED_TSV" || die "最终生效配置未声明 pacman:base，拒绝继续"
+  if ! python3 "$SCRIPT_DIR/extract-mise-packages.py" \
+    --manager pacman --manager aur "$STATUS_JSON" > "$DECLARED_TSV"; then
+    die "无法从 mise 最终生效配置中取得可靠的 pacman/AUR 声明"
+  fi
 
-LC_ALL=C pacman -Qqe | LC_ALL=C sort -u > "$EXPLICIT_FILE"
-LC_ALL=C pacman -Qq | LC_ALL=C sort -u > "$INSTALLED_FILE"
-LC_ALL=C pacman -Qqd | LC_ALL=C sort -u > "$DEPENDENCY_FILE"
-LC_ALL=C comm -23 "$DESIRED_FILE" "$INSTALLED_FILE" > "$MISSING_DESIRED_FILE"
+  awk -F '\t' '{ print $2 }' "$DECLARED_TSV" | LC_ALL=C sort -u > "$DESIRED_FILE"
+  validate_package_file "$DESIRED_FILE" "mise 声明"
+  [[ -s "$DESIRED_FILE" ]] || die "声明包集合为空，拒绝继续"
+  awk -F '\t' '$1 == "pacman" && $2 == "base" { found = 1 } END { exit !found }' \
+    "$DECLARED_TSV" || die "最终生效配置未声明 pacman:base，拒绝继续"
 
-# 若 mise 报告某个请求已安装，但本地数据库中没有同名真实包，它很可能是 virtual
-# provide。仅凭 request 名无法安全找到 provider，所以要求改为声明具体 provider。
-VIRTUAL_ERROR=0
-while IFS=$'\t' read -r manager package state; do
-  case "$state" in
-    installed|version_mismatch|needs_repair)
-      if ! grep -Fxq "$package" "$INSTALLED_FILE"; then
-        warn "${manager}:${package} 状态为 ${state}，但 pacman 中没有同名包；请在 $PROFILE_DIR/mise.toml 中改用具体 provider 包名"
-        VIRTUAL_ERROR=1
-      fi
-      ;;
-  esac
-done < "$DECLARED_TSV"
-[[ "$VIRTUAL_ERROR" -eq 0 ]] || die "检测到无法安全映射的 virtual package 声明"
+  LC_ALL=C pacman -Qqe | LC_ALL=C sort -u > "$EXPLICIT_FILE"
+  LC_ALL=C pacman -Qq | LC_ALL=C sort -u > "$INSTALLED_FILE"
+  LC_ALL=C pacman -Qqd | LC_ALL=C sort -u > "$DEPENDENCY_FILE"
+  LC_ALL=C comm -23 "$DESIRED_FILE" "$INSTALLED_FILE" > "$MISSING_DESIRED_FILE"
 
-# 硬保护项不能通过 allowlist 删除；所有已安装的 linux-* 内核/固件类包也动态保护。
-printf '%s\n' \
-  base bash coreutils filesystem glibc pacman shadow systemd util-linux \
-  > "$PROTECTED_FILE"
+  # 若 mise 报告某个请求已安装，但本地数据库中没有同名真实包，它很可能是 virtual
+  # provide。仅凭 request 名无法安全找到 provider，所以要求改为声明具体 provider。
+  VIRTUAL_ERROR=0
+  while IFS=$'\t' read -r manager package state; do
+    case "$state" in
+      installed|version_mismatch|needs_repair)
+        if ! grep -Fxq "$package" "$INSTALLED_FILE"; then
+          warn "${manager}:${package} 状态为 ${state}，但 pacman 中没有同名包；请在 $PROFILE_DIR/mise.toml 中改用具体 provider 包名"
+          VIRTUAL_ERROR=1
+        fi
+        ;;
+    esac
+  done < "$DECLARED_TSV"
+  [[ "$VIRTUAL_ERROR" -eq 0 ]] || die "检测到无法安全映射的 virtual package 声明"
 
-awk '
-  {
-    line = $0
-    sub(/\r$/, "", line)
-    sub(/[[:space:]]*#.*/, "", line)
-    sub(/^[[:space:]]+/, "", line)
-    sub(/[[:space:]]+$/, "", line)
-    if (line != "") print line
-  }
-' "$ALLOWLIST_FILE" >> "$PROTECTED_FILE"
+  # 硬保护项不能通过 allowlist 删除；所有已安装的 linux-* 内核/固件类包也动态保护。
+  printf '%s\n' \
+    base bash coreutils filesystem glibc pacman shadow systemd util-linux \
+    > "$PROTECTED_FILE"
 
-grep -E '^(linux($|-)|amd-ucode$|intel-ucode$|grub$|refind$|limine$|syslinux$)' \
-  "$INSTALLED_FILE" >> "$PROTECTED_FILE" || true
-LC_ALL=C sort -u -o "$PROTECTED_FILE" "$PROTECTED_FILE"
-validate_package_file "$PROTECTED_FILE" "保护清单"
-LC_ALL=C comm -12 "$PROTECTED_FILE" "$INSTALLED_FILE" > "$PROTECTED_INSTALLED_FILE"
+  awk '
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      sub(/[[:space:]]*#.*/, "", line)
+      sub(/^[[:space:]]+/, "", line)
+      sub(/[[:space:]]+$/, "", line)
+      if (line != "") print line
+    }
+  ' "$ALLOWLIST_FILE" >> "$PROTECTED_FILE"
 
-LC_ALL=C comm -23 "$EXPLICIT_FILE" "$DESIRED_FILE" > "$EXTRA_ALL_FILE"
-LC_ALL=C comm -23 "$EXTRA_ALL_FILE" "$PROTECTED_FILE" > "$DEMOTE_FILE"
-LC_ALL=C comm -12 "$EXTRA_ALL_FILE" "$PROTECTED_FILE" > "$PROTECTED_EXTRA_FILE"
+  grep -E '^(linux($|-)|amd-ucode$|intel-ucode$|grub$|refind$|limine$|syslinux$)' \
+    "$INSTALLED_FILE" >> "$PROTECTED_FILE" || true
+  LC_ALL=C sort -u -o "$PROTECTED_FILE" "$PROTECTED_FILE"
+  validate_package_file "$PROTECTED_FILE" "保护清单"
+  LC_ALL=C comm -12 "$PROTECTED_FILE" "$INSTALLED_FILE" > "$PROTECTED_INSTALLED_FILE"
 
-# 声明包和保护包是 root；如果它们过去以依赖方式安装，apply 时提升为 explicit，
-# 防止后续 pacman -Rs 递归清理时把这些包带走。
-LC_ALL=C sort -u "$DESIRED_FILE" "$PROTECTED_INSTALLED_FILE" > "$TMP_DIR/wanted-roots"
-LC_ALL=C comm -12 "$TMP_DIR/wanted-roots" "$DEPENDENCY_FILE" > "$PROMOTE_FILE"
+  LC_ALL=C comm -23 "$EXPLICIT_FILE" "$DESIRED_FILE" > "$EXTRA_ALL_FILE"
+  LC_ALL=C comm -23 "$EXTRA_ALL_FILE" "$PROTECTED_FILE" > "$DEMOTE_FILE"
+  LC_ALL=C comm -12 "$EXTRA_ALL_FILE" "$PROTECTED_FILE" > "$PROTECTED_EXTRA_FILE"
 
-query_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_ORPHAN_ERROR"
-filter_orphans \
-  "$CURRENT_ORPHANS_FILE" \
-  "$CURRENT_REMOVABLE_FILE" \
-  "$CURRENT_PROTECTED_ORPHANS_FILE"
+  # 声明包和保护包是 root；如果它们过去以依赖方式安装，apply 时提升为 explicit，
+  # 防止后续 pacman -Rs 递归清理时把这些包带走。
+  LC_ALL=C sort -u "$DESIRED_FILE" "$PROTECTED_INSTALLED_FILE" > "$TMP_DIR/wanted-roots"
+  LC_ALL=C comm -12 "$TMP_DIR/wanted-roots" "$DEPENDENCY_FILE" > "$PROMOTE_FILE"
 
-awk -F '\t' '{ printf "%s:%s [%s]\n", $1, $2, $3 }' "$DECLARED_TSV" \
-  | LC_ALL=C sort -u > "$TMP_DIR/declared-display"
+  query_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_ORPHAN_ERROR"
+  filter_orphans \
+    "$CURRENT_ORPHANS_FILE" \
+    "$CURRENT_REMOVABLE_FILE" \
+    "$CURRENT_PROTECTED_ORPHANS_FILE"
 
-print_list "mise 最终生效声明" "$TMP_DIR/declared-display"
-print_list "声明但尚未以同名具体包安装" "$MISSING_DESIRED_FILE"
-print_list "当前显式安装包中未声明、但受保护而保留" "$PROTECTED_EXTRA_FILE"
-print_list "apply 时会从 dependency 提升为 explicit 的声明/保护包" "$PROMOTE_FILE"
-print_list "apply 时会从 explicit 降级为 dependency 的未声明包" "$DEMOTE_FILE"
-print_list "当前真正 orphan 中可清理的包" "$CURRENT_REMOVABLE_FILE"
-print_list "当前 orphan 中因声明或保护规则而跳过的包" "$CURRENT_PROTECTED_ORPHANS_FILE"
+  awk -F '\t' '{ printf "%s:%s [%s]\n", $1, $2, $3 }' "$DECLARED_TSV" \
+    | LC_ALL=C sort -u > "$TMP_DIR/declared-display"
 
-EXPLICIT_COUNT="$(count_lines "$EXPLICIT_FILE")"
-DEMOTE_COUNT="$(count_lines "$DEMOTE_FILE")"
+  print_list "mise 最终生效声明" "$TMP_DIR/declared-display"
+  print_list "声明但尚未以同名具体包安装" "$MISSING_DESIRED_FILE"
+  print_list "当前显式安装包中未声明、但受保护而保留" "$PROTECTED_EXTRA_FILE"
+  print_list "apply 时会从 dependency 提升为 explicit 的声明/保护包" "$PROMOTE_FILE"
+  print_list "apply 时会从 explicit 降级为 dependency 的未声明包" "$DEMOTE_FILE"
+  print_list "当前真正 orphan 中可清理的包" "$CURRENT_REMOVABLE_FILE"
+  print_list "当前 orphan 中因声明或保护规则而跳过的包" "$CURRENT_PROTECTED_ORPHANS_FILE"
+
+  EXPLICIT_COUNT="$(count_lines "$EXPLICIT_FILE")"
+  DEMOTE_COUNT="$(count_lines "$DEMOTE_FILE")"
+}
+
+refresh_plan
+
 if [[ "$MODE" == "status" ]]; then
   printf '\n状态模式：未做任何修改。\n'
   exit 0
@@ -290,25 +298,26 @@ if [[ "$MODE" == "dry-run" ]]; then
 fi
 
 [[ -t 0 ]] || die "--apply 必须在交互式终端运行"
-grep -Fxq 'base' "$INSTALLED_FILE" || die "base 尚未安装；请先成功执行 mise bootstrap packages apply"
-[[ ! -s "$MISSING_DESIRED_FILE" ]] || die "仍有声明包未安装；请先成功执行 mise bootstrap packages apply，再运行收敛"
 
-LARGE_BY_RATIO=0
-if [[ "$EXPLICIT_COUNT" -gt 0 && "$DEMOTE_COUNT" -ge 5 ]]; then
-  if (( DEMOTE_COUNT * 100 / EXPLICIT_COUNT >= 50 )); then
-    LARGE_BY_RATIO=1
+check_large_change() {
+  LARGE_BY_RATIO=0
+  if [[ "$EXPLICIT_COUNT" -gt 0 && "$DEMOTE_COUNT" -ge 5 ]]; then
+    if (( DEMOTE_COUNT * 100 / EXPLICIT_COUNT >= 50 )); then
+      LARGE_BY_RATIO=1
+    fi
   fi
-fi
-if [[ "$DEMOTE_COUNT" -gt "$MAX_DEMOTIONS" || "$LARGE_BY_RATIO" -eq 1 ]]; then
-  if [[ "$ALLOW_LARGE_CHANGE" -ne 1 ]]; then
-    die "本次拟降级 $DEMOTE_COUNT/$EXPLICIT_COUNT 个显式包，触发大范围变更保护。核对 baseline 后，如确属预期，使用 --apply --allow-large-change"
+  if [[ "$DEMOTE_COUNT" -gt "$MAX_DEMOTIONS" || "$LARGE_BY_RATIO" -eq 1 ]]; then
+    if [[ "$ALLOW_LARGE_CHANGE" -ne 1 ]]; then
+      die "本次拟降级 $DEMOTE_COUNT/$EXPLICIT_COUNT 个显式包，触发大范围变更保护。核对 baseline 后，如确属预期，使用 --apply --allow-large-change"
+    fi
+    warn "已显式允许大范围变更：拟降级 $DEMOTE_COUNT/$EXPLICIT_COUNT 个显式包"
   fi
-  warn "已显式允许大范围变更：拟降级 $DEMOTE_COUNT/$EXPLICIT_COUNT 个显式包"
-fi
+}
+check_large_change
 
-printf '\n即将修改 pacman 安装原因。请输入精确短语 “APPLY %s” 继续：' "$DEMOTE_COUNT"
+printf '\n即将安装缺失声明并修改 pacman 安装原因。请输入精确短语 “APPLY %s” 继续：' "$DEMOTE_COUNT"
 IFS= read -r FIRST_CONFIRMATION
-[[ "$FIRST_CONFIRMATION" == "APPLY $DEMOTE_COUNT" ]] || die "确认不匹配，未做任何修改"
+[[ "$FIRST_CONFIRMATION" == "APPLY $DEMOTE_COUNT" ]] || system_sync_cancel "确认不匹配，未做任何修改"
 
 if [[ "$EUID" -ne 0 ]]; then
   command -v sudo >/dev/null 2>&1 || die "需要 root 权限，但找不到 sudo"
@@ -320,17 +329,30 @@ fi
 
 RUN_ID="$(date -u '+%Y%m%dT%H%M%SZ')"
 RUN_ID="${RUN_ID}-$$"
-RUN_LOG_DIR="$STATE_ROOT/$RUN_ID"
+RUN_LOG_DIR="$SYSTEM_SYNC_RUN_LOG_DIR"
 mkdir -p -- "$RUN_LOG_DIR"
 copy_if_present "$STATUS_JSON" "$RUN_LOG_DIR/mise-status.json"
 copy_if_present "$DESIRED_FILE" "$RUN_LOG_DIR/desired.txt"
 copy_if_present "$EXPLICIT_FILE" "$RUN_LOG_DIR/explicit.before.txt"
+copy_if_present "$INSTALLED_FILE" "$RUN_LOG_DIR/installed.before.txt"
 copy_if_present "$DEMOTE_FILE" "$RUN_LOG_DIR/demoted.txt"
 copy_if_present "$PROMOTE_FILE" "$RUN_LOG_DIR/promoted.txt"
 copy_if_present "$CURRENT_ORPHANS_FILE" "$RUN_LOG_DIR/orphans.before.txt"
 printf 'mode=apply\ncreated_utc=%s\n' "$RUN_ID" > "$RUN_LOG_DIR/run.meta"
 info "本次变更清单已保存到 $RUN_LOG_DIR"
 
+system_sync_phase installing
+(cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply)
+system_sync_phase validating-after-install
+refresh_plan
+[[ ! -s "$MISSING_DESIRED_FILE" ]] || die "安装后仍有声明包未以同名具体包安装；拒绝修改安装原因或卸载"
+check_large_change
+copy_if_present "$INSTALLED_FILE" "$RUN_LOG_DIR/installed.after-install.txt"
+copy_if_present "$EXPLICIT_FILE" "$RUN_LOG_DIR/explicit.before-reason-change.txt"
+copy_if_present "$DEMOTE_FILE" "$RUN_LOG_DIR/demoted.txt"
+copy_if_present "$PROMOTE_FILE" "$RUN_LOG_DIR/promoted.txt"
+
+system_sync_phase marking
 DEMOTE_PACKAGES=()
 while IFS= read -r package; do
   [[ -n "$package" ]] && DEMOTE_PACKAGES+=("$package")
@@ -366,6 +388,7 @@ print_list "安装原因调整后，因声明或保护规则跳过的 orphan" "$
 FINAL_REMOVE_COUNT="$(count_lines "$FINAL_REMOVABLE_FILE")"
 if [[ "$FINAL_REMOVE_COUNT" -eq 0 ]]; then
   LC_ALL=C pacman -Qqe | LC_ALL=C sort -u > "$RUN_LOG_DIR/explicit.after.txt"
+  system_sync_phase complete
   printf '\n完成：安装原因已收敛，没有 orphan 需要卸载。\n'
   exit 0
 fi
@@ -414,8 +437,10 @@ if [[ "$SECOND_CONFIRMATION" != "REMOVE $REMOVE_TRANSACTION_COUNT" ]]; then
 fi
 
 info "交给 pacman -Rs 执行最终事务；请再次核对 pacman 自己显示的完整移除列表"
+system_sync_phase removing
 "${ROOT_COMMAND[@]}" pacman -Rs "${REMOVE_PACKAGES[@]}"
 
 LC_ALL=C pacman -Qqe | LC_ALL=C sort -u > "$RUN_LOG_DIR/explicit.after.txt"
 LC_ALL=C pacman -Qq | LC_ALL=C sort -u > "$RUN_LOG_DIR/installed.after.txt"
+system_sync_phase complete
 printf '\n完成。审计与恢复清单：%s\n' "$RUN_LOG_DIR"

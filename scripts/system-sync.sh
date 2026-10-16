@@ -5,6 +5,7 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+source "$SCRIPT_DIR/sync-runtime.sh"
 
 die() {
   printf '错误：%s\n' "$*" >&2
@@ -48,6 +49,8 @@ for argument in "$@"; do
   esac
 done
 
+[[ "$MODE" == "help" ]] || system_sync_enter "$MODE"
+
 case "$(uname -s)" in
   Darwin)
     exec "$SCRIPT_DIR/homebrew-converge.sh" "$@"
@@ -71,7 +74,7 @@ case "$(uname -s)" in
         CONVERGE_SCRIPT="$SCRIPT_DIR/dnf-converge.sh"
         ;;
       opensuse)
-        exec "$SCRIPT_DIR/zypper-converge.sh" "$@"
+        CONVERGE_SCRIPT="$SCRIPT_DIR/zypper-converge.sh"
         ;;
       *)
         die "检测脚本返回了未知 profile：$PROFILE"
@@ -91,7 +94,9 @@ case "$(uname -s)" in
         (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --dry-run)
         ;;
       apply)
-        (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply)
+        # Installation belongs to the platform transaction, after its validation,
+        # exact confirmation and before-state audit have completed.
+        exec "$CONVERGE_SCRIPT" "$@"
         ;;
       *)
         die "无法识别运行模式"

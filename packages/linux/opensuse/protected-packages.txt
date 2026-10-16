@@ -1,4 +1,4 @@
-# 即使未在 packages.txt 声明，这些包也不会进入 zypper 移除事务。
+# 即使未在 mise.toml 声明，这些包也不会进入 zypper 移除事务。
 # 首次 apply 前，按实际产品、pattern、启动、存储和网络环境补充。
 
 bash

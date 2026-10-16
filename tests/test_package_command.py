@@ -7,12 +7,14 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
 SPEC = importlib.util.spec_from_file_location("package_command", ROOT / "scripts/package-command.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
@@ -93,13 +95,10 @@ class PackageCommandTest(unittest.TestCase):
         for profile, manager in MODULE.MANAGERS.items():
             directory = self.root / f"packages/linux/{profile}"
             packages = ["base", "base-files", "filesystem", "git", "ripgrep", "zsh"]
-            if profile == "opensuse":
-                (directory / "packages.txt").write_text("# Test package roots\n" + "\n".join(packages) + "\n")
-            else:
-                (directory / "mise.toml").write_text(
-                    '# Debian / Linux test roots\n[bootstrap.packages]\n' +
-                    "".join(f'"{manager}:{package}" = "latest"\n' for package in packages)
-                )
+            (directory / "mise.toml").write_text(
+                '# Debian / Linux test roots\n[bootstrap.packages]\n' +
+                "".join(f'"{manager}:{package}" = "latest"\n' for package in packages)
+            )
             (directory / "protected-packages.txt").write_text("git\nzsh\n")
         self.runner = FakeRunner()
 
@@ -253,8 +252,8 @@ class PackageCommandTest(unittest.TestCase):
             with self.subTest(profile=profile):
                 self.runner = FakeRunner(profile)
                 self.execute(self.make("install", "gitui", profile=profile))
-                path = self.root / f"packages/linux/{profile}" / ("packages.txt" if profile == "opensuse" else "mise.toml")
-                entry = "gitui\n" if profile == "opensuse" else f'"{manager}:gitui" = "latest"'
+                path = self.root / f"packages/linux/{profile}/mise.toml"
+                entry = f'"{manager}:gitui" = "latest"'
                 self.assertIn(entry, path.read_text())
                 self.assertEqual(self.runner.mutations[0][-1], "gitui")
                 self.assertNotIn('brew "gitui"', self.brewfile.read_text())
@@ -264,7 +263,7 @@ class PackageCommandTest(unittest.TestCase):
             with self.subTest(profile=profile):
                 self.runner = FakeRunner(profile, {"ripgrep", "base", "base-files", "filesystem"})
                 self.execute(self.make("uninstall", "ripgrep", profile=profile))
-                path = self.root / f"packages/linux/{profile}" / ("packages.txt" if profile == "opensuse" else "mise.toml")
+                path = self.root / f"packages/linux/{profile}/mise.toml"
                 self.assertNotIn("ripgrep", path.read_text())
                 self.assertIn("git", path.read_text())
                 command = self.runner.mutations[0]
@@ -375,7 +374,7 @@ class PackageCommandTest(unittest.TestCase):
                 return native_parser.run(command, capture)
             return fake(command, capture)
         self.runner.run = run
-        for profile in ("arch", "debian", "fedora"):
+        for profile in ("arch", "debian", "fedora", "opensuse"):
             with self.subTest(profile=profile):
                 self.execute(self.make("install", "--dry-run", "gitui", profile=profile))
                 self.execute(self.make("uninstall", "--dry-run", "ripgrep", profile=profile))

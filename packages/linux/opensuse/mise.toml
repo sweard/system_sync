@@ -1,0 +1,13 @@
+# openSUSE / SLE 的手工根包示例；正式收敛前先导入并审阅本机 baseline。
+[settings]
+system_packages.managers = ["zypper"]
+
+[bootstrap.packages]
+"zypper:filesystem" = "latest"
+"zypper:git" = "latest"
+"zypper:jq" = "latest"
+"zypper:openssh" = "latest"
+"zypper:python3" = "latest"
+"zypper:ripgrep" = "latest"
+"zypper:zsh" = "latest"
+"zypper:zypper" = "latest"

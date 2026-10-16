@@ -33,6 +33,12 @@ def _package_from_item(manager: str, item: Any) -> Tuple[str, str, str]:
     elif isinstance(item, dict):
         name = item.get("package", item.get("name"))
         state = item.get("state", "unknown")
+        if not isinstance(state, str) or state not in {"installed", "missing", "version_mismatch", "needs_repair"}:
+            raise StatusFormatError(
+                f"{manager!r} 的包状态不可用于根包收敛：{state!r}；不接受 skipped、absent 或未知状态"
+            )
+        if item.get("desired_state", "present") != "present":
+            raise StatusFormatError("根包清单只接受 present 声明；absent 必须通过单包卸载入口处理")
     else:
         raise StatusFormatError(
             f"{manager!r} 的 packages 项必须是对象或字符串，实际为 {type(item).__name__}"

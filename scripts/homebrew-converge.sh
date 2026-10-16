@@ -5,6 +5,7 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+source "$SCRIPT_DIR/sync-runtime.sh"
 BREWFILE="$PROJECT_ROOT/packages/macos/Brewfile"
 TRUSTED_FORMULAE_FILE="$PROJECT_ROOT/packages/macos/trusted-formulae.txt"
 TRUSTED_CASKS_FILE="$PROJECT_ROOT/packages/macos/trusted-casks.txt"
@@ -245,7 +246,7 @@ save_before_state() {
   local mode="$1"
   local run_id
   run_id="$(date -u '+%Y%m%dT%H%M%SZ')-$$-${mode}"
-  RUN_LOG_DIR="$STATE_ROOT/$run_id"
+  RUN_LOG_DIR="$SYSTEM_SYNC_RUN_LOG_DIR"
   mkdir -p -- "$RUN_LOG_DIR"
   cp -- "$BREWFILE" "$RUN_LOG_DIR/Brewfile.before"
   cp -- "$INSTALLED_FORMULAE_FILE" "$RUN_LOG_DIR/formulae.before.txt"
@@ -289,6 +290,8 @@ while [[ "$#" -gt 0 ]]; do
   esac
   shift
 done
+
+system_sync_enter "$MODE"
 
 [[ "$(uname -s)" == "Darwin" ]] || die "此脚本只允许在 macOS 上运行"
 command -v brew >/dev/null 2>&1 || die "找不到 Homebrew"
@@ -386,11 +389,13 @@ if [[ "$MODE" == "upgrade" ]]; then
   [[ -t 0 ]] || die "--upgrade 必须在交互式终端运行"
   printf '\n升级不会执行 cleanup。请输入精确短语 “UPGRADE HOMEBREW” 继续：'
   IFS= read -r UPGRADE_CONFIRMATION
-  [[ "$UPGRADE_CONFIRMATION" == "UPGRADE HOMEBREW" ]] || die "确认不匹配，未做任何修改"
+  [[ "$UPGRADE_CONFIRMATION" == "UPGRADE HOMEBREW" ]] || system_sync_cancel "确认不匹配，未做任何修改"
   : > "$CLEANUP_PREVIEW_FILE"
   save_before_state "upgrade"
+  system_sync_phase upgrading
   brew bundle install --upgrade --file="$BREWFILE"
   capture_after_state
+  system_sync_phase complete
   printf '\n升级完成。审计清单：%s\n' "$RUN_LOG_DIR"
   exit 0
 fi
@@ -414,10 +419,11 @@ fi
 printf '\n即将安装缺失项；随后 Homebrew 会再次显示完整 cleanup 清单并询问。\n'
 printf '请输入精确短语 “APPLY HOMEBREW” 继续：'
 IFS= read -r APPLY_CONFIRMATION
-[[ "$APPLY_CONFIRMATION" == "APPLY HOMEBREW" ]] || die "确认不匹配，未做任何修改"
+[[ "$APPLY_CONFIRMATION" == "APPLY HOMEBREW" ]] || system_sync_cancel "确认不匹配，未做任何修改"
 
 save_before_state "apply"
 
+system_sync_phase installing
 info "安装 Brewfile 中缺失的项目；不主动升级已安装项目"
 brew bundle install --no-upgrade --file="$BREWFILE"
 
@@ -425,22 +431,25 @@ info "确认 Brewfile 声明均已满足"
 brew bundle check --no-upgrade --verbose --file="$BREWFILE"
 
 info "安装后重新计算 cleanup 事务"
+system_sync_phase validating-cleanup
 preview_cleanup
 cp -- "$CLEANUP_PREVIEW_FILE" "$RUN_LOG_DIR/cleanup.after-install.preview.txt"
 confirm_cleanup_graph_warning
 
 printf '\nHomebrew 将列出最终 cleanup 事务并要求确认。\n'
 printf '脚本未使用 --zap，也不会自动回答 Homebrew 的确认问题。\n'
+system_sync_phase removing
 set +e
 brew bundle cleanup --file="$BREWFILE" --formula --cask --tap
 CLEANUP_RC=$?
 set -e
 
 if [[ "$CLEANUP_RC" -ne 0 ]]; then
-  warn "cleanup 已取消或失败（退出码 $CLEANUP_RC）；此前的安装步骤可能已经完成"
+  warn "cleanup 已取消或失败（退出码 ${CLEANUP_RC}）；此前的安装步骤可能已经完成"
   warn "没有继续执行其他清理；请查看 $RUN_LOG_DIR"
   exit "$CLEANUP_RC"
 fi
 
 capture_after_state
+system_sync_phase complete
 printf '\n同步完成。审计与恢复清单：%s\n' "$RUN_LOG_DIR"

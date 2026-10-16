@@ -1,5 +1,6 @@
 .system-sync/
 .DS_Store
+__pycache__/
 
 # 本机私有覆盖和密钥只保留在本地，不进入 Git。
 dotfiles/**/*.local
