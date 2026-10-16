@@ -1,0 +1,27 @@
+packages/macos/trusted-casks.txt
+  s_00332b4a331471::t_4a02d07a30226d 3
+packages/macos/Brewfile
+  s_00332b4a331471::t_5f4bc3a8aa519f 8,10,12-13,19,47
+  h_74ac6e576b13a5 16-18,58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "965f2eef817a28bd2e9979c303dc9d0cfd0a1b1a",
+  "prompts": {},
+  "humans": {
+    "h_74ac6e576b13a5": {
+      "author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  },
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
