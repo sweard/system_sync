@@ -1,0 +1,39 @@
+dotfiles/macos/zsh/platform.zsh
+  s_00332b4a331471::t_0c881d9b3d396b 1
+dotfiles/linux/zsh/platform.zsh
+  s_00332b4a331471::t_0c881d9b3d396b 1
+README.md
+  s_00332b4a331471::t_979442d43af167 3,25,37,108,140,520,527,587,589,591-622,624,636-637,663,665-666,673,675-676,679
+dotfiles/common/mise/miserc.toml
+  s_00332b4a331471::t_0c881d9b3d396b 2
+dotfiles/macos/mise/config.toml
+  s_00332b4a331471::t_03dfc0b66d1f1a 1-5
+dotfiles/common/mise/config.toml
+  s_00332b4a331471::t_03dfc0b66d1f1a 1-2,7-11,13-14,17-23
+  s_00332b4a331471::t_0c881d9b3d396b 15-16,25-30
+  s_00332b4a331471::t_a6fcca4d533713 24
+mise.toml
+  s_00332b4a331471::t_03dfc0b66d1f1a 3-4,54,69,74-76
+dotfiles/common/zsh/zshrc
+  s_00332b4a331471::t_0c881d9b3d396b 54-55
+mise.macos.toml
+  s_00332b4a331471::t_03dfc0b66d1f1a 1,7-8
+packages/macos/Brewfile
+  s_00332b4a331471::t_495b2f60fc008e 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4edab77236f807a264498194c578a9c58ec3e30f",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
