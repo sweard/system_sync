@@ -2,4 +2,3 @@
 # 这里的项目也必须以 `trusted: true` 出现在 Brewfile 中。
 
 antoniorodr/memo/memo
-oven-sh/bun/bun

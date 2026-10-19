@@ -1,6 +1,6 @@
 # macOS + 多发行版 Linux 声明式系统配置同步
 
-这个仓库用统一的 mise task 作为入口，把各平台的系统包收敛逻辑分开，并保存可逐项启用的开发环境与应用配置候选快照。
+这个仓库用统一的 mise task 作为入口，把各平台的系统包收敛逻辑分开，并通过全局 mise 配置管理开发工具版本。Espanso 已接管，其他应用配置保留可逐项启用的候选快照。
 
 | 平台 / profile | 声明来源 | 收敛方式 |
 |---|---|---|
@@ -22,7 +22,7 @@ system_sync/
 ├── .gitignore
 ├── README.md
 ├── mise.toml                         # 公共 task 入口
-├── mise.macos.toml                   # macOS dotfiles 适配器；目前只启用 espanso
+├── mise.macos.toml                   # macOS dotfiles 适配器；espanso 和 mise 工具配置
 ├── mise.linux.toml                   # Linux dotfiles 适配器；目前只启用 espanso
 ├── mise.local.toml                   # 本机私有映射（Git 忽略，不随仓库同步）
 ├── dotfiles/
@@ -34,7 +34,7 @@ system_sync/
 │   │   │   ├── private.local/match/private-snippets.yml  # 私有目录，Git 忽略
 │   │   │   └── mise.local.example.toml
 │   │   ├── mise/
-│   │   │   ├── config.toml           # 已注释的跨平台 tools 候选
+│   │   │   ├── config.toml           # 已启用的工具版本与 uv 解释器选择
 │   │   │   ├── miserc.toml
 │   │   │   └── secrets.env.example
 │   │   ├── zsh/
@@ -105,7 +105,7 @@ system_sync/
 mise trust --all
 ```
 
-本仓库的验证基线为 **mise 2026.10.11+、Python 3.9+ 和 Bash**。根配置通过 `min_version` 限定 mise 版本；直接执行脚本或单包入口也会预检版本和本机必需命令。前置依赖必须先由系统准备，仓库没有启用开发工具版本迁移。
+本仓库的验证基线为 **mise 2026.10.11+、Python 3.9+ 和 Bash**。根配置通过 `min_version` 限定 mise 版本；直接执行脚本或单包入口也会预检版本和本机必需命令。开发工具默认版本由 `dotfiles/common/mise/config.toml` 管理；首次部署全局配置后运行 `mise install`，系统包管理器等前置命令仍须由系统准备。
 
 ```bash
 mise run check
@@ -137,7 +137,7 @@ mise run config-dry-run
 mise run config-sync
 ```
 
-当前仅启用 espanso 的 `[dotfiles]` 映射；这些命令会检查或应用 espanso 配置。其他应用映射仍被注释，不会接管 zsh、Claude、VS Code 或开发工具环境。mise 会在内部选择当前平台适配器。
+当前启用 espanso 和全局 mise 配置的 `[dotfiles]` 映射；这些命令会检查或应用它们，mise 会选择当前平台适配器。zsh、Claude 和 VS Code 的完整文件映射仍被注释。本机 Shell 只为开发工具迁移做必要的初始化调整，不整份覆盖现有配置。
 
 Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 
@@ -517,14 +517,14 @@ mise run macos-upgrade
 
 `dotfiles/` 已重构为公共模块和两个平台适配器：
 
-- `dotfiles/common/`：已启用的 espanso 公共配置，以及跨平台工具候选、zsh 主配置、Claude 全局说明和 Hook；
+- `dotfiles/common/`：已启用的 espanso 公共配置、工具版本与 uv 配置，以及候选 zsh 主配置、Claude 全局说明和 Hook；
 - `dotfiles/macos/`：espanso 的 macOS 专用片段、Homebrew 相关路径、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
 - `dotfiles/linux/`：Linux Android SDK、可选 Linuxbrew，以及不含 macOS 外部 Hook 的 Claude/VS Code 模板；
 - `mise.macos.toml` 与 `mise.linux.toml`：相同 `config-*` 命令背后的两个平台适配器。
 
 仓库和未来的全局 mise 配置都通过 `auto_env` 自动选择 `macos` 或 `linux`。公共模块不需要知道当前平台，平台路径也不会散落在公共调用入口中。
 
-目前仅启用 espanso 的 `[dotfiles]`。其他应用映射以及 `[tools]`、`[env]` 和 `_.path` 候选仍被注释。`.miserc.toml` 本身只控制配置发现；`config-sync` 会应用已启用的 espanso 文件，不会激活其他应用或 shell 配置。
+目前启用 espanso、全局 mise 配置和 macOS Rust 参数的映射。工具 `[tools]` 与 uv 所需的两个环境变量已启用；locale、Android、其他 PATH、密钥文件和输出脱敏规则仍是候选。`.miserc.toml` 只控制配置发现；`config-sync` 不会接管其他应用的完整配置。
 
 ### Espanso（已启用）
 
@@ -584,22 +584,44 @@ espanso service restart
 
 当前 Mac 已安装的 `espanso` cask 已加入 Brewfile，仅记录声明，本次未安装或升级软件。其他 Linux 机器仍需按发行版准备 Espanso；这里的配置部署不安装应用，也不授予 macOS 辅助功能权限。若原片段管理器仍在运行且启用了同名关键词，请手动停用重叠片段，避免两边同时展开。
 
-### 工具候选
+### 开发工具版本（已启用）
 
-公共 `dotfiles/common/mise/config.toml` 记录以下候选版本：
+2026-10-19 重新核对本机实际版本后，由 `dotfiles/common/mise/config.toml` 固定全局默认值：
 
-| 工具 | 版本 | 当前来源 / 注意事项 |
-|---|---:|---|
-| Node | 24.15.0 | 当前 Mac 由 nvm 管理；启用 mise 后停用 nvm |
-| Python | 3.9.6 | 来自 Apple/Xcode，较旧；Linux 和 macOS 启用前都应重新评估 |
-| Ruby | 4.0.6 | 当前 Mac 由 Homebrew 管理；迁移后从 Brewfile 和手工 PATH 移交 |
-| Java | 21 | 当前 Mac 默认 JBR 21.0.6；mise 选择的发行版可能不同 |
-| Rust | 1.98.0 | 当前由 rustup 管理；迁移时决定是否保留 rustup |
-| Bun | 1.4.0 | 当前在 Brewfile 中；不得同时由 Homebrew 和 mise 拥有 |
-| uv | 0.12.9 | 当前在 Brewfile 中；不得同时由 Homebrew 和 mise 拥有 |
-| Yarn | 1.22.22 | 当前在 Brewfile 中；不得同时由 Homebrew 和 mise 拥有 |
+| 工具 | 默认版本 | 迁移方式和保留项 |
+|---|---|---|
+| Node | 24.15.0 | `mise sync node --nvm` 复用现有安装；22.15.0 和全局 npm 工具保留，停用 nvm 初始化 |
+| Python | 3.12.12 | 复用原 uv 安装的解释器；按用户选择切换默认版本，Apple 3.9.6 保留 |
+| Ruby | 4.0.7 | 使用 mise 安装；Homebrew Ruby 仅作为 CocoaPods 依赖保留 |
+| Java | jetbrains-21.0.6-b895.109 | 用 `mise link` 注册现有 JBR，保留其他 IDE JDK，不重复下载 |
+| Rust | 1.99.0 | mise 内置 rustup 后端；保留 Cargo CLI、rust-src 和原有交叉编译目标 |
+| Bun | 1.4.3 | mise 安装，移除 Homebrew 的直接管理 |
+| uv | 0.13.1 | mise 安装；uv 继续负责 Python 项目依赖和虚拟环境 |
+| Yarn Classic | 1.22.22 | 使用 `npm:yarn` 后端，移除 Homebrew 的直接管理；不另启用 Corepack Yarn |
 
-这些版本来自当前 Mac，仅作为跨平台候选，不代表已经在真实 Linux 主机验证。Flutter 3.47.2 的本地工作树有改动，因此仍只保留 PATH 候选，不交给 mise。
+这些默认值已针对当前 Mac 核对；真实 Linux 主机仍须验证。macOS 的 Rust 额外组件和目标在 `dotfiles/macos/mise/config.toml` 中声明，避免将 Apple 目标强加给 Linux。
+
+现有 Node 和 Python 安装通过 mise 官方同步命令复用，Java 使用官方 `mise link`。这些注册依赖原目录，不能删除 `~/.nvm/versions`、原 uv Python 目录或已注册的 JBR。以后通过 mise 选择和升级版本；首次在新机器上安装时，mise 会按版本声明下载。参见 [Node 迁移](https://mise.jdx.dev/lang/node.html#migrating-from-nvm-nodenv-or-homebrew)、[Python 迁移](https://mise.jdx.dev/lang/python.html#migrating-from-pyenv-or-uv)和[已有 JDK 接入](https://mise.jdx.dev/lang/java.html#use-a-jdk-installed-elsewhere)。
+
+Python 的 `UV_PYTHON` 指向 mise 选择的解释器，`UV_PYTHON_DOWNLOADS=never` 禁止 uv 再下载另一套 Python。项目需要其他 Python 时，在项目 mise 配置或已启用识别的 `.python-version` 中声明，再运行 `mise install`；项目版本覆盖全局默认。Apple Python 的原有用户库继续留在其 3.9 环境中，不自动混入 3.12；旧脚本需要它时显式使用 `/usr/bin/python3`，新项目通过 `uv sync` 安装自己的依赖。
+
+全局启用 `.nvmrc` / `.node-version`、Python、Ruby、Java 和 Rust 的原生版本文件识别，保留项目级版本选择；Node 不从 `package.json` 自动切换。Rust 仍使用 rustup 作为 mise 的底层安装器，不再由独立的默认通道决定 mise 环境中的版本。参见 [Rust 后端](https://mise.jdx.dev/lang/rust.html)。
+
+首次使用工具配置，先部署对应全局 mise 映射并信任，再安装和核对：
+
+```bash
+mise run config-dry-run
+mise run config-sync
+mise trust --all
+mise install
+mise ls --current
+mise exec -- node --version
+mise exec -- python3 --version
+```
+
+版本升级通过修改受管配置、`mise install` 和逐项验证完成；`mise use -g` 会修改受管的全局配置来源，提交前须检查 Git diff。工具完全迁出 Homebrew 的声明后，不再用 `mise run install` 为同一工具新增系统包声明。
+
+Flutter 3.47.2 的本地工作树有改动，因此本次保留原安装，不交给 mise。
 
 ### zsh
 
@@ -611,8 +633,8 @@ espanso service restart
 
 两个平台分别提供这个文件：
 
-- macOS：Homebrew nvm、Homebrew Ruby、pyenv 和当前 locale；
-- Linux：存在时兼容 `~/.nvm` 与 `~/.pyenv`，不假定安装 Homebrew。
+- macOS：保留当前 locale，移除 nvm、pyenv 和 Homebrew Ruby 的旧初始化；
+- Linux：保留平台扩展位置；正式接管前须先导入本机工具，不再并行初始化旧版本管理器。
 
 `zprofile` 也按平台拆分：macOS 使用 `/opt/homebrew`、`~/Library/Android/sdk` 和 macOS Toolbox 路径；Linux 使用可选 Linuxbrew、`~/Android/Sdk` 和 Linux Toolbox 路径。所有用户目录都改用 `$HOME`，不再把 `/Users/sbwoan` 写进公共 shell 配置。
 
@@ -638,23 +660,23 @@ Claude 和 VS Code 使用 mise `template` 模式，将 `{{ env.HOME }}` 渲染�
 
 ### 环境变量和 PATH
 
-配置分为三个文件：
+配置分为三个文件；本次只启用工具与 uv 解释器选择，其他环境候选仍保持注释：
 
-- `dotfiles/common/mise/config.toml`：工具版本、密钥文件入口和输出脱敏规则；
-- `dotfiles/macos/mise/config.toml`：macOS locale、Homebrew Ruby、Android 和 Toolbox；
+- `dotfiles/common/mise/config.toml`：已启用的工具版本和 uv 设置，以及候选密钥文件入口和输出脱敏规则；
+- `dotfiles/macos/mise/config.toml`：已启用的 Rust 平台参数，以及候选 macOS locale、Android 和 Toolbox；
 - `dotfiles/linux/mise/config.toml`：Linux Android 和 Toolbox 常见位置。
 
 Linux locale 不会照搬 macOS。应先用发行版工具确认已经生成的 locale，再取消注释 `LANG` / `LC_ALL`。
 
 真实密钥文件和 `*.local` 继续被 Git 忽略。`redactions` 只能降低输出泄漏风险，不是加密。
 
-### 将来逐项启用
+### 后续逐项接管其他配置
 
-1. 审阅公共工具版本以及当前平台的 mise 配置。
-2. 在根 `mise.toml` 中只启用公共映射，再在当前平台的 `mise.macos.toml` 或 `mise.linux.toml` 中启用对应映射。
+1. 审阅待接管的配置以及当前平台差异；全局 mise 工具配置已经启用。
+2. 在根 `mise.toml` 中启用所需公共映射，再在当前平台的 `mise.macos.toml` 或 `mise.linux.toml` 中启用对应映射。
 3. 运行 `mise run config-status` 和 `mise run config-dry-run`，确认目标和来源都属于当前平台。
 4. 处理已有真实文件与 symlink 的首次接管冲突后，再运行 `mise run config-sync`。
-5. 最后启用 `eval "$(mise activate zsh)"`，并且每次只把一个工具从 nvm、Homebrew、rustup 或其他旧管理器迁给 mise。
+5. 本机已为开发工具启用 mise Shell 激活；以后接管整个 zsh 文件时，保留这一个激活入口，不重复初始化旧管理器。
 
 从 `[dotfiles]` 删除条目不会自动删除已经应用的目标。取消管理时先执行 `mise bootstrap dotfiles unapply --dry-run`，确认后执行 `mise bootstrap dotfiles unapply`，再删除映射。
 

@@ -4,14 +4,12 @@
 # mise 作为本项目的任务运行器，也纳入 Brewfile。
 #
 # 这里只声明根 formula，不列出 Homebrew 自动维护的依赖树。
+# 开发工具版本交给 mise；Homebrew Ruby 仅作为 CocoaPods 的依赖保留。
 
 # 第三方 tap 与对应的 formula / cask 放在一起。
 # 仅信任已经安装并纳入本基线的具体 formula，不信任整个第三方 tap。
 tap "antoniorodr/memo"
 brew "antoniorodr/memo/memo", trusted: true
-
-tap "oven-sh/bun"
-brew "oven-sh/bun/bun", trusted: true
 
 tap "android/tap"
 cask "android/tap/android-cli"
@@ -32,14 +30,10 @@ brew "librsvg"
 brew "llama.cpp"
 brew "lsd"
 brew "neovim"
-brew "nvm"
 brew "poppler"
-brew "ruby", link: false
 brew "scrcpy"
 brew "sevenzip"
 brew "tlrc"
-brew "uv"
-brew "yarn"
 
 # 任务运行器；新机可用 Brew Bundle 先安装它。
 brew "mise"

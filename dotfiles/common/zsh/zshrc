@@ -51,5 +51,5 @@ zinit light romkatv/powerlevel10k
 [[ -f "$HOME/.openclaw/completions/openclaw.zsh" ]] &&
   source "$HOME/.openclaw/completions/openclaw.zsh"
 
-# 待确定正式切换时机后再启用。
-# eval "$(mise activate zsh)"
+# 开发工具版本统一交给 mise；平台模块不再初始化旧版本管理器。
+eval "$(mise activate zsh)"

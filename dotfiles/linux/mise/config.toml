@@ -3,7 +3,6 @@
 #
 # [env]
 # ANDROID_HOME = "{{ env.HOME }}/Android/Sdk"
-# PYENV_ROOT = "{{ env.HOME }}/.pyenv"
 #
 # Linux locale 必须先由发行版生成，再按实际结果选择；不要照搬 macOS 的 LANG/LC_ALL。
 # LANG = "en_US.UTF-8"
@@ -12,7 +11,6 @@
 # _.path = [
 #   "{{ env.HOME }}/.local/bin",
 #   "{{ env.HOME }}/.git-ai/bin",
-#   "{{ env.HOME }}/.pyenv/bin",
 #   "{{ env.HOME }}/.cargo/bin",
 #   "{{ env.HOME }}/development/flutter/bin",
 #   "{{ env.HOME }}/.gem/bin",
