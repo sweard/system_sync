@@ -1,0 +1,48 @@
+dotfiles/linux/zsh/zprofile
+  s_00332b4a331471::t_af6e646762d853 24-28
+tests/test_mise_config.py
+  s_00332b4a331471::t_c6b931d3c4ba71 1-88
+dotfiles/common/zsh/zshrc
+  s_00332b4a331471::t_af6e646762d853 42,48-54,56,62-64
+mise.linux.toml
+  s_00332b4a331471::t_af6e646762d853 2,6-7
+mise.toml
+  s_00332b4a331471::t_af6e646762d853 3,54,69,72,79-81
+  s_00332b4a331471::t_9173e35da25760 75-77
+tests/test_zsh_startup.py
+  s_00332b4a331471::t_8066db40e87782 1-87
+dotfiles/common/zsh/p10k.zsh
+  s_00332b4a331471::t_458f74b40709fb 731
+  s_6b8270b6e632f5::t_ec931e0f7c5b56 1-730,732-1720
+README.md
+  s_00332b4a331471::t_9173e35da25760 528-529
+  s_00332b4a331471::t_060b0ca8617a46 3,25-26,42-43,141,521,530,629,631,633-645,647,649,651,653,675,691,700
+mise.macos.toml
+  s_00332b4a331471::t_af6e646762d853 1,8-9
+dotfiles/macos/zsh/zprofile
+  s_00332b4a331471::t_af6e646762d853 24-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e74670d50b127bc2f8847049afde92d2802a691d",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
