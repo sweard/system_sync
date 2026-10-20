@@ -1,4 +1,5 @@
-# 公共任务入口。各平台的软件声明位于 packages/ 下。
+# 仓库任务与配置部署入口。各平台的系统软件声明位于 packages/ 下。
+# 全局开发环境由 dotfiles/common/mise/config.toml 及其平台配置管理。
 #
 # 已启用 espanso、全局 mise 工具配置、zsh、ChatGPT 和 VS Code。
 # 公共配置位于 dotfiles/common，平台差异分别位于 dotfiles/macos 和 dotfiles/linux。
@@ -69,14 +70,14 @@ run = "mise bootstrap dotfiles apply"
 # 已启用的公共配置
 #
 # 根配置只声明跨平台公共映射；mise.macos.toml / mise.linux.toml 是两个平台适配器。
-# .miserc.toml 的 auto_env 会自动选择当前平台的 espanso 和 zsh 适配器。
+# .miserc.toml 的 auto_env 会自动选择当前平台的配置部署适配器。
 #
 [dotfiles]
 # mise 2026.10.15 的 dry-run 会把 symlink 模式的 miserc 当作普通配置解析。
 # 模板部署避开错误的预览解析；修改来源后用 config-sync 同步。
 "~/.config/mise/miserc.toml" = { source = "dotfiles/common/mise/miserc.toml", mode = "template" }
 "~/.config/mise/config.toml" = { source = "dotfiles/common/mise/config.toml", mode = "symlink" }
-"~/.config/zsh/path.sh" = { source = "dotfiles/common/mise/path.sh", mode = "symlink" }
+"~/.config/zsh/path.sh" = { source = "dotfiles/common/shell/path.sh", mode = "symlink" }
 "~/.zshenv" = { source = "dotfiles/common/zsh/zshenv", mode = "symlink" }
 "~/.zshrc" = { source = "dotfiles/common/zsh/zshrc", mode = "symlink" }
 "~/.p10k.zsh" = { source = "dotfiles/common/zsh/p10k.zsh", mode = "symlink" }

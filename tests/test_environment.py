@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MISE = shutil.which("mise")
 BASH = shutil.which("bash")
 ZSH = shutil.which("zsh")
-PATH_SOURCE = ROOT / "dotfiles/common/mise/path.sh"
+PATH_SOURCE = ROOT / "dotfiles/common/shell/path.sh"
 
 
 @unittest.skipUnless(BASH, "bash is not installed")
@@ -109,11 +109,17 @@ class MiseEnvironmentTest(unittest.TestCase):
         env_source = source.read_text().split("\n[env]\n", 1)[1]
         python_home = self.home / "python"
         (python_home / "bin").mkdir(parents=True)
-        (self.config / "config.toml").write_text(
+        # Match the deployed symlink and its canonical source-directory layout.
+        config_source = self.base / "sources/common/mise/config.toml"
+        config_source.parent.mkdir(parents=True)
+        config_source.write_text(
             "redactions = " + json.dumps(self.definition["redactions"]) +
             '\n[tools]\npython = "path:' + str(python_home) + '"\n\n[env]\n' + env_source
         )
-        shutil.copy2(PATH_SOURCE, self.config / "path.sh")
+        (self.config / "config.toml").symlink_to(config_source)
+        shell_source = config_source.parent.parent / "shell/path.sh"
+        shell_source.parent.mkdir()
+        shutil.copy2(PATH_SOURCE, shell_source)
 
     def mise(self, *arguments, cwd=None, environment=None):
         result = subprocess.run(

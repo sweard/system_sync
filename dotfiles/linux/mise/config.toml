@@ -1,4 +1,4 @@
-# Linux Android、Toolbox 和公共 PATH 已由 common/mise/path.sh 按平台识别。
+# Linux Android、Toolbox 和公共 PATH 已由 common/shell/path.sh 按平台识别。
 # 此文件继续保留为本机 locale 候选，不需要额外映射才能加载 PATH。
 # Linux locale 必须先由发行版生成，再按实际结果选择；不要照搬 macOS 的 LANG/LC_ALL。
 # [env]

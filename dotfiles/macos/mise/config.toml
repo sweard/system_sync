@@ -1,4 +1,4 @@
-# macOS 开发工具差异。保留现有 Rust 组件和交叉编译目标。
+# macOS 全局开发环境差异。保留现有 Rust 组件和交叉编译目标。
 [tools]
 rust = { version = "1.99.1", components = ["rust-src"], targets = ["aarch64-apple-darwin", "aarch64-linux-android", "i686-linux-android", "x86_64-apple-darwin", "x86_64-linux-android"] }
 

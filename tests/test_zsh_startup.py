@@ -29,7 +29,7 @@ class ZshStartupTest(unittest.TestCase):
             (self.home / ("." + name)).symlink_to(ROOT / "dotfiles/common/zsh" / name)
         mise_config = self.home / ".config/zsh"
         mise_config.mkdir(parents=True)
-        (mise_config / "path.sh").symlink_to(ROOT / "dotfiles/common/mise/path.sh")
+        (mise_config / "path.sh").symlink_to(ROOT / "dotfiles/common/shell/path.sh")
 
     def write(self, relative, content, executable=False):
         target = self.home / relative

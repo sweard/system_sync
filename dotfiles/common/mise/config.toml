@@ -1,4 +1,5 @@
-# 全局开发工具版本。2026-10-19 按当前 Mac 实际版本核对后启用。
+# 全局开发环境：工具版本、mise 设置和环境变量。
+# 部署到 ~/.config/mise/config.toml；仓库任务与部署映射位于根 mise.toml。
 # macOS 的 Rust 交叉编译目标位于 config.macos.toml；Linux 首次安装仍需验证。
 
 # 只遮蔽 mise 处理的输出；mise env / exec 和 raw 任务仍可能输出真实值。
@@ -12,7 +13,7 @@ idiomatic_version_file_disable_files = ["node:package.json"]
 
 [tools]
 node = "26.12.0"
-# 复用原 uv 安装的解释器；Apple Python 继续由系统维护。
+# Python 解释器由 mise 管理；Apple Python 继续由系统维护。
 python = "3.15.0"
 ruby = "4.0.7"
 java = "jetbrains-21.0.6-b895.109"
@@ -27,7 +28,7 @@ uv = "0.13.1"
 _.file = { path = "{{ env.HOME }}/.config/mise/secrets.env", redact = true }
 # SDK 环境与 zsh 共用一份声明；用户命令目录由 zsh 在 mise 激活前加载。
 # 等项目变量和工具环境解析后再计算 SDK 路径。
-_.source = { path = "{{ config_source | canonicalize | dirname }}/path.sh", tools = true }
+_.source = { path = "{{ config_source | canonicalize | dirname }}/../shell/path.sh", tools = true }
 
 # uv 负责依赖和虚拟环境，解释器统一由 mise 选择，禁止另行下载。
 UV_PYTHON = { value = "{{ tools.python.path }}/bin/python3", tools = true }
