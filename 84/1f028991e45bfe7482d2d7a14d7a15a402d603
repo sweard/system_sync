@@ -1,0 +1,29 @@
+scripts/vscode-extensions.py
+  s_00332b4a331471::t_c2769a934720ab 5,8,41-55,57-58
+docs/roadmap.md
+  s_00332b4a331471::t_b8974117f50c57 12,18
+  s_00332b4a331471::t_149b9d393a3415 15,19-20
+docs/audit.md
+  s_00332b4a331471::t_a85bceb4a925f4 77
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_c2769a934720ab 9,104-112
+  s_00332b4a331471::t_415c4e5ce67d81 113
+docs/dotfiles.md
+  s_00332b4a331471::t_c2769a934720ab 119-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "841f028991e45bfe7482d2d7a14d7a15a402d603",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
