@@ -24,15 +24,16 @@ jobs:
         os: [ubuntu-24.04, macos-15]
         python: ['3.11', '3.15']
     env:
-      MISE_CONFIG_DIR: ${{ runner.temp }}/system-sync/config
-      MISE_SYSTEM_CONFIG_DIR: ${{ runner.temp }}/system-sync/system
-      MISE_DATA_DIR: ${{ runner.temp }}/system-sync/data
-      MISE_STATE_DIR: ${{ runner.temp }}/system-sync/state
-      MISE_CACHE_DIR: ${{ runner.temp }}/system-sync/cache
       MISE_AUTO_INSTALL: 'false'
       MISE_TASK_RUN_AUTO_INSTALL: 'false'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
+      - name: Isolate mise state from runner configuration
+        shell: bash
+        run: |
+          for part in CONFIG SYSTEM_CONFIG DATA STATE CACHE; do
+            printf 'MISE_%s_DIR=%s/system-sync/%s\n' "$part" "$RUNNER_TEMP" "$part" >> "$GITHUB_ENV"
+          done
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
