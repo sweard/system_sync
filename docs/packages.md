@@ -89,7 +89,7 @@ mise run package-install --cask --trust abue-ammar/tinycast/tinycast
 - 第三方 Homebrew 包使用准确的 `owner/tap/name`；首次添加必须 `--trust`，不是全 tap 信任。成功后自动补充 `tap`、完整的 `brew/cask ..., trusted: true` 以及对应的 `trusted-formulae.txt` / `trusted-casks.txt`。卸载时删除对应声明和信任清单项，保留 tap。已有精确信任的完整声明再次安装无需重复 `--trust`。
 - 修改会保留其他条目、注释和支持的单行选项。例如已有 `brew "ruby", link: false` 会保留该选项，并向安装命令传递 `--skip-link`。
 
-**支持边界：**需要 Python 3.9+。Homebrew 自动编辑器支持本仓库当前的静态单行 `tap` / `brew` / `cask` 声明及 `trusted`、`link` 布尔选项，不执行或猜测动态 Ruby。Linux TOML 由 `mise config get --file` 的官方解析器校验（不依赖特定 status JSON 或 Python `tomllib`），然后仅编辑 `[bootstrap.packages]` 下的单行条目；目标安装声明限 `"latest"` 或 `{ version = "latest" }`。多行包声明、其他选项、版本固定、虚拟包、包组、URL/本地文件、通配符或任意原生参数不由此入口处理，遇到不支持格式会停止。必要的元数据查询可能读取网络或刷新包管理器自身缓存，但 `--dry-run` 不运行原生安装/卸载命令，也不修改仓库清单或真实信任库。
+**支持边界：**需要 Python 3.11+。Homebrew 自动编辑器支持本仓库当前的静态单行 `tap` / `brew` / `cask` 声明及 `trusted`、`link` 布尔选项，不执行或猜测动态 Ruby。Linux TOML 由 `mise config get --file` 的官方解析器校验（不依赖特定 status JSON 或 Python `tomllib`），然后仅编辑 `[bootstrap.packages]` 下的单行条目；目标安装声明限 `"latest"` 或 `{ version = "latest" }`。多行包声明、其他选项、版本固定、虚拟包、包组、URL/本地文件、通配符或任意原生参数不由此入口处理，遇到不支持格式会停止。必要的元数据查询可能读取网络或刷新包管理器自身缓存，但 `--dry-run` 不运行原生安装/卸载命令，也不修改仓库清单或真实信任库。
 
 直接执行 `brew install`、`apt install`、`pacman -S` 等原生命令**不会被监听**，它们的卸载命令也不会自动删清单。单包入口不修改 Shell 启动文件，也不注册 hook 或后台轮询。以后从统一 mise 入口操作，或继续手工编辑清单后运行 `system-sync`；不要在两种习惯间切换时忘记同步声明。Linux 初次迁移的 baseline 导入仍不可省略，单包入口不会自动接管其余已安装软件。
 
@@ -193,7 +193,7 @@ mise run dry-run
 
 ## 首次迁移 Linux baseline
 
-所有 Linux profile 都需要先准备 Bash、Python 3.9+、mise 2026.10.11+ 和对应的包管理器。Python 是共享锁、版本预检和审计的前置依赖，不能等本仓库的安装阶段再补装。各 Linux profile 还声明了 `zsh` 和 `jq`，并将 `zsh` 加入保护清单。
+所有 Linux profile 都需要先准备 Bash、Python 3.11+、mise 2026.10.11+ 和对应的包管理器。Python 是共享锁、版本预检和审计的前置依赖，不能等本仓库的安装阶段再补装。各 Linux profile 还声明了 `zsh` 和 `jq`，并将 `zsh` 加入保护清单。
 
 导入后要逐项审阅 `protected-packages.txt`，根据本机的内核、引导、磁盘/加密、网络、远程救援和显卡环境补充保护项。
 

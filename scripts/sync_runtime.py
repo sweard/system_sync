@@ -23,8 +23,8 @@ class RuntimeFailure(RuntimeError):
 
 
 def preflight(root):
-    if sys.version_info < (3, 9):
-        raise RuntimeFailure("需要 Python 3.9+，请先通过系统包管理器准备 python3")
+    if sys.version_info < (3, 11):
+        raise RuntimeFailure("需要 Python 3.11+，请先准备符合要求的 python3")
     if not shutil.which("mise"):
         raise RuntimeFailure("找不到 mise；需要 mise >= 2026.10.11")
     result = subprocess.run(["mise", "--version"], text=True, capture_output=True)

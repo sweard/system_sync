@@ -27,7 +27,7 @@ mise run audit --color always
 mise run audit --color never
 ```
 
-也可通过 `python3 -B scripts/audit.py` 直接运行。脚本兼容 Python 3.9+，不增加第三方 Python 依赖。
+也可通过 `python3 -B scripts/audit.py` 直接运行。项目统一要求 Python 3.11+，不增加第三方 Python 依赖。
 
 ## 报告分类
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only machine/configuration audit, using Python 3.9+ and existing CLIs."""
+"""Read-only machine/configuration audit, using Python 3.11+ and existing CLIs."""
 
 import argparse
 from collections import Counter
