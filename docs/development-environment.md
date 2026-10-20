@@ -18,10 +18,11 @@
 | Bun | mise 管理，不再由 Homebrew 直接管理 |
 | uv | mise 管理工具版本；uv 负责 Python 项目依赖和虚拟环境 |
 | Yarn Classic | 使用 `npm:yarn` 后端，不另启用 Corepack Yarn |
+| Flutter / Dart | mise 固定 Flutter 版本，Dart 使用同一 SDK；当前机器链接原 SDK，新机器从官方归档安装 |
 
 这些配置已针对当前 Mac 核对；真实 Linux 主机仍须验证。macOS 的 Rust 额外组件和目标在 `dotfiles/macos/mise/config.toml` 中声明，避免将 Apple 目标强加给 Linux。
 
-初次迁移时，Node 和 Python 通过 mise 官方同步命令复用旧安装；后续升级版本已安装到 mise 自身目录。删除任何旧安装前，先用 `mise ls --current` 核对实际安装路径和链接。Java 仍使用 `mise link` 注册外部 JBR，其安装和更新由原来源负责；新机器需要先准备并注册该 JBR，不能仅凭版本选择声明假定能自动重建。参见 [Node 迁移](https://mise.jdx.dev/lang/node.html#migrating-from-nvm-nodenv-or-homebrew)、[Python 迁移](https://mise.jdx.dev/lang/python.html#migrating-from-pyenv-or-uv)和[已有 JDK 接入](https://mise.jdx.dev/lang/java.html#use-a-jdk-installed-elsewhere)。
+初次迁移时，Node 和 Python 通过 mise 官方同步命令复用旧安装；后续升级版本已安装到 mise 自身目录。删除任何旧安装前，先用 `mise ls --current` 核对实际安装路径和链接。当前 Java 继续链接外部 JBR；同一精确版本已验证可以通过 mise Java 后端重装，新机器无需复制旧路径。下载锁和重建步骤见[新机器重建](rebuild.md)。参见 [Node 迁移](https://mise.jdx.dev/lang/node.html#migrating-from-nvm-nodenv-or-homebrew)、[Python 迁移](https://mise.jdx.dev/lang/python.html#migrating-from-pyenv-or-uv)和[已有 JDK 接入](https://mise.jdx.dev/lang/java.html#use-a-jdk-installed-elsewhere)。
 
 Python 的 `UV_PYTHON` 指向 mise 选择的解释器，`UV_PYTHON_DOWNLOADS=never` 禁止 uv 再下载另一套 Python。项目需要其他 Python 时，在项目 mise 配置或已启用识别的 `.python-version` 中声明，再运行 `mise install`；项目版本覆盖全局默认。Apple Python 的原有用户库继续留在其 3.9 环境中，不会自动迁移到 mise 选择的其他版本；旧脚本需要它时显式使用 `/usr/bin/python3`，新项目通过 `uv sync` 安装自己的依赖。
 
@@ -33,7 +34,7 @@ Python 的 `UV_PYTHON` 指向 mise 选择的解释器，`UV_PYTHON_DOWNLOADS=nev
 mise run config-dry-run
 mise run config-sync
 mise trust --all
-mise install
+mise install --locked
 mise ls --current
 mise exec -- node --version
 mise exec -- python3 --version
@@ -60,7 +61,9 @@ git diff -- dotfiles/common/mise/config.toml dotfiles/macos/mise/config.toml
 
 Python 的 pandas、openpyxl 等第三方依赖属于解释器环境或项目虚拟环境，升级 Python 不会自动迁移这些包。项目应记录依赖，再通过 uv 重建环境。工具完全迁出 Homebrew 的声明后，不再用 `mise run package-install` 为同一工具新增系统包声明。
 
-Flutter 在核对时存在本地工作树改动，当前保留原安装；迁移前先保存并确认这些改动。
+Flutter 已接入 mise，仍复用原 SDK。迁移前已在 `.system-sync/history/*-roadmap/` 备份原 `pubspec.lock` 和二进制 Git 补丁，未重置 SDK。Flutter / Dart 均由 mise 的同一工具目录解析，公共 PATH 不再显式添加旧 SDK 目录。
+
+使用现有 Flutter 项目的 `master` 隔离副本完成了 `flutter pub get`、`flutter analyze --no-pub` 和 `flutter test --no-pub`。当前 SDK 的分析器在含中文的隔离路径发生 JSON 解析崩溃，改用 ASCII 临时路径后三项均通过；原项目只读，未修改代码、分支或未提交文件。SDK 升级与跨平台构建另行验收。
 
 
 ## zsh（已启用）
@@ -103,7 +106,7 @@ macOS locale 已移入 mise 平台配置，保留原值；Android SDK 默认使�
 | `~/.config/mise/secrets.env` | 本机私有变量；不映射、不提交，权限 `0600` |
 | `~/.zshrc.local` | 本机 Shell 函数与别名 |
 
-mise 通过原生 [`env._.source`](https://mise.jdx.dev/environments/#env-source) 加载共用文件中的 SDK 环境。脚本只前置存在的目录并保留原 PATH 后缀，路径包含空格也能正常处理；缺失 SDK、旧 `tools`、Gem 等目录自动跳过。用户路径函数由 zsh 在 mise 激活前调用，不作为 mise 的自定义 PATH 前置项，防止 `~/.local/bin` 等目录遮蔽项目工具。实际命令保持由 mise 选择开发工具、git-ai 提供 Git、原 Flutter 目录提供 Flutter/Dart。
+mise 通过原生 [`env._.source`](https://mise.jdx.dev/environments/#env-source) 加载共用文件中的 SDK 环境。脚本只前置存在的目录并保留原 PATH 后缀，路径包含空格也能正常处理；缺失 SDK、旧 `tools`、Gem 等目录自动跳过。用户路径函数由 zsh 在 mise 激活前调用，不作为 mise 的自定义 PATH 前置项，防止 `~/.local/bin` 等目录遮蔽项目工具。实际命令由 mise 选择开发工具及 Flutter/Dart，git-ai 提供 Git。
 
 新终端和交互目录切换由 `mise activate` 动态加载环境；非交互登录 Shell 一次加载。普通非交互 `zsh -c` 保持轻量，只继承已有环境并加载公共路径；脚本或 CI 要按当前目录解析变量和工具时使用 `mise exec -- <命令>` 或 `mise run <任务>`。用户命令路径由 zsh 提供，直接从其他程序调用 mise 时应传入需要的 PATH。仅添加 shims 无法给整个父 Shell 加载环境变量，参见[官方 Shell 配置](https://mise.jdx.dev/shell-setup.html)。
 

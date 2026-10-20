@@ -40,7 +40,6 @@ _system_sync_user_path() {
   for _mise_user_bin in \
     "${CARGO_HOME:-$HOME/.cargo}/bin" \
     "$HOME/.gem/bin" \
-    "$HOME/development/flutter/bin" \
     "$HOME/.git-ai/bin" \
     "$HOME/.local/bin" \
     "${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}/shims"

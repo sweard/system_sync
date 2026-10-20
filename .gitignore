@@ -9,3 +9,9 @@ dotfiles/**/secrets.env
 # 本机私有 dotfiles 映射；共享配置中不要写入凭据。
 mise.local.toml
 mise.*.local.toml
+mise.local.lock
+mise.*.local.lock
+**/.mise/locks/mise.local/
+**/.mise/locks/mise.*.local/
+**/locks/mise.local/
+**/locks/mise.*.local/

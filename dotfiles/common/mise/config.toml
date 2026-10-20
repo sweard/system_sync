@@ -22,6 +22,8 @@ bun = "1.4.3"
 uv = "0.13.1"
 # Yarn Classic 使用 npm 后端，避免默认注册表切换到其他 Yarn 实现。
 "npm:yarn" = { version = "1.22.22", depends = ["node"] }
+# 包含 Dart；当前机器复用已备份的 SDK，新机器从 Flutter 官方归档安装。
+flutter = "3.47.2"
 
 [env]
 # 可选本机文件；不存在时跳过，文件内的全部值标为敏感。

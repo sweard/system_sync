@@ -5,6 +5,7 @@
 "~/Library/Application Support/espanso/match/macos.yml" = { source = "dotfiles/macos/espanso/match/macos.yml", mode = "symlink" }
 
 "~/.config/mise/config.macos.toml" = { source = "dotfiles/macos/mise/config.toml", mode = "symlink" }
+"~/.config/mise/mise.macos.lock" = { source = "dotfiles/macos/mise/mise.macos.lock", mode = "symlink" }
 "~/.zprofile" = { source = "dotfiles/macos/zsh/zprofile", mode = "symlink" }
 "~/.config/zsh/platform.zsh" = { source = "dotfiles/macos/zsh/platform.zsh", mode = "symlink" }
 "~/Library/Application Support/Code/User/settings.json/shared" = { source = "dotfiles/common/vscode/settings.json", merge = true }

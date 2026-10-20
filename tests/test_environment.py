@@ -40,6 +40,11 @@ class SharedPathTest(unittest.TestCase):
         android, path, lang, locale = self.source("linux-gnu")
         self.assertEqual((android, path, lang, locale), ("", "/usr/bin:/bin", "", ""))
 
+    def test_legacy_flutter_directory_is_not_added_before_mise(self):
+        (self.home / "development/flutter/bin").mkdir(parents=True)
+        _, path, _, _ = self.source("linux-gnu")
+        self.assertEqual(path, "/usr/bin:/bin")
+
     def test_platform_paths_spaces_and_shim_priority(self):
         for platform, sdk, toolbox in (
             ("darwin25.0", "Library/Android/sdk", "Library/Application Support/JetBrains/Toolbox/scripts"),
@@ -47,7 +52,7 @@ class SharedPathTest(unittest.TestCase):
         ):
             with self.subTest(platform=platform):
                 relative_paths = [".local/share/mise/shims", ".local/bin", ".git-ai/bin",
-                                  "development/flutter/bin", ".cargo/bin", toolbox,
+                                  ".cargo/bin", toolbox,
                                   sdk + "/emulator", sdk + "/platform-tools", sdk + "/build-tools"]
                 for relative in relative_paths:
                     (self.home / relative).mkdir(parents=True, exist_ok=True)
