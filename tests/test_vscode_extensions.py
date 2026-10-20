@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,6 +100,16 @@ else:
                 result = self.run_cli("sync", success=False)
                 self.assertNotIn("[+] 已同步", result.stdout)
                 path.unlink()
+
+    @unittest.skipUnless(sys.platform in ("darwin", "linux"), "requires process groups")
+    def test_timeout_stops_child_installer_from_writing_after_failure(self):
+        marker = self.base / "orphan-wrote"
+        child = "import pathlib,time; time.sleep(0.7); pathlib.Path(" + repr(str(marker)) + ").touch()"
+        parent = "import subprocess,sys,time; subprocess.Popen([sys.executable,'-c'," + repr(child) + "]); time.sleep(10)"
+        with self.assertRaisesRegex(ValueError, "超时"):
+            module.invoke([sys.executable, "-c", parent], timeout=0.3)
+        time.sleep(0.8)
+        self.assertFalse(marker.exists(), "child installer survived the deadline")
 
 
 if __name__ == "__main__":

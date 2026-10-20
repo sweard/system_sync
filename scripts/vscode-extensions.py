@@ -2,8 +2,10 @@
 """Reconcile selected VS Code extension versions through its public CLI (Python 3.11+)."""
 
 import argparse
+import os
 from pathlib import Path
 import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -36,13 +38,24 @@ def declarations(path, platform):
     return dict(sorted(wanted.items()))
 
 
-def invoke(command, *args):
-    result = subprocess.run([*command, *args], stdin=subprocess.DEVNULL, text=True,
-                            capture_output=True, timeout=900)
-    if result.returncode:
+def invoke(command, *args, timeout=3600):
+    # Language extensions can exceed 100 MB. Stop the CLI shell and its child
+    # processes together if a download still exceeds the one-hour deadline.
+    with subprocess.Popen([*command, *args], stdin=subprocess.DEVNULL, text=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True) as process:
+        try:
+            stdout, _ = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.communicate()
+            raise ValueError("VS Code 命令超时，已停止本次 CLI 及其子进程；已安装项保留") from None
+    if process.returncode:
         # Native output may contain machine configuration; do not echo it.
-        raise ValueError(f"VS Code 命令失败（退出码 {result.returncode}），请检查 CLI、网络或扩展可用性")
-    return result.stdout
+        raise ValueError(f"VS Code 命令失败（退出码 {process.returncode}），请检查 CLI、网络或扩展可用性")
+    return stdout
 
 
 def installed(command):
