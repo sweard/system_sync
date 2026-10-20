@@ -1,0 +1,22 @@
+mise.toml
+  s_00332b4a331471::t_c42e3443bf3911 69
+README.md
+  s_00332b4a331471::t_c42e3443bf3911 48-49,53,58-60,140,312,520-522,529,671,678
+  s_00332b4a331471::t_52d1d4c9eb41e6 54-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e4c0e65f540e0e5bb66db6290e786161ac58ee84",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
