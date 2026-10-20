@@ -1,0 +1,50 @@
+tests/test_zsh_startup.py
+  s_00332b4a331471::t_9d0423334c8f9d 32
+docs/packages.md
+  s_00332b4a331471::t_d43049e5780670 23-32,94
+  s_6b8270b6e632f5::t_af0fc9ad49d077 1-22,33-93,95-418
+docs/development-environment.md
+  s_6b8270b6e632f5::t_af0fc9ad49d077 1-134
+dotfiles/linux/mise/config.toml
+  s_00332b4a331471::t_9d0423334c8f9d 1
+tests/test_environment.py
+  s_00332b4a331471::t_9d0423334c8f9d 17,112-115,119-122
+docs/recovery.md
+  s_6b8270b6e632f5::t_af0fc9ad49d077 1-46
+mise.toml
+  s_00332b4a331471::t_9d0423334c8f9d 1-2,73,80
+dotfiles/macos/mise/config.toml
+  s_00332b4a331471::t_9d0423334c8f9d 1
+dotfiles/common/mise/config.toml
+  s_00332b4a331471::t_9d0423334c8f9d 1-2,16,31
+docs/dotfiles.md
+  s_6b8270b6e632f5::t_af0fc9ad49d077 1-132
+README.md
+  s_6b8270b6e632f5::t_af0fc9ad49d077 3,5-7,9-16,18-19,21,23,27-30,32-37,39-47,50,52,54,60,67,69-75,77,79,81,83,85-89
+docs/roadmap.md
+  s_6b8270b6e632f5::t_af0fc9ad49d077 1-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "204427337f971d5a52c96fa72a7fe519c874d696",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
