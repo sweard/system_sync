@@ -1,4 +1,4 @@
-# macOS dotfiles 适配器。启用 espanso、mise 工具配置和 zsh；其他候选保持注释。
+# macOS dotfiles 适配器。启用 espanso、mise 工具配置、zsh 和 VS Code。
 # symlink-each 只接管来源中列出的文件，保留现有 packages 和其他自定义文件。
 [dotfiles]
 "~/Library/Application Support/espanso" = { source = "dotfiles/common/espanso", mode = "symlink-each", exclude = ["*.local", "*.example.toml"] }
@@ -7,7 +7,7 @@
 "~/.config/mise/config.macos.toml" = { source = "dotfiles/macos/mise/config.toml", mode = "symlink" }
 "~/.zprofile" = { source = "dotfiles/macos/zsh/zprofile", mode = "symlink" }
 "~/.config/zsh/platform.zsh" = { source = "dotfiles/macos/zsh/platform.zsh", mode = "symlink" }
+"~/Library/Application Support/Code/User/settings.json/shared" = { source = "dotfiles/common/vscode/settings.json", merge = true }
 
 # 含口令的片段通过本机 mise.local.toml 单独映射，不进入 Git。
 # "~/.claude/settings.json" = { source = "dotfiles/macos/claude/settings.json.tmpl", mode = "template" }
-# "~/Library/Application Support/Code/User/settings.json" = { source = "dotfiles/macos/vscode/settings.json.tmpl", mode = "template" }

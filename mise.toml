@@ -1,6 +1,6 @@
 # 公共任务入口。各平台的软件声明位于 packages/ 下。
 #
-# 已启用 espanso、全局 mise 工具配置和 zsh；其他应用的映射仍保持注释。
+# 已启用 espanso、全局 mise 工具配置、zsh、ChatGPT 和 VS Code。
 # 公共配置位于 dotfiles/common，平台差异分别位于 dotfiles/macos 和 dotfiles/linux。
 min_version = "2026.10.11"
 monorepo_root = true
@@ -51,7 +51,7 @@ confirm = { message = "这会升级 Brewfile 中的软件。是否继续进入�
 raw = true
 run = "./scripts/homebrew-converge.sh --upgrade"
 
-# dotfiles 命令应用 espanso、mise 工具配置和 zsh；其他应用映射尚未启用。
+# dotfiles 命令应用已启用的映射；ChatGPT / VS Code 的私有键保留在本机。
 [tasks.config-status]
 description = "查看已启用 dotfiles 映射的状态"
 run = "mise bootstrap dotfiles status"
@@ -66,7 +66,7 @@ confirm = { message = "这会修改已启用映射对应的用户配置文件。
 run = "mise bootstrap dotfiles apply"
 
 # -----------------------------------------------------------------------------
-# 已启用的公共 mise / zsh 配置，以及其他应用的候选映射
+# 已启用的公共配置，以及 Claude 的候选映射
 #
 # 根配置只声明跨平台公共映射；mise.macos.toml / mise.linux.toml 是两个平台适配器。
 # .miserc.toml 的 auto_env 会自动选择当前平台的 espanso 和 zsh 适配器。
@@ -79,5 +79,9 @@ run = "mise bootstrap dotfiles apply"
 "~/.zshenv" = { source = "dotfiles/common/zsh/zshenv", mode = "symlink" }
 "~/.zshrc" = { source = "dotfiles/common/zsh/zshrc", mode = "symlink" }
 "~/.p10k.zsh" = { source = "dotfiles/common/zsh/p10k.zsh", mode = "symlink" }
+# 应用会自行改写配置；merge 只管理来源列出的键，其余内容留在本机。
+"~/.codex/config.toml/shared" = { source = "dotfiles/common/chatgpt/config.toml", merge = true }
+"~/.codex/AGENTS.md" = { source = "dotfiles/common/chatgpt/AGENTS.md", mode = "copy" }
+"~/.codex/keybindings.json" = { source = "dotfiles/common/chatgpt/keybindings.json", mode = "copy" }
 # "~/.claude/CLAUDE.md" = { source = "dotfiles/common/claude/CLAUDE.md", mode = "copy" }
 # "~/.claude/hooks" = { source = "dotfiles/common/claude/hooks", mode = "symlink-each" }

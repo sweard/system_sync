@@ -10,10 +10,9 @@
   "files.autoSave": "afterDelay",
   "editor.unicodeHighlight.nonBasicASCII": false,
   "github.copilot.nextEditSuggestions.enabled": true,
-  "dart.flutterSdkPath": "{{ env.HOME }}/development/flutter",
-  "git.path": "{{ env.HOME }}/.git-ai/bin/git",
   "chat.useHooks": true,
   "claudeCode.preferredLocation": "panel",
   "github.copilot.chat.otel.dbSpanExporter.enabled": true,
-  "git.confirmSync": false
+  "git.confirmSync": false,
+  "workbench.tree.indent": 16
 }

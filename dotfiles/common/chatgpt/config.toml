@@ -1,0 +1,32 @@
+# 从本机 ChatGPT（com.openai.codex）提取的通用偏好；通过 merge 只管理这些键。
+# 本机环境、Hook、MCP、认证、项目及安装状态保留在原配置中。
+model = "gpt-6.1-sol"
+model_reasoning_effort = "max"
+service_tier = "priority"
+
+[features]
+hooks = true
+js_repl = false
+
+[desktop]
+conversationDetailMode = "STEPS_COMMANDS"
+ambient-suggestions-enabled = false
+followUpQueueMode = "queue"
+enabled-reasoning-efforts = ["low", "medium", "high", "xhigh", "ultra", "max"]
+realtimeVoiceScreenContextEnabled = true
+
+[desktop.appearanceLightChromeTheme]
+accent = "#3a83f7"
+accentSource = "chatgpt"
+contrast = 45
+ink = "#1a1c1f"
+opaqueWindows = false
+surface = "#ffffff"
+
+[desktop.appearanceLightChromeTheme.fonts]
+code = "\"MesloLGS NF\""
+
+[desktop.appearanceLightChromeTheme.semanticColors]
+diffAdded = "#00a240"
+diffRemoved = "#ba2623"
+skill = "#924ff7"

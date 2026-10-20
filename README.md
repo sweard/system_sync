@@ -1,6 +1,6 @@
 # macOS + 多发行版 Linux 声明式系统配置同步
 
-这个仓库用统一的 mise task 作为入口，把各平台的系统包收敛逻辑分开，并通过全局 mise 配置管理开发工具版本。Espanso 和 zsh 已接管，其他应用配置保留可逐项启用的候选快照。
+这个仓库用统一的 mise task 作为入口，把各平台的系统包收敛逻辑分开，并通过全局 mise 配置管理开发工具版本。Espanso、zsh、ChatGPT 和 VS Code 已接管；ChatGPT / VS Code 只共享选定的偏好，私有设置保留在本机。
 
 | 平台 / profile | 声明来源 | 收敛方式 |
 |---|---|---|
@@ -22,8 +22,8 @@ system_sync/
 ├── .gitignore
 ├── README.md
 ├── mise.toml                         # 公共 task 入口
-├── mise.macos.toml                   # macOS dotfiles 适配器；espanso、mise 和 zsh
-├── mise.linux.toml                   # Linux dotfiles 适配器；espanso 和 zsh
+├── mise.macos.toml                   # macOS dotfiles 适配器；espanso、mise、zsh 和 VS Code
+├── mise.linux.toml                   # Linux dotfiles 适配器；espanso、zsh 和 VS Code
 ├── mise.local.toml                   # 本机私有映射（Git 忽略，不随仓库同步）
 ├── dotfiles/
 │   ├── common/                       # 两个平台共用
@@ -41,6 +41,12 @@ system_sync/
 │   │   │   ├── zshenv
 │   │   │   ├── zshrc
 │   │   │   └── p10k.zsh             # 已启用：当前提示符配置，保持原样
+│   │   ├── chatgpt/                 # 已启用：通用偏好、协作规则和快捷键
+│   │   │   ├── config.toml          # 按键合并；不包含本机私有配置
+│   │   │   ├── AGENTS.md
+│   │   │   └── keybindings.json
+│   │   ├── vscode/
+│   │   │   └── settings.json        # 已启用：16 项通用偏好，按键合并
 │   │   └── claude/
 │   │       ├── CLAUDE.md
 │   │       └── hooks/
@@ -50,15 +56,13 @@ system_sync/
 │   │   ├── zsh/
 │   │   │   ├── zprofile
 │   │   │   └── platform.zsh
-│   │   ├── claude/settings.json.tmpl
-│   │   └── vscode/settings.json.tmpl
+│   │   └── claude/settings.json.tmpl
 │   └── linux/                        # 安全的 Linux 候选模板
 │       ├── mise/config.toml
 │       ├── zsh/
 │       │   ├── zprofile
 │       │   └── platform.zsh
-│       ├── claude/settings.json.tmpl
-│       └── vscode/settings.json.tmpl
+│       └── claude/settings.json.tmpl
 ├── packages/                         # 系统软件包声明与收敛策略
 │   ├── macos/
 │   │   ├── Brewfile
@@ -138,7 +142,7 @@ mise run config-dry-run
 mise run config-sync
 ```
 
-当前启用 espanso、全局 mise 配置和 zsh 的 `[dotfiles]` 映射；这些命令会检查或应用它们，mise 会选择当前平台适配器。Claude 和 VS Code 的完整文件映射仍被注释。zsh 的私有值保留在仓库外的 `~/.zshrc.local`，不会被 `config-sync` 覆盖。
+当前启用 espanso、全局 mise 配置、zsh、ChatGPT 和 VS Code 的 `[dotfiles]` 映射；mise 会选择当前平台适配器。Claude 的完整文件映射仍被注释。zsh 的私有值保留在仓库外的 `~/.zshrc.local`；ChatGPT / VS Code 使用按键合并，`config-sync` 保留来源未声明的本机设置。
 
 Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 
@@ -518,16 +522,16 @@ mise run macos-upgrade
 
 `dotfiles/` 已重构为公共模块和两个平台适配器：
 
-- `dotfiles/common/`：已启用的 espanso 公共配置、工具版本、uv 和 zsh 配置，以及候选 Claude 全局说明和 Hook；
-- `dotfiles/macos/`：espanso 的 macOS 专用片段、Homebrew 相关路径、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
-- `dotfiles/linux/`：Linux Android SDK、可选 Linuxbrew，以及不含 macOS 外部 Hook 的 Claude/VS Code 模板；
+- `dotfiles/common/`：已启用的 espanso、工具版本、uv、zsh、ChatGPT 和 VS Code 通用配置，以及候选 Claude 全局说明和 Hook；
+- `dotfiles/macos/`：espanso 的 macOS 专用片段、Homebrew 相关路径、macOS Android SDK、Toolbox 和 Claude 当前 Mac 模板；
+- `dotfiles/linux/`：Linux Android SDK、可选 Linuxbrew，以及不含 macOS 外部 Hook 的 Claude 模板；
 - `mise.macos.toml` 与 `mise.linux.toml`：相同 `config-*` 命令背后的两个平台适配器。
 
 仓库和未来的全局 mise 配置都通过 `auto_env` 自动选择 `macos` 或 `linux`。公共模块不需要知道当前平台，平台路径也不会散落在公共调用入口中。
 
 全局 `~/.config/mise/miserc.toml` 使用 `template` 模式部署，以规避 mise 2026.10.15 在 dotfiles dry-run 中将该文件按普通 `mise.toml` 解析、误报未知字段的问题。`auto_env` 和 `env_conf_d` 保留在这个文件中，符合[官方 miserc 配置规则](https://mise.jdx.dev/configuration.html#miserc)。修改来源后运行 `mise run config-sync`；dry-run 不渲染模板，查看真实内容差异用 `mise bootstrap dotfiles diff ~/.config/mise/miserc.toml`。
 
-目前启用 espanso、全局 mise 配置、macOS Rust 参数和 zsh 的映射。工具 `[tools]` 与 uv 所需的两个环境变量已启用；zsh 负责现有 locale、Android 和 Shell PATH。mise 配置中的其他 `[env]` / PATH、密钥文件和输出脱敏规则仍是候选。`.miserc.toml` 只控制配置发现；`config-sync` 不会接管 Claude 或 VS Code。
+目前启用 espanso、全局 mise 配置、macOS Rust 参数、zsh、ChatGPT 和 VS Code 的映射。工具 `[tools]` 与 uv 所需的两个环境变量已启用；zsh 负责现有 locale、Android 和 Shell PATH。mise 配置中的其他 `[env]` / PATH、密钥文件和输出脱敏规则仍是候选。`.miserc.toml` 只控制配置发现；Claude 尚未启用。
 
 ### Espanso（已启用）
 
@@ -652,7 +656,42 @@ macOS 平台模块保留现有 locale，Android SDK 使用 `~/Library/Android/sd
 
 以后直接编辑仓库来源文件，链接会反映修改；用 `mise run config-status` 检查映射，重新打开终端加载新配置。当前 Mac 使用真实登录终端验证，公共启动逻辑另有隔离测试；Linux 的平台文件通过语法检查，尚未在真实 Linux 主机验证。
 
-### Claude 和 VS Code
+### ChatGPT（已启用）
+
+2026-10-20 核对的本机应用为 `/Applications/ChatGPT.app`，版本 `26.1007.71326`，bundle id 为 `com.openai.codex`。它使用 `~/.codex` 配置目录，与 Codex CLI / IDE 扩展共享用户配置，见 [OpenAI 官方配置说明](https://learn.chatgpt.com/docs/config-file/config-basic)。
+
+| 目标 | 来源 | 管理方式 |
+|---|---|---|
+| `~/.codex/config.toml` | `dotfiles/common/chatgpt/config.toml` | `merge = true`，只管理来源中的键 |
+| `~/.codex/AGENTS.md` | `dotfiles/common/chatgpt/AGENTS.md` | `copy`，保留可由应用编辑的普通文件 |
+| `~/.codex/keybindings.json` | `dotfiles/common/chatgpt/keybindings.json` | `copy`，导入当前快捷键 |
+
+共享偏好包括当前模型、推理强度、服务层级、两项功能开关，以及对话详情、队列、语音屏幕上下文和外观设置。全局协作规则与当前禁用头像快捷键的配置按原内容导入。首次接管保持本机有效设置不变。
+
+`config.toml` 中的私有环境变量、通知命令、Hook、MCP、项目路径与信任、插件及技能安装状态、引导状态和头像标识继续留在本机。认证文件、会话、数据库、浏览器数据和 macOS 应用状态也不纳入映射。这里使用 mise 原生[按键合并](https://mise.jdx.dev/dotfiles/edits.html#set-keys-in-a-config-file)，没有增加应用不支持的 `config.local.toml`。
+
+### VS Code（已启用）
+
+本机 VS Code `1.142.0` 使用默认 User 目录，现有 18 项设置中有 16 项通用偏好。已按本机值导入 `dotfiles/common/vscode/settings.json`，包括原候选缺少的 `workbench.tree.indent = 16`。两个平台从同一个公共来源合并：
+
+| 平台 | 目标 |
+|---|---|
+| macOS | `~/Library/Application Support/Code/User/settings.json` |
+| Linux | `~/.config/Code/User/settings.json` |
+
+本机的 `dart.flutterSdkPath`、`git.path` 和以后新增的未声明设置保留在目标文件中。旧的整份覆盖模板已由公共合并来源替代。Profiles、扩展安装、工作区配置、凭据、`argv.json` 和全局存储继续由本机 VS Code 管理；现有 Settings Sync 配置保持原状。VS Code 的目录与配置作用域见[官方说明](https://code.visualstudio.com/docs/configure/settings)。
+
+当前 `settings.json` 是标准 JSON，符合 mise 合并器要求。VS Code 允许的 JSONC 注释不受当前 mise 合并器支持；文件包含注释、尾逗号或无效内容时，mise 会报错并保留原文件，不会自动剥离注释再覆盖。
+
+### 应用配置的日常同步
+
+编辑上述公共来源后，运行 `mise run config-status`、`mise run config-dry-run`，确认后运行 `mise run config-sync`。`/shared` 是 mise 的编辑条目标识，不是实际目录。应用界面修改的共享值可与来源产生差异；私有键的变化不会被视为共享配置漂移。
+
+合并会递归设置来源拥有的键；删除来源中的键只会停止管理它，目标中的原值保留。取消管理也保留合并过的键。含私有项的目标和差异输出只在本机查看，不将整个 `~/.codex`、VS Code User 目录或其完整文件加入 Git。当前 Mac 的原文件、路径及权限记录保存在 `.system-sync/history/*-app-configs/`，权限受限且被 Git 忽略。恢复时取消相应映射，再从该目录的 `home.before` 恢复文件。
+
+隔离测试覆盖本机私有值、应用新增键、重复同步和 JSONC 拒绝写入；当前 Mac 对比接管前后的完整配置，确认设置值未变。Linux 使用同一公共来源，尚未在真实 Linux 主机验证。
+
+### Claude（候选）
 
 Claude 的 `CLAUDE.md` 与自有 Hook 放在 `common`。Hook 运行环境会自动识别：
 
@@ -663,12 +702,7 @@ Claude 的 `CLAUDE.md` 与自有 Hook 放在 `common`。Hook 运行环境会自�
 
 macOS Claude 模板保留当前 PromLight、SBBars、git-ai 和项目权限；Linux 模板只保留可跨平台的 Claude Hook 与 Flutter/Rust 命令，不伪造 macOS 应用路径。认证令牌和私有服务地址仍只允许放在仓库外的 `~/.config/mise/secrets.env`。
 
-VS Code 分别映射到：
-
-- macOS：`~/Library/Application Support/Code/User/settings.json`；
-- Linux：`~/.config/Code/User/settings.json`。
-
-Claude 和 VS Code 使用 mise `template` 模式，将 `{{ env.HOME }}` 渲染为目标机器的真实 HOME。`config-dry-run` 不执行模板渲染，只会把模板标为可能变更；需要查看渲染后的真实差异时使用 `mise bootstrap dotfiles diff`。
+Claude 候选使用 mise `template` 模式，将 `{{ env.HOME }}` 渲染为目标机器的真实 HOME。`config-dry-run` 不执行模板渲染，只会把模板标为可能变更；需要查看渲染后的真实差异时使用 `mise bootstrap dotfiles diff`。
 
 ### 环境变量和 PATH
 

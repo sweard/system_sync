@@ -1,13 +1,13 @@
 # Linux dotfiles 适配器，适用于当前已支持的 Arch、Debian、Fedora 和 openSUSE profile。
-# 启用 espanso 公共配置和 Linux zsh 适配器，不加载 macOS defaults 命令。
+# 启用 espanso 公共配置、Linux zsh 和 VS Code 适配器。
 # 使用非默认 XDG_CONFIG_HOME 或 ESPANSO_CONFIG_DIR 时，请按 espanso path 修改目标。
 [dotfiles]
 "~/.config/espanso" = { source = "dotfiles/common/espanso", mode = "symlink-each", exclude = ["*.local", "*.example.toml"] }
 "~/.zprofile" = { source = "dotfiles/linux/zsh/zprofile", mode = "symlink" }
 "~/.config/zsh/platform.zsh" = { source = "dotfiles/linux/zsh/platform.zsh", mode = "symlink" }
+"~/.config/Code/User/settings.json/shared" = { source = "dotfiles/common/vscode/settings.json", merge = true }
 
 # 其他候选映射保持注释。
 #
 # "~/.config/mise/config.linux.toml" = { source = "dotfiles/linux/mise/config.toml", mode = "symlink" }
 # "~/.claude/settings.json" = { source = "dotfiles/linux/claude/settings.json.tmpl", mode = "template" }
-# "~/.config/Code/User/settings.json" = { source = "dotfiles/linux/vscode/settings.json.tmpl", mode = "template" }
