@@ -1,0 +1,45 @@
+docs/roadmap.md
+  s_00332b4a331471::t_c3848e8ebb56ba 7-12
+scripts/sync_runtime.py
+  s_00332b4a331471::t_11e73ffaae7c2d 26-27
+scripts/sync-runtime.sh
+  s_00332b4a331471::t_11e73ffaae7c2d 7
+scripts/audit.py
+  s_00332b4a331471::t_11e73ffaae7c2d 2
+scripts/package-command.py
+  s_00332b4a331471::t_11e73ffaae7c2d 2
+README.md
+  s_00332b4a331471::t_11e73ffaae7c2d 54
+docs/audit.md
+  s_00332b4a331471::t_11e73ffaae7c2d 30
+tests/test_runtime.py
+  s_00332b4a331471::t_11e73ffaae7c2d 1-20
+docs/packages.md
+  s_6b8270b6e632f5::t_a303ef50518ff4 92,196
+.github/workflows/check.yml
+  s_00332b4a331471::t_9556fff09bd551 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b437a747fa984944150ad03d80db0a23e13070e0",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
