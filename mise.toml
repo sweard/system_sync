@@ -1,6 +1,6 @@
 # 公共任务入口。各平台的软件声明位于 packages/ 下。
 #
-# 已启用 espanso 和全局 mise 工具配置；Shell 与其他应用的完整映射仍保持注释。
+# 已启用 espanso、全局 mise 工具配置和 zsh；其他应用的映射仍保持注释。
 # 公共配置位于 dotfiles/common，平台差异分别位于 dotfiles/macos 和 dotfiles/linux。
 min_version = "2026.10.11"
 monorepo_root = true
@@ -51,7 +51,7 @@ confirm = { message = "这会升级 Brewfile 中的软件。是否继续进入�
 raw = true
 run = "./scripts/homebrew-converge.sh --upgrade"
 
-# dotfiles 命令应用 espanso 和 mise 工具配置；其他应用映射尚未启用。
+# dotfiles 命令应用 espanso、mise 工具配置和 zsh；其他应用映射尚未启用。
 [tasks.config-status]
 description = "查看已启用 dotfiles 映射的状态"
 run = "mise bootstrap dotfiles status"
@@ -66,15 +66,18 @@ confirm = { message = "这会修改已启用映射对应的用户配置文件。
 run = "mise bootstrap dotfiles apply"
 
 # -----------------------------------------------------------------------------
-# 已启用的公共 mise 配置，以及其他应用的候选映射
+# 已启用的公共 mise / zsh 配置，以及其他应用的候选映射
 #
 # 根配置只声明跨平台公共映射；mise.macos.toml / mise.linux.toml 是两个平台适配器。
-# .miserc.toml 的 auto_env 会自动选择当前平台；espanso 已在平台适配器启用。
+# .miserc.toml 的 auto_env 会自动选择当前平台的 espanso 和 zsh 适配器。
 #
 [dotfiles]
-"~/.config/mise/miserc.toml" = { source = "dotfiles/common/mise/miserc.toml", mode = "symlink" }
+# mise 2026.10.15 的 dry-run 会把 symlink 模式的 miserc 当作普通配置解析。
+# 模板部署避开错误的预览解析；修改来源后用 config-sync 同步。
+"~/.config/mise/miserc.toml" = { source = "dotfiles/common/mise/miserc.toml", mode = "template" }
 "~/.config/mise/config.toml" = { source = "dotfiles/common/mise/config.toml", mode = "symlink" }
-# "~/.zshenv" = { source = "dotfiles/common/zsh/zshenv", mode = "symlink" }
-# "~/.zshrc" = { source = "dotfiles/common/zsh/zshrc", mode = "symlink" }
+"~/.zshenv" = { source = "dotfiles/common/zsh/zshenv", mode = "symlink" }
+"~/.zshrc" = { source = "dotfiles/common/zsh/zshrc", mode = "symlink" }
+"~/.p10k.zsh" = { source = "dotfiles/common/zsh/p10k.zsh", mode = "symlink" }
 # "~/.claude/CLAUDE.md" = { source = "dotfiles/common/claude/CLAUDE.md", mode = "copy" }
 # "~/.claude/hooks" = { source = "dotfiles/common/claude/hooks", mode = "symlink-each" }

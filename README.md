@@ -1,6 +1,6 @@
 # macOS + 多发行版 Linux 声明式系统配置同步
 
-这个仓库用统一的 mise task 作为入口，把各平台的系统包收敛逻辑分开，并通过全局 mise 配置管理开发工具版本。Espanso 已接管，其他应用配置保留可逐项启用的候选快照。
+这个仓库用统一的 mise task 作为入口，把各平台的系统包收敛逻辑分开，并通过全局 mise 配置管理开发工具版本。Espanso 和 zsh 已接管，其他应用配置保留可逐项启用的候选快照。
 
 | 平台 / profile | 声明来源 | 收敛方式 |
 |---|---|---|
@@ -22,8 +22,8 @@ system_sync/
 ├── .gitignore
 ├── README.md
 ├── mise.toml                         # 公共 task 入口
-├── mise.macos.toml                   # macOS dotfiles 适配器；espanso 和 mise 工具配置
-├── mise.linux.toml                   # Linux dotfiles 适配器；目前只启用 espanso
+├── mise.macos.toml                   # macOS dotfiles 适配器；espanso、mise 和 zsh
+├── mise.linux.toml                   # Linux dotfiles 适配器；espanso 和 zsh
 ├── mise.local.toml                   # 本机私有映射（Git 忽略，不随仓库同步）
 ├── dotfiles/
 │   ├── common/                       # 两个平台共用
@@ -39,7 +39,8 @@ system_sync/
 │   │   │   └── secrets.env.example
 │   │   ├── zsh/
 │   │   │   ├── zshenv
-│   │   │   └── zshrc
+│   │   │   ├── zshrc
+│   │   │   └── p10k.zsh             # 已启用：当前提示符配置，保持原样
 │   │   └── claude/
 │   │       ├── CLAUDE.md
 │   │       └── hooks/
@@ -137,7 +138,7 @@ mise run config-dry-run
 mise run config-sync
 ```
 
-当前启用 espanso 和全局 mise 配置的 `[dotfiles]` 映射；这些命令会检查或应用它们，mise 会选择当前平台适配器。zsh、Claude 和 VS Code 的完整文件映射仍被注释。本机 Shell 只为开发工具迁移做必要的初始化调整，不整份覆盖现有配置。
+当前启用 espanso、全局 mise 配置和 zsh 的 `[dotfiles]` 映射；这些命令会检查或应用它们，mise 会选择当前平台适配器。Claude 和 VS Code 的完整文件映射仍被注释。zsh 的私有值保留在仓库外的 `~/.zshrc.local`，不会被 `config-sync` 覆盖。
 
 Linux 使用 `/etc/os-release` 自动选择 profile。当前映射为：
 
@@ -517,14 +518,16 @@ mise run macos-upgrade
 
 `dotfiles/` 已重构为公共模块和两个平台适配器：
 
-- `dotfiles/common/`：已启用的 espanso 公共配置、工具版本与 uv 配置，以及候选 zsh 主配置、Claude 全局说明和 Hook；
+- `dotfiles/common/`：已启用的 espanso 公共配置、工具版本、uv 和 zsh 配置，以及候选 Claude 全局说明和 Hook；
 - `dotfiles/macos/`：espanso 的 macOS 专用片段、Homebrew 相关路径、macOS Android SDK、Toolbox、Claude/VS Code 当前 Mac 模板；
 - `dotfiles/linux/`：Linux Android SDK、可选 Linuxbrew，以及不含 macOS 外部 Hook 的 Claude/VS Code 模板；
 - `mise.macos.toml` 与 `mise.linux.toml`：相同 `config-*` 命令背后的两个平台适配器。
 
 仓库和未来的全局 mise 配置都通过 `auto_env` 自动选择 `macos` 或 `linux`。公共模块不需要知道当前平台，平台路径也不会散落在公共调用入口中。
 
-目前启用 espanso、全局 mise 配置和 macOS Rust 参数的映射。工具 `[tools]` 与 uv 所需的两个环境变量已启用；locale、Android、其他 PATH、密钥文件和输出脱敏规则仍是候选。`.miserc.toml` 只控制配置发现；`config-sync` 不会接管其他应用的完整配置。
+全局 `~/.config/mise/miserc.toml` 使用 `template` 模式部署，以规避 mise 2026.10.15 在 dotfiles dry-run 中将该文件按普通 `mise.toml` 解析、误报未知字段的问题。`auto_env` 和 `env_conf_d` 保留在这个文件中，符合[官方 miserc 配置规则](https://mise.jdx.dev/configuration.html#miserc)。修改来源后运行 `mise run config-sync`；dry-run 不渲染模板，查看真实内容差异用 `mise bootstrap dotfiles diff ~/.config/mise/miserc.toml`。
+
+目前启用 espanso、全局 mise 配置、macOS Rust 参数和 zsh 的映射。工具 `[tools]` 与 uv 所需的两个环境变量已启用；zsh 负责现有 locale、Android 和 Shell PATH。mise 配置中的其他 `[env]` / PATH、密钥文件和输出脱敏规则仍是候选。`.miserc.toml` 只控制配置发现；`config-sync` 不会接管 Claude 或 VS Code。
 
 ### Espanso（已启用）
 
@@ -623,22 +626,31 @@ mise exec -- python3 --version
 
 Flutter 3.47.2 的本地工作树有改动，因此本次保留原安装，不交给 mise。
 
-### zsh
+### zsh（已启用）
 
-`dotfiles/common/zsh/zshrc` 现在只包含两个平台都能使用的 Zinit、Powerlevel10k、通用插件、OpenClaw 补全和本机私有配置入口。它会按需加载：
+2026-10-20 对比本机实际配置后接管以下五项，全部使用 `symlink`：
 
-```text
-~/.config/zsh/platform.zsh
-```
+| 目标 | 来源 |
+|---|---|
+| `~/.zshenv` | `dotfiles/common/zsh/zshenv` |
+| `~/.zshrc` | `dotfiles/common/zsh/zshrc` |
+| `~/.p10k.zsh` | `dotfiles/common/zsh/p10k.zsh` |
+| `~/.zprofile` | 当前平台的 `dotfiles/macos/zsh/zprofile` 或 `dotfiles/linux/zsh/zprofile` |
+| `~/.config/zsh/platform.zsh` | 当前平台的 `platform.zsh` |
 
-两个平台分别提供这个文件：
+所有 zsh 实例先读取 `.zshenv`；登录 Shell 还读取 `.zprofile`，交互 Shell 读取 `.zshrc`。参见 [zsh 启动文件顺序](https://zsh.sourceforge.io/Doc/Release/Files.html#Startup_002fShutdown-Files)。
 
-- macOS：保留当前 locale，移除 nvm、pyenv 和 Homebrew Ruby 的旧初始化；
-- Linux：保留平台扩展位置；正式接管前须先导入本机工具，不再并行初始化旧版本管理器。
+- `.zshenv` 保持轻量，只在目录实际存在时添加用户命令、Gem、Cargo 和 Flutter 路径，不加载插件或运行 mise。
+- `.zprofile` 准备当前平台的 Homebrew、Android SDK 和 JetBrains Toolbox 路径，并执行 `mise activate zsh --shims`，让登录但非交互的 Shell 也能找到受管工具。
+- `.zshrc` 加载平台模块、原有 Zinit 插件、Powerlevel10k、私有文件和可选 OpenClaw 补全，最后执行一次 `mise activate zsh`。git-ai 和 `.local/bin` 保持原有命令优先级，PATH 用 zsh 唯一化数组去重。
 
-`zprofile` 也按平台拆分：macOS 使用 `/opt/homebrew`、`~/Library/Android/sdk` 和 macOS Toolbox 路径；Linux 使用可选 Linuxbrew、`~/Android/Sdk` 和 Linux Toolbox 路径。所有用户目录都改用 `$HOME`，不再把 `/Users/sbwoan` 写进公共 shell 配置。
+macOS 平台模块保留现有 locale，Android SDK 使用 `~/Library/Android/sdk`；Linux 使用 `~/Android/Sdk` 和可选 Linuxbrew，不照搬 macOS locale。不存在的 Android `tools` 目录不会加入 PATH。当前 Mac 的 Powerlevel10k 配置按原文件导入，保留原有外观；Zinit 已下载的插件、历史文件、补全缓存和 instant-prompt 缓存仍由本机维护，不纳入 Git。
 
-公共 `zshenv` 只在目录真实存在时加入 `.local/bin`、git-ai、Gem、Cargo 和 Flutter 路径，并用 zsh 的唯一化数组消除重复 PATH。
+原 `.zshrc` 中的 `CASE_SUBMITTER`、`DASHBOARD_HOST` 已移到仓库外的 `~/.zshrc.local`，权限为 `0600`。该文件不由 mise 映射；新的机器没有它时会正常跳过。需要同步私有值时，通过安全渠道复制到新机器并设置权限；不要将实际值粘贴到公共 zsh 文件。
+
+首次接管已有普通文件前，先备份并预览这五个目标；需要替换时只对这五项执行 `mise bootstrap dotfiles apply --force`。当前 Mac 的原文件、私有设置和启动前后校验记录位于 `.system-sync/history/*-zsh-*/`。恢复时先对这五项执行定向 `unapply`，再从审计目录的 `home.before` 恢复原文件。
+
+以后直接编辑仓库来源文件，链接会反映修改；用 `mise run config-status` 检查映射，重新打开终端加载新配置。当前 Mac 使用真实登录终端验证，公共启动逻辑另有隔离测试；Linux 的平台文件通过语法检查，尚未在真实 Linux 主机验证。
 
 ### Claude 和 VS Code
 
@@ -660,7 +672,7 @@ Claude 和 VS Code 使用 mise `template` 模式，将 `{{ env.HOME }}` 渲染�
 
 ### 环境变量和 PATH
 
-配置分为三个文件；本次只启用工具与 uv 解释器选择，其他环境候选仍保持注释：
+mise 环境配置分为三个文件；目前启用工具与 uv 解释器选择，其他环境候选仍保持注释。现有 Shell 环境由已接管的 zsh 文件提供：
 
 - `dotfiles/common/mise/config.toml`：已启用的工具版本和 uv 设置，以及候选密钥文件入口和输出脱敏规则；
 - `dotfiles/macos/mise/config.toml`：已启用的 Rust 平台参数，以及候选 macOS locale、Android 和 Toolbox；
@@ -676,7 +688,7 @@ Linux locale 不会照搬 macOS。应先用发行版工具确认已经生成的 
 2. 在根 `mise.toml` 中启用所需公共映射，再在当前平台的 `mise.macos.toml` 或 `mise.linux.toml` 中启用对应映射。
 3. 运行 `mise run config-status` 和 `mise run config-dry-run`，确认目标和来源都属于当前平台。
 4. 处理已有真实文件与 symlink 的首次接管冲突后，再运行 `mise run config-sync`。
-5. 本机已为开发工具启用 mise Shell 激活；以后接管整个 zsh 文件时，保留这一个激活入口，不重复初始化旧管理器。
+5. zsh 已接管并启用 mise Shell 激活；接管其他应用时继续保留这一个交互激活入口，不重复初始化旧管理器。
 
 从 `[dotfiles]` 删除条目不会自动删除已经应用的目标。取消管理时先执行 `mise bootstrap dotfiles unapply --dry-run`，确认后执行 `mise bootstrap dotfiles unapply`，再删除映射。
 
@@ -685,7 +697,7 @@ Linux locale 不会照搬 macOS。应先用发行版工具确认已经生成的 
 - dry-run 只能精确显示当前状态下的 orphan。Linux 包的安装原因降级后，可能新出现 orphan，所以 apply 会重新计算并第二次确认。
 - 在第二次确认处取消时，pacman/APT/DNF 的安装原因可能已经变更，但包尚未卸载。查看当次 `.system-sync/history/.../demoted.txt` 和 `promoted.txt` 恢复需要保留的根包。
 - Homebrew 在 cleanup 最后确认前取消时，前面的缺失软件安装可能已完成，但不会继续清理。
-- 误删后，从 Git 恢复声明并重新安装。Git 只保存软件清单，不是包文件、应用数据或系统备份。
+- 误删后，从 Git 恢复声明并重新安装。Git 保存软件清单和受管配置，不是已安装包文件、应用数据或完整系统备份。
 
 macOS 恢复 Brewfile 示例：
 

@@ -21,3 +21,8 @@ fi
 
 typeset -U path PATH
 export PATH
+
+# 登录但非交互的 Shell（包括部分 IDE）也能找到受管工具。
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh --shims)"
+fi
