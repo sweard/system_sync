@@ -4,6 +4,31 @@
 
 本文中的命令默认在仓库根目录执行。系统包流程见[系统软件包](packages.md)，应用配置接管与取消管理见[配置接管](dotfiles.md)。
 
+## 手动配置检查点（仅本机）
+
+公共来源继续使用仓库 Git 历史。部署后含私有键的 ChatGPT / VS Code 目标文件，以及存在的 `~/.zshrc.local`，使用 mise `track-local` 历史；`secrets.env`、认证文件和整个应用数据目录不纳入范围。
+
+```bash
+mise run config-history-init
+mise run config-save -d '修改前的说明'
+mise run config-history
+```
+
+初始化把登记写入 `~/.config/mise/conf.d/system-sync-history.toml`（非默认 XDG / mise 目录遵循对应环境变量），权限 `0600`。登记不部署到其他机器，`autosave = false`，没有启用 watcher 或历史远端。已有人工修改的登记不会被覆盖。新增文件或调整范围后先审阅登记；本机私有内容不进入本项目 Git。
+
+`config-save` 显式列出已登记的现存文件，因此能保存关闭 autosave 的文件；原生不带路径的 `mise dot save` 会跳过这些条目。检查点存于 `$MISE_STATE_DIR/history-local`，默认 `~/.local/state/mise/history-local`，目录权限 `0700`。本机历史是本机磁盘上的明文 Git 存储，丢失磁盘时不能代替离线备份。原理与隔离边界见 [mise 官方本机历史](https://mise.jdx.dev/dotfiles/history.html#local-only-history)。
+
+恢复前选择具体检查点和目标文件，先预览，再执行：
+
+```bash
+mise dot --local rollback ~/.codex/config.toml --to <检查点ID> --dry-run
+mise dot --local rollback ~/.codex/config.toml --to <检查点ID>
+```
+
+原生命令会询问确认，并在回滚前保存当前状态；不要对整个 HOME 使用 `--all`。之后运行 `mise run config-dry-run`，公共键如需恢复到当前声明，再运行 `config-sync`，私有键继续保留。原生 rollback 与 undo 的用法见[官方文档](https://mise.jdx.dev/cli/dotfiles/rollback.html)。
+
+本轮已在临时 HOME 使用合成私有键完成保存、修改、恢复预览、实际回滚和再次合并的演练；共享历史中没有检查点。未对真实私有配置执行回滚。
+
 ## 中断与写入失败的恢复
 
 确认后，操作前后的清单副本和事务阶段保存在 `.system-sync/history/<时间>-package-<随机值>/`：`*.before` 是原文件，`*.after` 是候选结果，`transaction.json` 记录命令与状态。该目录被 Git 忽略。

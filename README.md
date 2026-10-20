@@ -76,12 +76,14 @@ mise run config-dry-run
 | 单独升级 Brewfile 声明项 | `mise run macos-upgrade` |
 | 查看受管配置的实际差异，无变化时提示无需同步 | `mise run config-dry-run` |
 | 部署受管配置文件 | `mise run config-sync` |
+| 核对 / 预览 / 安装公共 VS Code 扩展 | `mise run vscode-status` / `vscode-dry-run` / `vscode-sync` |
+| 登记本机配置历史 / 手动保存 / 查看检查点 | `mise run config-history-init` / `config-save` / `config-history` |
 | 补齐 `[tools]` 已声明的工具版本 | `mise install` |
 | 预览工具升级 | `mise upgrade --global --bump --no-prune --dry-run uv`，工具名可替换 |
 
 Linux 清单仍是结构示例。首次整机应用前必须导入本机 baseline；Linux 统一升级尚未实现，继续使用发行版本身的升级流程。macOS 当前仍使用 Homebrew Bundle。
 
-私有变量文件不部署、不提交；ChatGPT / VS Code 只合并来源声明的键。运行时审计保存在 `.system-sync/history/`，与 mise 可选的 dotfiles 历史功能分别管理。
+私有变量文件不部署、不提交；ChatGPT / VS Code 只合并来源声明的键。运行时审计保存在 `.system-sync/history/`；应用配置检查点由 mise 的本机历史单独保存，不开启后台捕获或远端历史同步。
 
 ## 详细文档
 
@@ -90,6 +92,7 @@ Linux 清单仍是结构示例。首次整机应用前必须导入本机 baselin
 | [只读审计](docs/audit.md) | tools、packages、PATH、配置漂移及本机保留项，报告格式与检查边界 |
 | [系统软件包](docs/packages.md) | 单包操作、漂移捕获、Linux baseline、平台收敛顺序及保护规则 |
 | [全局开发环境](docs/development-environment.md) | 工具安装与升级、zsh、环境变量及 PATH |
+| [新机器重建](docs/rebuild.md) | 公共配置重建、全局锁文件、JBR 与 Flutter 来源及验证范围 |
 | [应用配置与接管](docs/dotfiles.md) | Espanso、ChatGPT、VS Code、平台映射及日常同步 |
 | [取消、冲突与恢复](docs/recovery.md) | 操作中断、链接和配置恢复、审计及 Git 管理 |
 | [后续规划](docs/roadmap.md) | 核对快照、未启用功能及后续推进顺序 |
