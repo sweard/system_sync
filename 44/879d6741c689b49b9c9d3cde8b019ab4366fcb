@@ -1,0 +1,16 @@
+dotfiles/common/mise/config.toml
+  h_74ac6e576b13a5 14,16
+dotfiles/macos/mise/config.toml
+  h_74ac6e576b13a5 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "44879d6741c689b49b9c9d3cde8b019ab4366fcb",
+  "prompts": {},
+  "humans": {
+    "h_74ac6e576b13a5": {
+      "author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
