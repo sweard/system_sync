@@ -41,7 +41,9 @@ class ZshStartupTest(unittest.TestCase):
 
     def shell(self, flags, script):
         result = subprocess.run(
-            [ZSH, *flags, script], env=self.env, text=True,
+            # Keep the runner's /etc/zshrc (including Debian compinit prompts)
+            # outside this test of the repository's own startup files.
+            [ZSH, "-d", *flags, script], env=self.env, text=True,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
