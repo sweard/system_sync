@@ -87,7 +87,7 @@ def operation_lock(root):
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as error:
-            raise RuntimeFailure("另一条包操作正在运行（install/uninstall/system-sync/upgrade），请稍后重试") from error
+            raise RuntimeFailure("另一条包操作正在运行（package-install/package-uninstall/system-sync/upgrade），请稍后重试") from error
         yield lock.fileno()
 
 
