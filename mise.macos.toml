@@ -8,6 +8,3 @@
 "~/.zprofile" = { source = "dotfiles/macos/zsh/zprofile", mode = "symlink" }
 "~/.config/zsh/platform.zsh" = { source = "dotfiles/macos/zsh/platform.zsh", mode = "symlink" }
 "~/Library/Application Support/Code/User/settings.json/shared" = { source = "dotfiles/common/vscode/settings.json", merge = true }
-
-# 含口令的片段通过本机 mise.local.toml 单独映射，不进入 Git。
-# "~/.claude/settings.json" = { source = "dotfiles/macos/claude/settings.json.tmpl", mode = "template" }
