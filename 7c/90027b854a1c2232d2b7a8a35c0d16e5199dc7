@@ -1,0 +1,27 @@
+mise.toml
+  s_00332b4a331471::t_115ffc0468f800 82-94
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_abe717fb18dec4 1-105
+docs/dotfiles.md
+  s_00332b4a331471::t_dd6edb60dfc6bd 105-127
+dotfiles/common/vscode/extensions.toml
+  s_00332b4a331471::t_115ffc0468f800 1-21
+scripts/vscode-extensions.py
+  s_00332b4a331471::t_115ffc0468f800 1-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c90027b854a1c2232d2b7a8a35c0d16e5199dc7",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
