@@ -1,0 +1,29 @@
+tests/test_config_history.py
+  s_00332b4a331471::t_2ea31c0afb4a36 1-87
+docs/roadmap.md
+  s_00332b4a331471::t_613ab6e2c9b9f7 9-18,22,29
+docs/recovery.md
+  s_00332b4a331471::t_d9a13021b196c1 7-31
+mise.toml
+  s_00332b4a331471::t_3a4dfa20bcb60a 95-106
+scripts/config-history.py
+  s_00332b4a331471::t_3a4dfa20bcb60a 1-78
+README.md
+  s_00332b4a331471::t_dd6edb60dfc6bd 79-80,86,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5ccacb2f2c65ddac2c5af70a3a51679fa456960e",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
