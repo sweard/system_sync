@@ -632,7 +632,7 @@ Flutter 3.47.2 的本地工作树有改动，因此本次保留原安装，不�
 
 ### zsh（已启用）
 
-2026-10-20 对比本机实际配置后接管以下五项，全部使用 `symlink`：
+2026-10-20 对比本机实际配置后接管以下配置，全部使用 `symlink`：
 
 | 目标 | 来源 |
 |---|---|
@@ -641,18 +641,19 @@ Flutter 3.47.2 的本地工作树有改动，因此本次保留原安装，不�
 | `~/.p10k.zsh` | `dotfiles/common/zsh/p10k.zsh` |
 | `~/.zprofile` | 当前平台的 `dotfiles/macos/zsh/zprofile` 或 `dotfiles/linux/zsh/zprofile` |
 | `~/.config/zsh/platform.zsh` | 当前平台的 `platform.zsh` |
+| `~/.config/zsh/path.sh` | `dotfiles/common/mise/path.sh`，与 mise 共用 |
 
 所有 zsh 实例先读取 `.zshenv`；登录 Shell 还读取 `.zprofile`，交互 Shell 读取 `.zshrc`。参见 [zsh 启动文件顺序](https://zsh.sourceforge.io/Doc/Release/Files.html#Startup_002fShutdown-Files)。
 
-- `.zshenv` 保持轻量，只在目录实际存在时添加用户命令、Gem、Cargo 和 Flutter 路径，不加载插件或运行 mise。
-- `.zprofile` 准备当前平台的 Homebrew、Android SDK 和 JetBrains Toolbox 路径，并执行 `mise activate zsh --shims`，让登录但非交互的 Shell 也能找到受管工具。
-- `.zshrc` 加载平台模块、原有 Zinit 插件、Powerlevel10k、私有文件和可选 OpenClaw 补全，最后执行一次 `mise activate zsh`。git-ai 和 `.local/bin` 保持原有命令优先级，PATH 用 zsh 唯一化数组去重。
+- `.zshenv` 从共用文件加载现有目录，保持非交互脚本安静，不加载插件或运行 mise，也不再加载旧的 `~/.cargo/env`。
+- `.zprofile` 初始化 Homebrew，再恢复共用 PATH。非交互登录 Shell 执行 `mise env -s zsh`，一次加载工具、公共环境和私有变量；交互登录 Shell 留给 `.zshrc` 激活。
+- `.zshrc` 加载平台模块、原有 Zinit 插件、Powerlevel10k、本机函数/别名和可选 OpenClaw 补全，在末尾恢复共用 PATH 并执行一次 `mise activate zsh`。git-ai 和 `.local/bin` 保持用户命令优先级；mise 选择的开发工具优先于用户目录中的同名命令，PATH 用 zsh 唯一化数组去重。
 
-macOS 平台模块保留现有 locale，Android SDK 使用 `~/Library/Android/sdk`；Linux 使用 `~/Android/Sdk` 和可选 Linuxbrew，不照搬 macOS locale。不存在的 Android `tools` 目录不会加入 PATH。当前 Mac 的 Powerlevel10k 配置按原文件导入，保留原有外观；Zinit 已下载的插件、历史文件、补全缓存和 instant-prompt 缓存仍由本机维护，不纳入 Git。
+macOS locale 已移入 mise 平台配置，保留原值；Android SDK 默认使用 `~/Library/Android/sdk`，Linux 默认使用 `~/Android/Sdk`，已设置的 `ANDROID_HOME` 优先。Linux 使用可选 Linuxbrew，不照搬 macOS locale。不存在的 Android `tools` 目录不会加入 PATH。当前 Mac 的 Powerlevel10k 配置按原文件导入，保留原有外观；Zinit 已下载的插件、历史文件、补全缓存和 instant-prompt 缓存仍由本机维护，不纳入 Git。
 
-原 `.zshrc` 中的 `CASE_SUBMITTER`、`DASHBOARD_HOST` 已移到仓库外的 `~/.zshrc.local`，权限为 `0600`。该文件不由 mise 映射；新的机器没有它时会正常跳过。需要同步私有值时，通过安全渠道复制到新机器并设置权限；不要将实际值粘贴到公共 zsh 文件。
+原 `.zshrc` 中的 `CASE_SUBMITTER`、`DASHBOARD_HOST` 已从 `~/.zshrc.local` 迁入仓库外的 `~/.config/mise/secrets.env`，原值和 `0600` 权限保留。`~/.zshrc.local` 继续作为本机函数/别名入口，不由 mise 映射。新的机器没有这些私有文件时会正常跳过；需要同步时，通过安全渠道复制并设置权限。
 
-首次接管已有普通文件前，先备份并预览这五个目标；需要替换时只对这五项执行 `mise bootstrap dotfiles apply --force`。当前 Mac 的原文件、私有设置和启动前后校验记录位于 `.system-sync/history/*-zsh-*/`。恢复时先对这五项执行定向 `unapply`，再从审计目录的 `home.before` 恢复原文件。
+首次接管已有普通文件前，先备份并预览目标；需要替换时只对冲突项执行 `mise bootstrap dotfiles apply --force`。当前 Mac 原 zsh 文件和接管记录位于 `.system-sync/history/*-zsh-*/`，本次环境迁移记录位于 `*-env-path/`。恢复时先取消对应映射，再恢复相应审计目录中的原文件与仓库来源。
 
 以后直接编辑仓库来源文件，链接会反映修改；用 `mise run config-status` 检查映射，重新打开终端加载新配置。当前 Mac 使用真实登录终端验证，公共启动逻辑另有隔离测试；Linux 的平台文件通过语法检查，尚未在真实 Linux 主机验证。
 
@@ -706,15 +707,27 @@ Claude 候选使用 mise `template` 模式，将 `{{ env.HOME }}` 渲染为目�
 
 ### 环境变量和 PATH
 
-mise 环境配置分为三个文件；目前启用工具与 uv 解释器选择，其他环境候选仍保持注释。现有 Shell 环境由已接管的 zsh 文件提供：
+公共声明已启用，并按用途分工：
 
-- `dotfiles/common/mise/config.toml`：已启用的工具版本和 uv 设置，以及候选密钥文件入口和输出脱敏规则；
-- `dotfiles/macos/mise/config.toml`：已启用的 Rust 平台参数，以及候选 macOS locale、Android 和 Toolbox；
-- `dotfiles/linux/mise/config.toml`：Linux Android 和 Toolbox 常见位置。
+| 来源 | 管理内容 |
+|---|---|
+| `dotfiles/common/mise/config.toml` | 工具版本、uv 解释器、可选私有文件和输出脱敏 |
+| `dotfiles/common/mise/path.sh` | Android SDK 默认值、Toolbox/Android 目录，以及供 zsh 调用的用户 PATH 函数 |
+| `dotfiles/macos/mise/config.toml` | Rust 平台参数、原有 `LANG=zh` 和 `LC_ALL=en_US.UTF-8` |
+| `~/.config/mise/secrets.env` | 本机私有变量；不映射、不提交，权限 `0600` |
+| `~/.zshrc.local` | 本机 Shell 函数与别名 |
 
-Linux locale 不会照搬 macOS。应先用发行版工具确认已经生成的 locale，再取消注释 `LANG` / `LC_ALL`。
+mise 通过原生 [`env._.source`](https://mise.jdx.dev/environments/#env-source) 加载共用文件中的 SDK 环境。脚本只前置存在的目录并保留原 PATH 后缀，路径包含空格也能正常处理；缺失 SDK、旧 `tools`、Gem 等目录自动跳过。用户路径函数由 zsh 在 mise 激活前调用，不作为 mise 的自定义 PATH 前置项，防止 `~/.local/bin` 等目录遮蔽项目工具。实际命令保持由 mise 选择开发工具、git-ai 提供 Git、原 Flutter 目录提供 Flutter/Dart。
 
-真实密钥文件和 `*.local` 继续被 Git 忽略。`redactions` 只能降低输出泄漏风险，不是加密。
+新终端和交互目录切换由 `mise activate` 动态加载环境；非交互登录 Shell 一次加载。普通非交互 `zsh -c` 保持轻量，只继承已有环境并加载公共路径；脚本或 CI 要按当前目录解析变量和工具时使用 `mise exec -- <命令>` 或 `mise run <任务>`。用户命令路径由 zsh 提供，直接从其他程序调用 mise 时应传入需要的 PATH。仅添加 shims 无法给整个父 Shell 加载环境变量，参见[官方 Shell 配置](https://mise.jdx.dev/shell-setup.html)。
+
+Linux 的 SDK/Toolbox 路径通过同一文件自动识别，无需部署空的 `config.linux.toml`；该文件保留为 locale 候选。先用发行版工具确认已生成的 locale，再按本机选择 `LANG` / `LC_ALL`。Linux 分支有隔离测试，尚未在真实 Linux 主机验证。
+
+以后公共变量编辑对应的 mise 配置，公共路径编辑 `path.sh`。私有值只写入 `~/.config/mise/secrets.env`，可参考 `dotfiles/common/mise/secrets.env.example`；不存在时自动跳过。项目的 `mise.toml` / `mise.local.toml` 可以覆盖全局变量，离开项目后恢复。应用专用凭据和环境策略继续留在各自的本机配置中，不自动扩大到全局环境。
+
+真实密钥文件和 `*.local` 继续被 Git 忽略。私有文件中所有变量已标为敏感，同时启用常见凭据名称的 `redactions`。它只遮蔽 mise 处理的日志和普通任务输出，不是加密；`mise env`（包括 `--redacted`）、`mise exec` 和 `raw` 任务仍可能输出真实值，见[官方脱敏范围](https://mise.jdx.dev/environments/secrets/#what-redaction-covers)。检查路径可使用 `mise env --paths`，不要将完整环境输出提交到仓库。
+
+本机已核对交互和非交互登录 Shell 的工具版本、20 个命令来源、PATH 去重及私有值哈希。迁移前私有文件、仓库来源和校验记录保存在 `.system-sync/history/*-env-path/`；回退时先恢复仓库来源，再从 `zshrc.local.before` 恢复本机文件，确认后移除新建的 `secrets.env` 与 PATH 映射。
 
 ### 后续逐项接管其他配置
 

@@ -45,20 +45,21 @@ zinit ice depth=1
 zinit light romkatv/powerlevel10k
 [[ ! -f "$HOME/.p10k.zsh" ]] || source "$HOME/.p10k.zsh"
 
-# 登录初始化中的 brew shellenv 会前置 Homebrew；保留本机命令原有的优先级。
-for user_bin in "$HOME/.git-ai/bin" "$HOME/.local/bin"; do
-  [[ -d "$user_bin" ]] && path=("$user_bin" "${path[@]}")
-done
-unset user_bin
-typeset -U path PATH
-
-# CASE_SUBMITTER、DASHBOARD_HOST 等私有值只放在本机文件。
+# 本机 Shell 函数与别名；私有环境变量由 mise 的 secrets.env 加载。
 [[ ! -r "$HOME/.zshrc.local" ]] || source "$HOME/.zshrc.local"
 
 [[ -f "$HOME/.openclaw/completions/openclaw.zsh" ]] &&
   source "$HOME/.openclaw/completions/openclaw.zsh"
 
 # 开发工具版本统一交给 mise；平台模块不再初始化旧版本管理器。
+mise_path_config="${XDG_CONFIG_HOME:-$HOME/.config}/zsh/path.sh"
+if [[ -r "$mise_path_config" ]]; then
+  source "$mise_path_config"
+  _system_sync_user_path
+  unfunction _system_sync_user_path
+fi
+unset mise_path_config
+typeset -U path PATH
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"
 fi

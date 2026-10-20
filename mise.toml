@@ -76,6 +76,7 @@ run = "mise bootstrap dotfiles apply"
 # 模板部署避开错误的预览解析；修改来源后用 config-sync 同步。
 "~/.config/mise/miserc.toml" = { source = "dotfiles/common/mise/miserc.toml", mode = "template" }
 "~/.config/mise/config.toml" = { source = "dotfiles/common/mise/config.toml", mode = "symlink" }
+"~/.config/zsh/path.sh" = { source = "dotfiles/common/mise/path.sh", mode = "symlink" }
 "~/.zshenv" = { source = "dotfiles/common/zsh/zshenv", mode = "symlink" }
 "~/.zshrc" = { source = "dotfiles/common/zsh/zshrc", mode = "symlink" }
 "~/.p10k.zsh" = { source = "dotfiles/common/zsh/p10k.zsh", mode = "symlink" }

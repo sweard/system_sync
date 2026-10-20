@@ -5,24 +5,18 @@ elif [[ -x "$HOME/.linuxbrew/bin/brew" ]]; then
   eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
 fi
 
-toolbox_bin="$HOME/.local/share/JetBrains/Toolbox/scripts"
-[[ -d "$toolbox_bin" ]] && path=("${path[@]}" "$toolbox_bin")
-unset toolbox_bin
-
-if [[ -z "${ANDROID_HOME:-}" && -d "$HOME/Android/Sdk" ]]; then
-  export ANDROID_HOME="$HOME/Android/Sdk"
+# Homebrew 会前置自身路径，在 mise 加载前恢复用户命令的优先级。
+mise_path_config="${XDG_CONFIG_HOME:-$HOME/.config}/zsh/path.sh"
+if [[ -r "$mise_path_config" ]]; then
+  source "$mise_path_config"
+  _system_sync_user_path
+  unfunction _system_sync_user_path
 fi
-if [[ -n "${ANDROID_HOME:-}" ]]; then
-  for android_bin in emulator tools platform-tools build-tools; do
-    [[ -d "$ANDROID_HOME/$android_bin" ]] && path=("${path[@]}" "$ANDROID_HOME/$android_bin")
-  done
-  unset android_bin
-fi
-
+unset mise_path_config
 typeset -U path PATH
 export PATH
 
-# 登录但非交互的 Shell（包括部分 IDE）也能找到受管工具。
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate zsh --shims)"
+# 非交互登录 Shell 一次加载完整环境；交互 Shell 由 .zshrc 激活并动态更新。
+if [[ ! -o interactive ]] && command -v mise >/dev/null 2>&1; then
+  eval "$(mise env -s zsh)"
 fi

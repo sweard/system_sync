@@ -27,6 +27,9 @@ class ZshStartupTest(unittest.TestCase):
         }
         for name in ("zshenv", "zshrc"):
             (self.home / ("." + name)).symlink_to(ROOT / "dotfiles/common/zsh" / name)
+        mise_config = self.home / ".config/zsh"
+        mise_config.mkdir(parents=True)
+        (mise_config / "path.sh").symlink_to(ROOT / "dotfiles/common/mise/path.sh")
 
     def write(self, relative, content, executable=False):
         target = self.home / relative
@@ -81,6 +84,19 @@ class ZshStartupTest(unittest.TestCase):
         )
         self.assertEqual(lines, [f"loaded|loaded|local value|loaded|active|{user_git}|0|0"])
         self.assertEqual(self.calls.read_text().splitlines(), ["activate zsh"])
+
+    def test_login_noninteractive_loads_environment_without_prompt_hooks(self):
+        (self.home / ".zprofile").symlink_to(ROOT / "dotfiles/linux/zsh/zprofile")
+        self.write(
+            "bin/mise",
+            '#!/bin/sh\nprintf "%s\\n" "$*" >> "$ZSH_TEST_CALLS"\n'
+            'test "$*" = "env -s zsh" || exit 99\n'
+            'printf "%s\\n" "export ZSH_TEST_MISE=environment"\n',
+            executable=True,
+        )
+        lines = self.shell(["-l", "-c"], 'print -r -- "$ZSH_TEST_MISE|${+functions[mise]}"')
+        self.assertEqual(lines, ["environment|0"])
+        self.assertEqual(self.calls.read_text().splitlines(), ["env -s zsh"])
 
 
 if __name__ == "__main__":

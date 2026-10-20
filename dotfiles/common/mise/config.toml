@@ -1,8 +1,8 @@
 # 全局开发工具版本。2026-10-19 按当前 Mac 实际版本核对后启用。
 # macOS 的 Rust 交叉编译目标位于 config.macos.toml；Linux 首次安装仍需验证。
 
-# 只负责在 mise 输出中隐藏匹配名称；这不是加密。
-# redactions = ["*_TOKEN", "*_SECRET", "*_PASSWORD", "*_API_KEY"]
+# 只遮蔽 mise 处理的输出；mise env / exec 和 raw 任务仍可能输出真实值。
+redactions = ["*_TOKEN", "*_SECRET", "*_PASSWORD", "*_API_KEY"]
 
 [settings]
 # 保留现有项目的版本选择；项目文件优先于这里的全局默认值。
@@ -23,9 +23,12 @@ uv = "0.13.1"
 "npm:yarn" = { version = "1.22.22", depends = ["node"] }
 
 [env]
+# 可选本机文件；不存在时跳过，文件内的全部值标为敏感。
+_.file = { path = "{{ env.HOME }}/.config/mise/secrets.env", redact = true }
+# SDK 环境与 zsh 共用一份声明；用户命令目录由 zsh 在 mise 激活前加载。
+# 等项目变量和工具环境解析后再计算 SDK 路径。
+_.source = { path = "{{ config_source | canonicalize | dirname }}/path.sh", tools = true }
+
 # uv 负责依赖和虚拟环境，解释器统一由 mise 选择，禁止另行下载。
 UV_PYTHON = { value = "{{ tools.python.path }}/bin/python3", tools = true }
 UV_PYTHON_DOWNLOADS = "never"
-
-# 私密值只从 Git 仓库外加载；当前不启用。
-# _.file = "{{ env.HOME }}/.config/mise/secrets.env"

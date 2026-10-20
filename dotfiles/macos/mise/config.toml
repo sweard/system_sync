@@ -2,22 +2,7 @@
 [tools]
 rust = { version = "1.99.1", components = ["rust-src"], targets = ["aarch64-apple-darwin", "aarch64-linux-android", "i686-linux-android", "x86_64-apple-darwin", "x86_64-linux-android"] }
 
-# 其他环境变量和 PATH 仍是候选；本次不接管。
-#
-# [env]
-# LANG = "zh"
-# LC_ALL = "en_US.UTF-8"
-# ANDROID_HOME = "{{ env.HOME }}/Library/Android/sdk"
-#
-# _.path = [
-#   "{{ env.HOME }}/.local/bin",
-#   "{{ env.HOME }}/.git-ai/bin",
-#   "{{ env.HOME }}/.cargo/bin",
-#   "{{ env.HOME }}/development/flutter/bin",
-#   "{{ env.HOME }}/.gem/bin",
-#   "{{ env.HOME }}/Library/Application Support/JetBrains/Toolbox/scripts",
-#   "{{ env.HOME }}/Library/Android/sdk/emulator",
-#   "{{ env.HOME }}/Library/Android/sdk/tools",
-#   "{{ env.HOME }}/Library/Android/sdk/platform-tools",
-#   "{{ env.HOME }}/Library/Android/sdk/build-tools",
-# ]
+[env]
+# 保留本机原 locale；Android 与 PATH 由公共 path.sh 按平台识别。
+LANG = "zh"
+LC_ALL = "en_US.UTF-8"

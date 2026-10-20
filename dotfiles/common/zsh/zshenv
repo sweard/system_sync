@@ -1,15 +1,12 @@
-# 跨平台 zsh 环境入口。保持轻量，且只加入实际存在的用户目录。
-[[ -r "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-
-for candidate_bin in \
-  "$HOME/.local/bin" \
-  "$HOME/.git-ai/bin" \
-  "$HOME/.gem/bin" \
-  "$HOME/development/flutter/bin"
-do
-  [[ -d "$candidate_bin" ]] && path=("$candidate_bin" "${path[@]}")
-done
-unset candidate_bin
+# 跨平台轻量入口。mise 尚未部署时也能找到官方安装器的位置。
+[[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" "${path[@]}")
+mise_path_config="${XDG_CONFIG_HOME:-$HOME/.config}/zsh/path.sh"
+if [[ -r "$mise_path_config" ]]; then
+  source "$mise_path_config"
+  _system_sync_user_path
+  unfunction _system_sync_user_path
+fi
+unset mise_path_config
 
 typeset -U path PATH
 export PATH
