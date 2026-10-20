@@ -53,11 +53,14 @@ system_sync/
 
 以下命令在仓库根目录执行。运行时预检要求 mise 2026.10.11+、Python 3.9+ 和 Bash，系统包管理器由系统准备。完整 `check` 当前还依赖 Python 3.11+ 的 `tomllib`；最低版本要求待统一，见[后续规划](docs/roadmap.md)。
 
+本仓库已关闭任务运行前的自动工具补装，避免审计时先改变本机状态。缺失的开发工具通过 `mise install` 显式安装。
+
 ```bash
 mise trust --all
 mise run check
 
 # 查看系统软件和配置漂移
+mise run audit
 mise run status
 mise run dry-run
 mise run config-status
@@ -66,6 +69,7 @@ mise run config-dry-run
 
 | 操作 | 命令 |
 |---|---|
+| 汇总四类状态、来源与待纳管候选 | `mise run audit`；JSON 用 `mise run --quiet audit --json` |
 | 安装 / 卸载一个系统软件并记录清单 | `mise run package-install <包名>` / `mise run package-uninstall <包名>` |
 | 预览单包操作 | 在上述任务参数中加 `--dry-run` |
 | 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认 |
@@ -82,6 +86,7 @@ Linux 清单仍是结构示例。首次整机应用前必须导入本机 baselin
 
 | 文档 | 内容 |
 |---|---|
+| [只读审计](docs/audit.md) | tools、packages、PATH、配置漂移及本机保留项，报告格式与检查边界 |
 | [系统软件包](docs/packages.md) | 单包操作、漂移捕获、Linux baseline、平台收敛顺序及保护规则 |
 | [全局开发环境](docs/development-environment.md) | 工具安装与升级、zsh、环境变量及 PATH |
 | [应用配置与接管](docs/dotfiles.md) | Espanso、ChatGPT、VS Code、平台映射及日常同步 |

@@ -6,6 +6,11 @@
 min_version = "2026.10.11"
 monorepo_root = true
 
+[settings.task]
+# 状态与审计任务需要先报告缺失工具，不能在执行前自动补装。
+# 本仓库的开发工具使用 mise install 显式安装。
+run_auto_install = false
+
 [monorepo]
 config_roots = [
   "packages/linux/arch",
@@ -17,6 +22,14 @@ config_roots = [
 [tasks.status]
 description = "查看当前系统的声明状态和差异（只读）"
 run = "./scripts/system-sync.sh --status"
+
+[tasks.audit]
+description = "只读审计 tools、packages、PATH 和配置映射；支持 --json、--strict、--only、--color"
+# 直接连接输出，让颜色判断使用终端的真实状态；查询输出由审计脚本过滤和脱敏。
+raw = true
+# 在任务运行器前置工具目录前保存调用终端的 PATH。
+env.SYSTEM_SYNC_AUDIT_CALLER_PATH = '{{ get_env(name="PATH", default="") }}'
+run = "python3 -B ./scripts/audit.py"
 
 [tasks.check]
 description = "检查前置版本、任务配置并运行隔离测试；不修改系统软件"

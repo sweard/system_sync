@@ -39,6 +39,8 @@ mise exec -- node --version
 mise exec -- python3 --version
 ```
 
+本仓库的 `settings.task.run_auto_install = false` 禁止任务先自动补装工具，状态和审计入口因此能够报告缺失项。需要补装时显式运行 `mise install`。版本、其他安装来源和实际 PATH 的汇总检查见[只读审计](audit.md)。
+
 ### 安装与升级的区别
 
 `mise install` 按已有声明补齐工具，不修改版本声明；固定完整版本号的工具使用 `mise upgrade --bump` 才能升级并更新声明。例如逐个升级 uv：
