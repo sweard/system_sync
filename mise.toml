@@ -71,8 +71,8 @@ description = "查看已启用 dotfiles 映射的状态"
 run = "mise bootstrap dotfiles status"
 
 [tasks.config-dry-run]
-description = "预览已启用 dotfiles 映射将产生的文件变更"
-run = "mise bootstrap dotfiles apply --dry-run"
+description = "比较受管配置的实际差异；无变化时明确提示无需同步"
+run = "./scripts/config-preview.sh"
 
 [tasks.config-sync]
 description = "应用已启用的 dotfiles 映射；默认需要确认"

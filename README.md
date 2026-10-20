@@ -74,6 +74,7 @@ mise run config-dry-run
 | 预览单包操作 | 在上述任务参数中加 `--dry-run` |
 | 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认 |
 | 单独升级 Brewfile 声明项 | `mise run macos-upgrade` |
+| 查看受管配置的实际差异，无变化时提示无需同步 | `mise run config-dry-run` |
 | 部署受管配置文件 | `mise run config-sync` |
 | 补齐 `[tools]` 已声明的工具版本 | `mise install` |
 | 预览工具升级 | `mise upgrade --global --bump --no-prune --dry-run uv`，工具名可替换 |

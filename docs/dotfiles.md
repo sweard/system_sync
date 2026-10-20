@@ -16,7 +16,7 @@
 
 仓库配置和已部署的全局 mise 配置都通过 `auto_env` 自动选择 `macos` 或 `linux`。公共模块不需要知道当前平台，平台路径也不会散落在公共调用入口中。
 
-全局 `~/.config/mise/miserc.toml` 使用 `template` 模式部署，以规避 mise 2026.10.15 在 dotfiles dry-run 中将该文件按普通 `mise.toml` 解析、误报未知字段的问题。`auto_env` 和 `env_conf_d` 保留在这个文件中，符合[官方 miserc 配置规则](https://mise.jdx.dev/configuration.html#miserc)。修改来源后运行 `mise run config-sync`；dry-run 不渲染模板，查看真实内容差异用 `mise bootstrap dotfiles diff ~/.config/mise/miserc.toml`。
+全局 `~/.config/mise/miserc.toml` 使用 `template` 模式部署，以规避 mise 2026.10.15 在 dotfiles dry-run 中将该文件按普通 `mise.toml` 解析、误报未知字段的问题。`auto_env` 和 `env_conf_d` 保留在这个文件中，符合[官方 miserc 配置规则](https://mise.jdx.dev/configuration.html#miserc)。修改来源后运行 `mise run config-sync`；项目的 `config-dry-run` 已改用原生 `diff` 比较真实差异，模板无变化时不会再显示条件性的 `render … (if changed)`。
 
 目前启用 espanso、全局 mise 配置、macOS Rust 参数、zsh、ChatGPT 和 VS Code 的映射。工具版本、uv 环境、SDK 路径、可选私有文件和输出脱敏已启用；zsh 在激活 mise 前加载共用的用户 PATH，macOS locale 由 mise 平台配置提供。`.miserc.toml` 只控制配置发现。
 
@@ -109,6 +109,14 @@ espanso service restart
 ## 应用配置的日常同步
 
 编辑上述公共来源后，运行 `mise run config-status`、`mise run config-dry-run`，确认后运行 `mise run config-sync`。`/shared` 是 mise 的编辑条目标识，不是实际目录。应用界面修改的共享值可与来源产生差异；私有键的变化不会被视为共享配置漂移。
+
+`config-dry-run` 通过 [config-preview.sh](../scripts/config-preview.sh) 调用 `mise bootstrap dotfiles diff`，显示内容、权限、链接结构等真实差异。没有差异时明确输出 `[+] 未发现需要应用的配置差异，无需同步。`；查询失败则返回非零并提示检查失败，不把失败当作无变化。预览不执行 `apply`，也不运行部署钩子；原生 `diff` 会渲染受信任模板，因此模板中的 `exec()` 仍可能运行，见[官方模板说明](https://mise.jdx.dev/dotfiles/managed.html#templates)。
+
+只查看一个目标时可传入路径，例如：
+
+```bash
+mise run config-dry-run ~/.config/mise/miserc.toml
+```
 
 合并会递归设置来源拥有的键；删除来源中的键只会停止管理它，目标中的原值保留。取消管理也保留合并过的键。含私有项的目标和差异输出只在本机查看，不将整个 `~/.codex`、VS Code User 目录或其完整文件加入 Git。当前 Mac 的原文件、路径及权限记录保存在 `.system-sync/history/*-app-configs/`，权限受限且被 Git 忽略。恢复时取消相应映射，再从该目录的 `home.before` 恢复文件。
 
