@@ -1,0 +1,21 @@
+tests/test_zsh_startup.py
+  s_00332b4a331471::t_6742ef3883912a 44-46
+.github/workflows/check.yml
+  s_00332b4a331471::t_6742ef3883912a 43,48-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "02a38e28eab2f9c9bf41a3511ed85f747515fd25",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
