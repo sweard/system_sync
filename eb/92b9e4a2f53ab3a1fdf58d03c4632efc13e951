@@ -1,0 +1,53 @@
+tests/test_rebuild.py
+  s_00332b4a331471::t_2ea31c0afb4a36 1-52,55-101
+  s_00332b4a331471::t_dd6edb60dfc6bd 53-54
+dotfiles/common/mise/.mise/locks/npm-yarn/1.22.22/aube-lock.yaml
+  s_00332b4a331471::t_f212325edb428b 1-24
+docs/development-environment.md
+  s_6b8270b6e632f5::t_331a5531b0deb5 109
+  s_00332b4a331471::t_01ed1b80aebab0 21,25,37,64-66
+dotfiles/common/mise/config.toml
+  s_00332b4a331471::t_e104aeab35c7b1 25-26
+mise.toml
+  s_00332b4a331471::t_e104aeab35c7b1 93
+.gitignore
+  s_00332b4a331471::t_e104aeab35c7b1 12-17
+dotfiles/common/mise/.mise/locks/npm-yarn/1.22.22/package.json
+  s_00332b4a331471::t_f212325edb428b 1-7
+tests/test_environment.py
+  s_00332b4a331471::t_e104aeab35c7b1 55
+  s_00332b4a331471::t_dd6edb60dfc6bd 43-47
+docs/rebuild.md
+  s_00332b4a331471::t_01ed1b80aebab0 1-31,33-56
+  s_00332b4a331471::t_dd6edb60dfc6bd 32
+mise.macos.toml
+  s_00332b4a331471::t_e104aeab35c7b1 8
+dotfiles/common/mise/mise.lock
+  s_6b8270b6e632f5::t_5c89e5da35b805 1-330
+dotfiles/macos/mise/mise.macos.lock
+  s_00332b4a331471::t_13c138e985ffdf 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb92b9e4a2f53ab3a1fdf58d03c4632efc13e951",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
