@@ -79,6 +79,19 @@ description = "应用已启用的 dotfiles 映射；默认需要确认"
 confirm = { message = "这会修改已启用映射对应的用户配置文件。是否继续？", default = "no" }
 run = "mise bootstrap dotfiles apply"
 
+[tasks.vscode-status]
+description = "核对当前平台公共 VS Code 扩展及版本，保留清单外扩展"
+run = "python3 -B ./scripts/vscode-extensions.py status"
+
+[tasks.vscode-dry-run]
+description = "预览公共 VS Code 扩展安装与版本变更"
+run = "python3 -B ./scripts/vscode-extensions.py sync --dry-run"
+
+[tasks.vscode-sync]
+description = "按清单安装公共 VS Code 扩展；不删除其他扩展"
+confirm = { message = "这会安装或调整清单中扩展的版本。是否继续？", default = "no" }
+run = "python3 -B ./scripts/vscode-extensions.py sync"
+
 # -----------------------------------------------------------------------------
 # 已启用的公共配置
 #

@@ -102,7 +102,29 @@ espanso service restart
 | macOS | `~/Library/Application Support/Code/User/settings.json` |
 | Linux | `~/.config/Code/User/settings.json` |
 
-本机的 `dart.flutterSdkPath`、`git.path`、插件专属偏好和以后新增的未声明设置保留在目标文件中。旧的整份覆盖模板已由公共合并来源替代。Profiles、扩展安装、工作区配置、凭据、`argv.json` 和全局存储继续由本机 VS Code 管理；现有 Settings Sync 配置保持原状。VS Code 的目录与配置作用域见[官方说明](https://code.visualstudio.com/docs/configure/settings)。
+本机的 `dart.flutterSdkPath`、`git.path`、插件专属偏好和以后新增的未声明设置保留在目标文件中。旧的整份覆盖模板已由公共合并来源替代。Profiles、工作区配置、凭据、`argv.json` 和全局存储继续由本机 VS Code 管理；现有 Settings Sync 配置保持原状。VS Code 的目录与配置作用域见[官方说明](https://code.visualstudio.com/docs/configure/settings)。
+
+### 公共扩展清单
+
+`dotfiles/common/vscode/extensions.toml` 固定筛选后的 18 个扩展及核对时版本。当前均为公共项；以后有平台专属扩展时放入 `[macos]` 或 `[linux]`，脚本合并当前平台分组，冲突或格式不明时停止。认证状态和扩展存储不进入清单，此前移除的扩展不重新纳管；清单外扩展继续保留。
+
+```bash
+mise run vscode-status
+mise run vscode-dry-run
+mise run vscode-sync
+```
+
+同步只安装缺失项或调整清单内版本，不删除其他扩展；明确同步会按固定版本安装，可能将更新的版本调回清单版本。需要升级时先修改并审阅清单。扩展依赖由 VS Code 安装，若依赖也是清单项，会在最后核对其版本。Settings Sync 的扩展同步若已启用，仍可能与本地固定版本相互覆盖，出现版本漂移时先选择保留的版本再同步。
+
+隔离验收同时指定用户数据和扩展目录，避免使用本机 Profiles、认证和已有扩展；单独传一个目录会被拒绝：
+
+```bash
+python3 scripts/vscode-extensions.py sync \
+  --user-data-dir /tmp/system-sync-code/user-data \
+  --extensions-dir /tmp/system-sync-code/extensions
+```
+
+macOS 可自动找到标准应用目录中的 CLI；其他位置用 `--code <CLI绝对路径>`。参数依据 [VS Code 官方 CLI 文档](https://code.visualstudio.com/docs/configure/command-line#_working-with-extensions)。扩展清单是独立入口，`config-sync` 只同步应用配置，不自动安装扩展。
 
 当前 `settings.json` 是标准 JSON，符合 mise 合并器要求。VS Code 允许的 JSONC 注释不受当前 mise 合并器支持；文件包含注释、尾逗号或无效内容时，mise 会报错并保留原文件，不会自动剥离注释再覆盖。
 
