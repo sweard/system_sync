@@ -1,0 +1,19 @@
+.github/workflows/check.yml
+  s_00332b4a331471::t_a85efd1239f2a9 31-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9f73f2e7af1aa4e61224c291f356402ce34e729",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
