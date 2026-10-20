@@ -1,0 +1,24 @@
+scripts/sync_runtime.py
+  s_00332b4a331471::t_8c2366a2f83960 90
+mise.toml
+  s_00332b4a331471::t_8c2366a2f83960 38,43
+README.md
+  s_00332b4a331471::t_8c2366a2f83960 84,153,159-160,163-164,167-168,171-172,175,205,624
+  s_00332b4a331471::t_7a5189dc988636 714-739
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "187f16a261bd8050c85a08e169e6813a43d067ba",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
