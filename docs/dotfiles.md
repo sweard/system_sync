@@ -56,7 +56,9 @@
 
 原占位符已转换为 Espanso 原生语法：`{date}` → 本地日期 `YYYY-MM-DD`，`{datetime}` → 本地日期时间 `YYYY-MM-DD HH:mm:ss`，`{cursor}` → 光标标记 `$|$`。因此 `:date` 输出日期时间，`:clsdsc` 中的日期动态生成；单独的 `:cursor` 会移除触发词并将光标留在原位。默认 `base.yml` 中重复的 `:date` 示例已移除，`:espanso` 和 `:shell` 仍保留。详见 [Espanso 日期扩展](https://espanso.org/docs/matches/extensions/#date-extension)和[光标标记](https://espanso.org/docs/matches/basics/#cursor-hints)。
 
-原有 `config/default.yml` 的配置选项保持不变；与处理过日期冲突的 `match/base.yml` 一起交给 mise。公共目录使用 `symlink-each`，只接管来源中列出的文件，保留本机的其他片段和 `match/packages/`。公共目录映射明确排除 `*.local` 与 `*.example.toml`，私有文件由本机映射单独链接。
+原有 `config/default.yml` 的配置选项保持不变；与处理过日期冲突的 `match/base.yml` 一起交给 mise。公共目录使用 `symlink-each`，只接管来源中列出的文件，保留本机的其他片段和 `match/packages/`。公共目录映射明确排除 `*.local`、`*.example.toml` 和 `.DS_Store`，私有文件由本机映射单独链接。
+
+`.gitignore` 不会自动成为目录映射的排除清单。2026-10-21 核对发现，YAML 和私有映射均已正确部署，待同步项实际来自 Finder 在公共来源中生成的 `.DS_Store`。两个平台已显式排除此名称，覆盖根目录及子目录；目标中的本机元数据文件继续保留，不需要强制覆盖或重启 Espanso。无 `/` 的 `exclude` 模式会匹配任意深度的文件名，规则见 [mise 官方说明](https://mise.jdx.dev/dotfiles/managed.html#exclude-files)。
 
 目标位置：macOS 为 `~/Library/Application Support/espanso`，Linux 为 `~/.config/espanso`。如果使用自定义 `XDG_CONFIG_HOME` 或 `ESPANSO_CONFIG_DIR`，先运行 `espanso path`，再将平台适配器和私有映射的目标改成实际路径。跨系统配置目录的依据见 [Espanso 官方入门文档](https://espanso.org/docs/get-started/#configuration)。
 

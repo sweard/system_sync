@@ -2,7 +2,7 @@
 # 启用 espanso 公共配置、Linux zsh 和 VS Code 适配器。
 # 使用非默认 XDG_CONFIG_HOME 或 ESPANSO_CONFIG_DIR 时，请按 espanso path 修改目标。
 [dotfiles]
-"~/.config/espanso" = { source = "dotfiles/common/espanso", mode = "symlink-each", exclude = ["*.local", "*.example.toml"] }
+"~/.config/espanso" = { source = "dotfiles/common/espanso", mode = "symlink-each", exclude = ["*.local", "*.example.toml", ".DS_Store"] }
 "~/.zprofile" = { source = "dotfiles/linux/zsh/zprofile", mode = "symlink" }
 "~/.config/zsh/platform.zsh" = { source = "dotfiles/linux/zsh/platform.zsh", mode = "symlink" }
 "~/.config/Code/User/settings.json/shared" = { source = "dotfiles/common/vscode/settings.json", merge = true }
