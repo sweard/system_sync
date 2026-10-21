@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("runtime_preflight", ROOT / "scripts/sync_runtime.py")
+SPEC = importlib.util.spec_from_file_location("runtime_preflight", ROOT / "tests/reference/sync_runtime.py")
 RUNTIME = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RUNTIME)
 

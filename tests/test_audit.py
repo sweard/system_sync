@@ -15,7 +15,7 @@ from helper_fixture import prepare_helper
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("system_audit", ROOT / "scripts/audit.py")
+SPEC = importlib.util.spec_from_file_location("system_audit", ROOT / "tests/reference/audit.py")
 AUDIT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(AUDIT)
 MISE = shutil.which("mise")

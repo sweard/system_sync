@@ -17,7 +17,7 @@ import tomllib
 from sync_runtime import RuntimeFailure, journal, operation_lock
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @dataclass(frozen=True)

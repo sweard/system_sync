@@ -18,8 +18,8 @@ from helper_fixture import prepare_helper
 
 ROOT = Path(__file__).resolve().parents[1]
 MISE = shutil.which("mise")
-sys.path.insert(0, str(ROOT / "scripts"))
-SPEC = importlib.util.spec_from_file_location("config_detach", ROOT / "scripts/config-detach.py")
+sys.path.insert(0, str(ROOT / "tests/reference"))
+SPEC = importlib.util.spec_from_file_location("config_detach", ROOT / "tests/reference/config-detach.py")
 DETACH = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = DETACH
 SPEC.loader.exec_module(DETACH)

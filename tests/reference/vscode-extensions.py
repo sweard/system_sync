@@ -12,7 +12,7 @@ import sys
 import tomllib
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 IDENTIFIER = re.compile(r"[a-z0-9][a-z0-9-]*\.[a-z0-9][a-z0-9-]*\Z")
 VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?\Z")
 

@@ -92,7 +92,7 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         scripts.mkdir()
         self.script = scripts / "homebrew-converge.sh"
         shutil.copy2(PROJECT_ROOT / "scripts/homebrew-converge.sh", self.script)
-        for name in ("sync-runtime.sh", "sync_runtime.py", "system-sync.sh"):
+        for name in ("sync-runtime.sh", "system-sync.sh"):
             shutil.copy2(PROJECT_ROOT / "scripts" / name, scripts / name)
         prepare_helper(self.project)
 

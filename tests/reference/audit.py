@@ -13,7 +13,7 @@ import sys
 from threading import Lock
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SECTIONS = ("tools", "packages", "path", "config")
 KINDS = {"ok": "已核对", "drift": "漂移", "candidate": "待纳管候选",
          "local": "本机保留", "error": "未完成核对"}

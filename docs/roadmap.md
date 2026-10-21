@@ -12,6 +12,7 @@
 - `audit`、mise 包状态 JSON、zypper XML，以及 Bash 平台流程的版本预检、共享锁和事务日志已接入 Go；原有 task 名称、报告格式和 `yes` 确认保持。
 - 单包清单编辑、配置迁出、VS Code 扩展和本机配置历史均已接入 Go；原 task、`yes` 确认、原生 CLI、精确信任、备份/回滚和本机历史边界保持。TOML 库固定版本并 vendoring，构建仍可离线完成，预编译包同时携带许可。
 - Python 仅作为开发检查、原有测试及参考实现保留；后续可按需迁移测试。运行时迁移不修改本机真实包、扩展或用户配置，验收使用临时 HOME 和模拟命令。
+- 已将仍有测试用途的 7 个 Python 参考实现移入 `tests/reference/`，删除未引用的旧 `config-history.py`，同步检查入口、导入及隔离测试路径；`scripts/` 仅保留 Shell 执行入口。
 - 构建和验证命令、源码位置与预编译安装步骤见 [Go helper](go-helper.md)。未将交叉编译视为 Linux 真实包事务验收。
 
 `v0.2.0` 本机检查通过：49 项 Go 测试（含 race 检查）、166 项 Python 回归、22 项 task 校验及 `go vet`。新增无 Python/Go 的写入口验收、配置迁出失败回滚与并发修改保护、扩展进程树超时清理及本机历史范围检查；四平台归档和空模块缓存的离线构建已验证。本轮尚未执行远端 CI。
@@ -56,7 +57,7 @@
 
 | 顺序 | 工作项 | 当前状态 | 完成标准 |
 |---|---|---|---|
-| 1 | 对齐检查入口的 Python 要求 | `scripts/sync_runtime.py` 允许 Python 3.9+，但 `tests/test_environment.py` 直接导入 `tomllib`；本机系统 Python 3.9.6 没有该模块，当前 mise Python 3.15.0 不受影响。 | 选择保留 3.9 兼容性或明确提高检查入口要求，同步预检与文档，并在声明的最低版本下运行检查。 |
+| 1 | 对齐检查入口的 Python 要求 | 当时的 `scripts/sync_runtime.py`（现位于 `tests/reference/sync_runtime.py`）允许 Python 3.9+，但 `tests/test_environment.py` 直接导入 `tomllib`；本机系统 Python 3.9.6 没有该模块，当前 mise Python 3.15.0 不受影响。 | 选择保留 3.9 兼容性或明确提高检查入口要求，同步预检与文档，并在声明的最低版本下运行检查。 |
 | 2 | 增加自动化验收与 CI | 仓库尚未提供 CI 工作流，现有测试主要通过本机手动执行。 | 增加 macOS/Linux 自动检查，覆盖最低 Python 版本；保持隔离 HOME 和模拟包管理器，避免测试修改宿主系统软件。 |
 | 3 | 补齐新机重建能力 | Java 通过 mise 链接到本机外部 JBR；仓库、全局配置及公共来源旁均没有 `mise.lock`。 | 明确 JDK 的可重装来源或前置安装与注册步骤，为适用工具生成并部署全局锁文件，再在干净环境验证公共配置和工具重建、私有文件缺失时正常跳过。 |
 | 4 | 完成 Flutter 版本管理 | Flutter 仍由原目录维护，位于 `stable` 分支，核对时有 1 项本地改动。 | 先核对并保存本地改动，再迁入 mise；确认 Flutter/Dart 命令来源、版本和现有项目工作流正常。 |

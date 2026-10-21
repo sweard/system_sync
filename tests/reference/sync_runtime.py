@@ -144,7 +144,7 @@ def run_guarded(root, command):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--check", action="store_true")
     action.add_argument("--inherited-lock", action="store_true")

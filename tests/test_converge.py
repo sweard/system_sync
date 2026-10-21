@@ -16,7 +16,7 @@ from helper_fixture import prepare_helper
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tests/reference"))
 from sync_runtime import operation_lock
 
 
@@ -168,6 +168,8 @@ class ConvergeTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name) / "system sync"
         shutil.copytree(ROOT / "scripts", self.root / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(ROOT / "tests/reference", self.root / "tests/reference",
+                        ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(ROOT / "packages", self.root / "packages")
         prepare_helper(self.root)
         detector = self.root / "scripts/detect-linux-profile.sh"
@@ -424,7 +426,7 @@ class ConvergeTest(unittest.TestCase):
         self.configure()
         commands = (
             ["/bin/bash", str(self.root / "scripts/system-sync.sh"), "--apply"],
-            [sys.executable, str(self.root / "scripts/package-command.py"), "install", "new-tool"],
+            [sys.executable, str(self.root / "tests/reference/package-command.py"), "install", "new-tool"],
             ["/bin/bash", str(self.root / "scripts/homebrew-converge.sh"), "--upgrade"],
         )
         with operation_lock(self.root):

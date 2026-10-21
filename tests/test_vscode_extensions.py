@@ -10,7 +10,7 @@ import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts/vscode-extensions.py"
+SCRIPT = ROOT / "tests/reference/vscode-extensions.py"
 spec = importlib.util.spec_from_file_location("vscode_extensions", SCRIPT)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)

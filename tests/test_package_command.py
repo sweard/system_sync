@@ -14,8 +14,8 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-SPEC = importlib.util.spec_from_file_location("package_command", ROOT / "scripts/package-command.py")
+sys.path.insert(0, str(ROOT / "tests/reference"))
+SPEC = importlib.util.spec_from_file_location("package_command", ROOT / "tests/reference/package-command.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 

@@ -24,7 +24,7 @@ from xml.etree import ElementTree
 from sync_runtime import RuntimeFailure, operation_lock, preflight
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 TOKEN = r"[A-Za-z0-9][A-Za-z0-9@+._-]*"
 BREW_NAME = re.compile(rf"{TOKEN}(?:/{TOKEN}/{TOKEN})?\Z")
 LINUX_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9+._-]*(?::[a-z0-9][a-z0-9-]*)?\Z")
