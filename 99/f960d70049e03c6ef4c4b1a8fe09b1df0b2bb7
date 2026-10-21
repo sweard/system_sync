@@ -1,0 +1,84 @@
+helper/README.md
+  s_00332b4a331471::t_4a43848d03412c 32
+  s_00332b4a331471::t_eee86e3dc164e4 121
+helper/internal/extensions/capture_test.go
+  s_00332b4a331471::t_faed07aa01404c 46,49,67-101
+  s_00332b4a331471::t_c1a693bb483888 1-45,47-48,50-66,102-121,127-339
+  s_00332b4a331471::t_41e0968446497c 122-126
+dotfiles/common/vscode/extensions.toml
+  s_00332b4a331471::t_faed07aa01404c 1
+  s_f18ad276625752::t_cb428c30de9df2 22
+helper/internal/helpercli/writers.go
+  s_00332b4a331471::t_2bc77ed3cf08e7 113,124,127-132,146
+  s_00332b4a331471::t_a9e83e520213bd 108,114-115,117-120,123,133-145,147-149
+  s_00332b4a331471::t_faed07aa01404c 116
+helper/internal/syncstate/runtime.go
+  s_00332b4a331471::t_2bc77ed3cf08e7 141
+helper/internal/helpercli/vscode_capture.go
+  s_00332b4a331471::t_a9e83e520213bd 1-20,25-49
+  s_00332b4a331471::t_2bc77ed3cf08e7 21-24
+docs/roadmap.md
+  s_00332b4a331471::t_faed07aa01404c 20,45
+  s_00332b4a331471::t_eee86e3dc164e4 23
+mise.toml
+  s_00332b4a331471::t_a9e83e520213bd 126
+  s_00332b4a331471::t_2bc77ed3cf08e7 125
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_6b8270b6e632f5::t_75505cb5859c76 14,20
+  s_00332b4a331471::t_936c0dea5e7de1 15
+  s_6b8270b6e632f5::t_4827156fef9f75 19,33
+docs/dotfiles.md
+  s_00332b4a331471::t_597cfee96c0c98 144-145,147-148,152-153,155-156,162-163,167,169
+  s_00332b4a331471::t_2bc77ed3cf08e7 146,149-151,168,170
+  s_00332b4a331471::t_faed07aa01404c 111,125,154,157-161,164-166
+  s_00332b4a331471::t_4bc02e56812e5d 171
+helper/internal/extensions/extensions.go
+  s_00332b4a331471::t_aa51a3646fb629 27-30,53,111,114,117,127,133,137,141-152
+helper/internal/extensions/capture.go
+  s_00332b4a331471::t_faed07aa01404c 67
+  s_00332b4a331471::t_aa51a3646fb629 1-28,32-66,68-148,150-151,154-275
+  s_00332b4a331471::t_41e0968446497c 149,152-153
+  s_6b8270b6e632f5::t_00d03102d08713 29-31
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_cd1f90d813d138 5,7,12,15-16,59-64,67-81,85-98,100-118,136-157,159-198,201-204
+  s_00332b4a331471::t_2bc77ed3cf08e7 65,158,200
+  s_00332b4a331471::t_faed07aa01404c 82-84,99,119-135,199
+  s_00332b4a331471::t_bdf340aa1d7211 66
+  s_00332b4a331471::t_7a94acaa362dbe 205
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_6b8270b6e632f5::t_75505cb5859c76 1-4
+README.md
+  s_00332b4a331471::t_4a43848d03412c 106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "99f960d70049e03c6ef4c4b1a8fe09b1df0b2bb7",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_f18ad276625752": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15812-7389-7b13-95fd-eef670d53e78",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
