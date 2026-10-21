@@ -1,0 +1,37 @@
+tests/test_converge.py
+  s_00332b4a331471::t_d516778758a79b 93-95,221-248
+  s_00332b4a331471::t_cb0f6575e93a51 249
+docs/packages.md
+  s_00332b4a331471::t_938cc7bb83d361 33-34
+docs/audit.md
+  s_00332b4a331471::t_938cc7bb83d361 32-39
+  s_00332b4a331471::t_5e1a26f4c5f84c 40-41
+scripts/system-sync.sh
+  s_00332b4a331471::t_3749244811c560 54,86-93
+tests/test_homebrew_preview.py
+  s_00332b4a331471::t_d516778758a79b 90,218-246
+  s_00332b4a331471::t_c773378a595080 247
+tests/test_audit.py
+  s_00332b4a331471::t_d516778758a79b 11,267-337
+  s_00332b4a331471::t_e99c251ad6ceb4 338
+scripts/audit.py
+  s_00332b4a331471::t_3749244811c560 6,13,159-160,184-193,195-196,211-231,340,345-347,425-431,433-434
+docs/roadmap.md
+  s_00332b4a331471::t_938cc7bb83d361 7-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "84bdd43d3fe9c799179dd48e2530ba2fa80d527d",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
