@@ -22,6 +22,7 @@ Go 单元测试随源码保存；项目级 CLI、离线安装和 Python 行为�
 | 命令或入口 | 实现与状态 |
 |---|---|
 | `mise run audit` | Go；保持 JSON schema 1、颜色和固定标记、查询并发、脱敏及退出状态 |
+| `package-capture` / `machine-init` | Go；默认预览，五平台清单采集、追加候选、分阶段补装、配置备份与工具来源核对；保留已有软件，不调用整机清理 |
 | `parse-status` | Go；校验 mise 包状态结构、状态、名称及非空声明，输出 TSV |
 | `parse-zypper` | Go；校验 XML 根节点、名称、对象种类及完整移除事务 |
 | 整机 `status` / `dry-run` / `system-sync`、`macos-upgrade` | 保留 Bash 平台流程，预检、共享锁、事务日志和解析调用 Go |
@@ -56,6 +57,7 @@ mise run helper-install
 |---|---|
 | CLI 入口、版本注入 | [`cmd/system-sync-helper/`](cmd/system-sync-helper/) |
 | 子命令与参数 | [`internal/helpercli/`](internal/helpercli/) |
+| 软件采集与机器接入 | [`internal/onboard/`](internal/onboard/) |
 | 审计逻辑和报告 | [`internal/audit/`](internal/audit/) |
 | JSON/XML 解析 | [`internal/packagestate/`](internal/packagestate/) |
 | 前置检查、共享锁和日志 | [`internal/syncstate/`](internal/syncstate/) |
@@ -111,7 +113,7 @@ CI 在准备编译器前校验并启动仓库内的预编译工具，再运行�
 
 `mise run check` 先校验仓库分发包，再显式重建本机 helper、检查前置版本和 task 配置，运行 Go race 检查和原有 Python 测试。Go 覆盖安全解析、查询超时清理、并发和共享状态、锁冲突与继承、日志状态；CLI 对照测试使用临时 HOME、合成私有值和替身命令，比较两种实现的完整报告。预编译回归另覆盖空缓存首次调用、并发初始化、禁用 Go/Python/下载命令、JSON 输出、四平台归档校验、源码漂移及损坏拒绝执行。
 
-2026-10-21 本机 macOS ARM64 的 `v0.2.0` 已通过 49 项 Go 测试（含 race 检查）、166 项 Python 回归（含 19 项 CLI/安装回归）、22 项 task 校验及 `go vet`。原有隔离部署、扩展安装和本机历史测试已改为调用 Go，原 Python 单元测试作为参考继续保留。新增验证在禁用 Go、Python 和下载命令的环境中完成单包安装、共享锁冲突检查、配置迁出、扩展同步及本机历史登记/保存；配置内容保持本机，输出不含测试私有值。
+2026-10-21 本机 macOS ARM64 的 `v0.2.0` 已通过 65 项 Go 测试（含 race 检查）、187 项 Python 回归、25 项 task 校验及 `go vet`。机器接入覆盖五平台采集与补装、保留清单外软件和 orphan、重复执行、固定版本阻止误装、失败与并发检查；另有 7 项接入 CLI 回归，包含真实 mise 在临时 HOME 中部署、私有键保留及备份核对。原有隔离部署、扩展安装和本机历史测试继续调用 Go，Python 参考测试保留；禁用 Go、Python CLI 和下载命令的接入验收通过。真实 Mac 只读预览已运行，未在宿主执行初始化 apply。
 
 四个平台归档、内外两层 SHA256、目标格式及 Linux 静态链接均已核对，压缩包合计约 6.4 MiB；模块缓存为空且关闭网络时，仍可从 `helper/vendor/` 构建。此前真实只读审计与 Python 参考报告逐字段一致。上述验证均未修改本机真实软件包、扩展或用户配置；新 CI 流程尚未在远端执行。
 

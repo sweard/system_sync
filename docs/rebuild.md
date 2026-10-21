@@ -4,7 +4,42 @@
 
 先准备 Git、Bash、mise、tar、SHA256 校验工具和系统原生包管理器。当前验收使用 mise 2026.10.15；日常管理任务已经不依赖 Python，只有开发检查和参考测试仍要求 Python 3.11+。首次调用自动从随 clone 保存的 `helper/prebuilt/<版本>/` 安装 [Go helper](../helper/README.md)，无需先安装 Go 或联网下载 helper。系统软件、开发工具和应用配置分别安装，不把 Linux 的示例软件清单直接应用到新机器。
 
-## 部署与安装
+## 使用 machine-init 分阶段接入
+
+支持 macOS Homebrew，以及 Arch、Debian/Ubuntu、Fedora/RHEL、openSUSE/SLE 的现有 profile；WSL 使用其发行版适配，不适用于依赖 `transactional-update` 的 MicroOS/Aeon。先准备 mise 2026.10.11+ 和前述基础命令，以普通用户运行；Linux 需要有可用的 sudo 权限。先审阅系统软件声明，WSL 仓库建议放在 Linux HOME 中，整个发行版的备份在 Windows 侧通过 `wsl --export` 完成。
+
+```bash
+mise trust --all
+mise run helper-install             # 已有 checkout 更新后显式启用新 helper
+mise run package-capture            # 默认预览本机清单与合并候选
+mise run machine-init               # 默认预览 packages → config → tools
+mise run package-capture --apply    # 仅保存本机快照与候选
+
+# 已有机器建议分阶段接入
+mise run machine-init --apply --only packages
+mise run machine-init --apply --only config
+mise run machine-init --apply --only tools
+
+# 完整计划没有待处理项时，也可依次执行全部阶段
+mise run machine-init --apply
+mise run audit
+```
+
+`--dry-run` 显式指定预览；`--only` 可重复或用逗号分隔，始终按上述顺序执行。执行时输入小写 `yes`，已审阅计划可显式加 `--yes` 跳过项目确认，冲突和来源检查始终保留。Arch/zypper 在项目确认后非交互补装；sudo 认证、其他包管理器及第三方信任仍可能需要交互。`--json` 用于结构化预览，与 `--apply` 互斥。
+
+| 阶段 | 行为与保留范围 |
+|---|---|
+| packages | 仅安装声明中尚未安装的软件。Homebrew 用只含缺失项的临时 Brewfile，保留原选项并禁用自动升级、cleanup 和 autoremove；Linux 使用原生安装命令及适用的保留策略。不改变已有根包的安装原因、不清理 orphan，也不自动刷新 Arch 数据库或全量升级。 |
+| config | 显示真实差异，备份 HOME 内的受管目标后调用 mise 原生部署。普通文件和其他来源的链接冲突需逐项接管，不使用强制覆盖，不删除 `absent` 配置；合并配置保留私有键。 |
+| tools | 核对公共目标版本和已安装版本，发现 nvm、pyenv、uv Python、rbenv、Bun、Flutter 等额外来源或 Homebrew 显式工具根包时，先单独核对迁移。全局配置部署后以 `mise install --locked` 补装精确版本，保留其他版本和旧管理器，不写入版本声明。 |
+
+完整计划有阻塞项时不执行任何阶段，可先用 `--only packages` 完成独立补装。Linux 自动补装仅接受本 profile 的 `latest` 声明；缺失的固定版本、额外选项及继承来源先单独核对，避免误装为最新版。AUR 缺失项先审阅并通过 `package-install --aur` 单独处理；未知、absent、跳过和不完整状态不用于初始化。原生依赖事务可能更新依赖，出现冲突或移除建议应取消并人工处理；安装后复核原有软件的名称/架构身份仍在。失败保留 `needs-review` 记录及已完成阶段，不自动回滚系统包；重跑会重新计算并跳过已安装项。
+
+快照与候选保存在 `.system-sync/capture/<时间>-<平台>-*/`；初始化计划、原配置 `config.before.tar` 和事务记录位于 `.system-sync/history/<时间>-machine-init-*/`。目录为 `0700`、文件为 `0600`，均被 Git 忽略。备份可能包含私有配置，只保存在本机。候选需人工合并，来源不明的软件继续保留；审阅完整 baseline、保护项和删除预览后，才单独运行 `system-sync`。预览不保存候选或配置备份，但首次 helper 初始化和共享锁仍会写入本机缓存。
+
+WSL 的 Windows 应用配置、VS Code Remote 的设置/扩展目标、Windows PATH 和 Docker/systemd 服务需另行核对；task 不接管 Windows 配置或启用服务。工具下载仍受平台限制，例如当前 Flutter 官方归档没有 Linux ARM64 版本。
+
+## 单独部署与安装
 
 在克隆后的仓库根目录执行，已有配置先备份，再审阅差异：
 

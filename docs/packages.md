@@ -106,6 +106,20 @@ mise run package-install --cask --trust abue-ammar/tinycast/tinycast
 
 `system-sync` 的方向是“声明 → 系统”。如果希望保留当前机器的软件状态，应先按下面的命令导出“系统 → 声明”的候选，再核对差异；这些导出命令不安装或卸载软件，也不直接覆盖受管清单。请在仓库根目录执行，且不要与包操作并行运行。
 
+优先使用跨平台 task，自动识别现有 macOS / Linux profile，复用共享锁，区分有效空结果和查询失败，并检查采集期间软件状态是否变化：
+
+```bash
+mise run package-capture             # 默认预览根包、缺失项、待核对来源与候选 diff
+mise run package-capture --json      # 结构化预览
+mise run package-capture --apply     # 仅保存本机快照和候选，不改写清单或系统软件
+```
+
+输出到 `.system-sync/capture/<时间>-<平台>-*/`，包括 `capture.json`、`sources.before.json` 和 `Brewfile.candidate` 或 `mise.toml.candidate`。文件为 `0600`、目录为 `0700`，均被 Git 忽略。候选保留原清单的声明、注释及选项，仅追加已识别的清单外根包；仍未安装的原声明不会被删掉，合并前需要重新核对当前差异。
+
+Homebrew 从原生 Bundle 快照取得 formula/cask/tap；新发现的第三方 tap 和完整包名只列为待核对，不自动扩大信任。Arch 的 foreign 显式根包单独记录，不自动认定为 AUR 或转为 `pacman:`；已有 orphan 也会列出并保留。查询失败不会发布部分候选。手工根包标记不一定完全反映使用意图，候选必须审阅后再合并；unknown、absent、skipped、版本不符等状态不能作为无条件补装计划。
+
+首次接入建议先运行 `mise run machine-init --apply --only packages`，只补装缺失声明并保留已有软件。配置及工具阶段见[机器接入](rebuild.md#使用-machine-init-分阶段接入)。以下原生命令保留作人工导出参考；Arch 无匹配返回 1 的情况优先交给 `package-capture` 处理。
+
 macOS 使用 Homebrew 自己的快照命令，仅导出本项目管理的 formula、cask 和 tap：
 
 ```bash

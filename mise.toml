@@ -23,6 +23,16 @@ config_roots = [
 description = "查看当前系统的声明状态和差异（只读）"
 run = "./scripts/system-sync.sh --status"
 
+[tasks.package-capture]
+description = "预览本机软件清单与合并候选；--apply 仅保存本机快照，不改写受管清单"
+raw = true
+run = "./helper/scripts/run.sh package-capture"
+
+[tasks.machine-init]
+description = "预览新机器接入；--apply 输入 yes 分阶段补装并保留已有软件，支持 --only packages/config/tools"
+raw = true
+run = "./helper/scripts/run.sh machine-init"
+
 [tasks.audit]
 description = "只读审计 tools、packages、PATH 和配置映射；支持 --json、--strict、--only、--color"
 # 直接连接输出，让颜色判断使用终端的真实状态；查询输出由审计脚本过滤和脱敏。

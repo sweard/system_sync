@@ -31,7 +31,7 @@ mise run clean --apply --yes
 | `.system-sync/go/build` | helper 的 Go 构建缓存，下次构建时重新生成 |
 | `.system-sync/dist` | `helper-dist` 导出的本机产物 |
 
-迁移备份、`.system-sync/history/`、当前安装的 `.system-sync/helper/`、Go 模块缓存、重建/Flutter 的结果与日志文件以及 Git 管理的 `helper/prebuilt/` 均保留。路径中出现符号链接或非目录时会停止，缺失目录直接跳过；已经没有目标时明确提示无需清理。预计回收空间来自 `du`，不代表文件系统实际释放量。脚本不与验证工具或构建进程协调加锁。
+迁移备份、`.system-sync/history/`、`.system-sync/capture/` 软件快照、当前安装的 `.system-sync/helper/`、Go 模块缓存、重建/Flutter 的结果与日志文件以及 Git 管理的 `helper/prebuilt/` 均保留。路径中出现符号链接或非目录时会停止，缺失目录直接跳过；已经没有目标时明确提示无需清理。预计回收空间来自 `du`，不代表文件系统实际释放量。脚本不与验证工具或构建进程协调加锁。
 
 Finder 等程序可能在删除过程中重建 `.DS_Store`，导致 `Directory not empty`。脚本仅对此类错误最多尝试三次，每次重新校验路径，并检查目标是否已移除；权限等其他错误直接停止。持续有程序写入而仍失败时，先结束相关进程，再执行同一清理命令；清理已完成的部分不会恢复。
 
@@ -98,9 +98,13 @@ mise dot --local rollback ~/.codex/config.toml --to <检查点ID>
 
 ## 中断与写入失败的恢复
 
+`machine-init` 的记录位于 `.system-sync/history/<时间>-machine-init-*/`：`plan.json` 是接入计划，`transaction.json` 记录已完成阶段；失败标为 `needs-review`，不会自动卸载已经补装的软件。先核对原生包状态、失败原因和实际配置，再重跑相同阶段，已安装项会跳过。受管清单始终不由初始化自动改写。
+
+配置阶段前保存的 `config.before.tar` 包含原 HOME 相对路径、内容、链接和权限；备份可能含私有值，仅保存在本机。需要恢复时先在独立目录解包核对，再逐目标恢复，避免向仍指向仓库的链接直接写入而改动公共来源。原本不存在的目标可结合 `plan.json` 与归档条目判断。软件清单候选另存在 `.system-sync/capture/`，不是已安装包的完整备份。
+
 确认后，操作前后的清单副本和事务阶段保存在 `.system-sync/history/<时间>-package-<随机值>/`：`*.before` 是原文件，`*.after` 是候选结果，`transaction.json` 记录命令与状态。该目录被 Git 忽略。
 
-清单采用临时文件原子替换，也会检测操作期间的人工编辑并拒绝覆盖。`package-install` / `package-uninstall`、整机 `system-sync`、macOS 升级和直接调用的平台写操作共用 `.system-sync/operation.lock`，冲突时立即停止。多个文件无法与系统包事务组成一个跨文件/跨进程的原子事务，突然断电或写盘失败仍可能需要人工恢复。手工包管理命令、直接运行的 mise bootstrap 命令和编辑器不会参与此锁，仍不要与这些入口并行操作。
+清单采用临时文件原子替换，也会检测操作期间的人工编辑并拒绝覆盖。`package-capture` / `machine-init`、`package-install` / `package-uninstall`、整机 `system-sync`、macOS 升级和直接调用的平台写操作共用 `.system-sync/operation.lock`，冲突时立即停止。多个文件无法与系统包事务组成一个跨文件/跨进程的原子事务，突然断电或写盘失败仍可能需要人工恢复。手工包管理命令、直接运行的 mise bootstrap 命令和编辑器不会参与此锁，仍不要与这些入口并行操作。
 
 如果原生安装/卸载已经发生，但配置写入失败，脚本不会擅自反向安装或删除软件。先检查包管理器实际状态、审计副本和 `git diff`，解决权限/格式/并发修改问题后再用相同入口重试；必要时人工合并 `*.after`。在声明和实际状态尚未对齐前，不要直接运行整机 `system-sync`。Git 只能恢复配置文件，不能回滚已经执行的系统包操作。
 
