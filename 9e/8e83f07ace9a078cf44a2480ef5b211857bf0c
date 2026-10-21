@@ -1,0 +1,26 @@
+packages/linux/arch/README.md
+  s_00332b4a331471::t_9582f8b73bd1f1 1-58
+README.md
+  s_00332b4a331471::t_1916a815db743d 113
+docs/packages.md
+  s_00332b4a331471::t_9582f8b73bd1f1 19-21
+packages/linux/arch/mise.toml
+  s_00332b4a331471::t_9582f8b73bd1f1 1-3,17-37
+  s_00332b4a331471::t_fff4b4d9481acb 38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9e8e83f07ace9a078cf44a2480ef5b211857bf0c",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
