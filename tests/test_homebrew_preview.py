@@ -87,7 +87,7 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         scripts.mkdir()
         self.script = scripts / "homebrew-converge.sh"
         shutil.copy2(PROJECT_ROOT / "scripts/homebrew-converge.sh", self.script)
-        for name in ("sync-runtime.sh", "sync_runtime.py"):
+        for name in ("sync-runtime.sh", "sync_runtime.py", "system-sync.sh"):
             shutil.copy2(PROJECT_ROOT / "scripts" / name, scripts / name)
 
         self.brewfile = self.packages / "Brewfile"
@@ -214,6 +214,36 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         journals = list((self.project / ".system-sync/history").glob("*/transaction.json"))
         self.assertEqual(len(journals), 1)
         return json.loads(journals[0].read_text())
+
+    def test_wrapper_and_direct_status_each_preflight_once(self):
+        version_log = self.root / "version-queries"
+        mise = self.root / "bin/mise"
+        mise.write_text('#!/bin/bash\nprintf "%s\\n" "$*" >> "$SYNC_TEST_VERSION_LOG"\n'
+                        'printf "%s\\n" "${SYNC_TEST_MISE_VERSION:-2026.10.11 fixture}"\n')
+        mise.chmod(0o755)
+        environment = dict(self.environment, SYNC_TEST_VERSION_LOG=str(version_log))
+        for name in ("system-sync.sh", "homebrew-converge.sh"):
+            with self.subTest(entry=name):
+                version_log.unlink(missing_ok=True)
+                result = subprocess.run(["bash", str(self.script.parent / name), "--status"],
+                                        env=environment, text=True, stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, timeout=20)
+                self.assertEqual(result.returncode, 0, result.stdout)
+                self.assertEqual(version_log.read_text().splitlines(), ["--version"])
+                self.assertIn("bundle check 退出码为 0", result.stdout)
+                self.log.unlink()
+                old = subprocess.run(["bash", str(self.script.parent / name), "--status"],
+                                     env=dict(environment, SYNC_TEST_MISE_VERSION="2026.10.10 fixture"),
+                                     text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=20)
+                self.assertNotEqual(old.returncode, 0)
+                self.assertFalse(self.log.exists(), "old mise reached Homebrew queries")
+
+    def test_wrapper_apply_retains_a_single_guarded_transaction(self):
+        result = run_terminal(["bash", str(self.script.parent / "system-sync.sh"), "--apply"],
+                              self.environment, [("APPLY HOMEBREW", "APPLY HOMEBREW")])
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(self.transaction()["phase"], "complete")
+        self.assertEqual(sum("|bundle install " in line for line in self.log.read_text().splitlines()), 1)
 
     def test_apply_installs_and_cleans_inside_shared_audit(self):
         result = run_terminal(["bash", str(self.script), "--apply"], self.environment,

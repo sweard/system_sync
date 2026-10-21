@@ -90,6 +90,9 @@ if name == "uname": print("Linux")
 elif name == "sudo":
     if args != ["-v"]: os.execvp(args[0], args)
 elif name == "mise":
+    if os.environ.get("FIXTURE_QUERY_LOG"):
+        with Path(os.environ["FIXTURE_QUERY_LOG"]).open("a") as log:
+            log.write(json.dumps(args) + "\n")
     if args == ["--version"]: print(state.get("mise_version", "2026.10.11 fixture"))
     elif args[:3] == ["bootstrap", "packages", "status"]:
         if state.get("json_error"): print('{"changed_schema":true}')
@@ -213,6 +216,35 @@ class ConvergeTest(unittest.TestCase):
                 result = self.run_sync(terminal=False)
                 self.assertNotEqual(result.returncode, 0, result.stdout)
                 self.assertIn("交互式终端", result.stdout)
+                self.assertEqual(self.calls(), [])
+
+    def test_wrapper_status_uses_one_preflight_and_one_package_snapshot(self):
+        queries = self.root / "query-calls.jsonl"
+        self.environment["FIXTURE_QUERY_LOG"] = str(queries)
+        for profile in ("arch", "debian", "fedora", "opensuse"):
+            with self.subTest(profile=profile):
+                self.configure(profile)
+                queries.unlink(missing_ok=True)
+                result = self.run_sync("--status", terminal=False)
+                self.assertEqual(result.returncode, 0, result.stdout)
+                commands = [json.loads(line) for line in queries.read_text().splitlines()]
+                self.assertEqual(commands.count(["--version"]), 1)
+                snapshots = [command for command in commands if command[:3] == ["bootstrap", "packages", "status"]]
+                self.assertEqual(snapshots, [["bootstrap", "packages", "status", "--json"]])
+                self.assertIn("git", result.stdout)
+                self.assertIn("new-tool", result.stdout)
+                self.assertEqual(self.calls(), [])
+
+    def test_readonly_wrappers_reject_old_mise_before_package_queries(self):
+        queries = self.root / "query-calls.jsonl"
+        self.environment["FIXTURE_QUERY_LOG"] = str(queries)
+        for mode in ("--status", "--dry-run"):
+            with self.subTest(mode=mode):
+                self.configure(mise_version="2026.10.10 fixture")
+                queries.unlink(missing_ok=True)
+                result = self.run_sync(mode, terminal=False)
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertEqual([json.loads(line) for line in queries.read_text().splitlines()], [["--version"]])
                 self.assertEqual(self.calls(), [])
 
     def test_cancel_before_install_is_audited(self):

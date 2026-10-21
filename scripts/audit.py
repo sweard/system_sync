@@ -3,12 +3,14 @@
 
 import argparse
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+from threading import Lock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,6 +156,8 @@ class Audit:
         self.runner = runner or Runner(self.root, query_environment)
         self.sections = {name: [] for name in SECTIONS}
         self.tools = None
+        self.tools_error = None
+        self.tools_lock = Lock()
 
     def display(self, value):
         value = str(value)
@@ -177,8 +181,19 @@ class Audit:
             raise AuditError("状态 JSON 无法识别；报告尚未完成") from None
 
     def load_tools(self):
-        if self.tools is not None:
+        # tools and PATH share one snapshot, including a failed query.
+        with self.tools_lock:
+            if self.tools_error is not None:
+                raise AuditError(self.tools_error)
+            if self.tools is None:
+                try:
+                    self.tools = self.read_tools()
+                except AuditError as error:
+                    self.tools_error = str(error)
+                    raise
             return self.tools
+
+    def read_tools(self):
         data = self.query_json(["mise", "ls", "--current", "--json"])
         if not isinstance(data, dict):
             raise AuditError("工具状态顶层结构无法识别")
@@ -191,8 +206,28 @@ class Audit:
                         not isinstance(version.get("installed"), bool)):
                     raise AuditError("工具版本状态缺少必需字段")
                 rows.append(dict(version, tool=name))
-        self.tools = rows
         return rows
+
+    def command_paths(self, rows):
+        commands = list(dict.fromkeys(COMMANDS[row["tool"]] for row in rows
+                                     if row["installed"] and row["tool"] in COMMANDS))
+
+        def query(command):
+            try:
+                return self.runner.run(["mise", "which", command]).strip()
+            except AuditError as error:
+                return error
+
+        paths = {}
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            for start in range(0, len(commands), 4):
+                batch = commands[start:start + 4]
+                values = list(pool.map(query, batch))
+                paths.update(zip(batch, values))
+                # Preserve partial reporting and avoid scheduling more queries after failure.
+                if any(isinstance(value, AuditError) for value in values):
+                    break
+        return paths
 
     def collect_tools(self):
         rows = self.load_tools()
@@ -302,11 +337,14 @@ class Audit:
                 self.add("path", "candidate", "unmanaged_path", entry, "未由共享 PATH 规则声明，需要核对来源")
         rows = self.load_tools()
         requested = {row["tool"] for row in rows}
+        expected_paths = self.command_paths(rows)
         for row in rows:
             command = COMMANDS.get(row["tool"])
             if not row["installed"] or not command:
                 continue
-            expected = self.runner.run(["mise", "which", command]).strip()
+            expected = expected_paths[command]
+            if isinstance(expected, AuditError):
+                raise expected
             if not expected or "\n" in expected or not Path(expected).is_absolute():
                 raise AuditError("mise which 返回了无法识别的命令路径")
             found = []
@@ -384,14 +422,16 @@ class Audit:
             if path.exists():
                 self.add("config", "local", "private_local", path, "按约定保留在本机，不读取内容")
 
+    def collect_section(self, section):
+        try:
+            getattr(self, "collect_" + section)()
+        except (AuditError, OSError, ValueError, RuntimeError) as error:
+            message = str(error) if isinstance(error, AuditError) else "文件或状态无法读取；该项尚未核对"
+            self.add(section, "error", "collector_failed", section, message)
+
     def execute(self, selected=SECTIONS):
-        for section in SECTIONS:
-            if section in selected:
-                try:
-                    getattr(self, "collect_" + section)()
-                except (AuditError, OSError, ValueError, RuntimeError) as error:
-                    message = str(error) if isinstance(error, AuditError) else "文件或状态无法读取；该项尚未核对"
-                    self.add(section, "error", "collector_failed", section, message)
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(self.collect_section, (section for section in SECTIONS if section in selected)))
         sections = {name: self.sections[name] for name in SECTIONS if name in selected}
         summary = dict.fromkeys(KINDS, 0)
         summary.update(Counter(item["kind"] for items in sections.values() for item in items))

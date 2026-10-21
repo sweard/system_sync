@@ -30,6 +30,8 @@ mise run system-sync
 
 `status` 只读地显示声明、当前根包和差异；`dry-run` 同时预览缺失包安装和收敛计划；`system-sync` 经交互确认后安装缺失项，再单独审阅删除阶段。
 
+平台脚本负责自己的完整预检和写操作保护。macOS 统一入口直接转交 Homebrew 脚本；Linux 的 `status` / `apply` 直接转交对应平台脚本，状态中的原生 JSON 只查询一次。Linux `dry-run` 会先显示原生安装预览，因此在这一步之前仍保留外层预检，再进入平台清理预览。
+
 所有包写入口共用操作锁。Linux apply 的顺序是：**终端/版本预检 → 加锁并建立审计 → 读取声明和当前状态 → 校验保护项及变更阈值 → 精确确认 → 保存安装前状态 → 原生 mise 安装 → 重新校验 → 调整安装原因及再次审阅删除事务 → 执行删除**。直接运行平台脚本同样经过保护；mise 原生安装阶段可能使用非交互参数，因此本仓库的精确确认始终在它之前。
 
 整机操作和升级的 `transaction.json` 记录 `preflight`、`installing` / `upgrading`、`marking`、`removing` 等阶段，以及最终 `complete` / `cancelled` / `failed` / `interrupted` 状态。安装失败也会保留 `.before` 清单和安装前包列表；包装层要求平台脚本明确记录完成，不能只凭退出码 0 判定成功。审计不是系统事务回滚，失败后应先检查 `last_phase` 与实际包状态。

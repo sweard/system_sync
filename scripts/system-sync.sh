@@ -49,10 +49,9 @@ for argument in "$@"; do
   esac
 done
 
-[[ "$MODE" == "help" ]] || system_sync_enter "$MODE"
-
 case "$(uname -s)" in
   Darwin)
+    # The platform entry enforces preflight and the write guard itself.
     exec "$SCRIPT_DIR/homebrew-converge.sh" "$@"
     ;;
   Linux)
@@ -84,19 +83,19 @@ case "$(uname -s)" in
     if [[ "$MODE" == "help" ]]; then
       exec "$CONVERGE_SCRIPT" --help
     fi
+    if [[ "$MODE" == "status" || "$MODE" == "apply" ]]; then
+      # The platform report already includes the native JSON state. Delegating
+      # avoids querying it twice and retains the platform's own preflight/lock.
+      exec "$CONVERGE_SCRIPT" "$@"
+    fi
+    # The installation preview runs before the platform cleanup preview, so it
+    # still needs its own preflight before invoking mise.
+    system_sync_enter "$MODE"
     command -v mise >/dev/null 2>&1 || die "找不到 mise"
     printf '==> Linux 发行版 profile：%s\n' "$PROFILE"
     case "$MODE" in
-      status)
-        (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status)
-        ;;
       dry-run)
         (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --dry-run)
-        ;;
-      apply)
-        # Installation belongs to the platform transaction, after its validation,
-        # exact confirmation and before-state audit have completed.
-        exec "$CONVERGE_SCRIPT" "$@"
         ;;
       *)
         die "无法识别运行模式"

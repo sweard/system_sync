@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from threading import Barrier
 import unittest
 from unittest.mock import patch
 
@@ -262,6 +263,78 @@ class AuditTest(unittest.TestCase):
             with self.assertRaises(AUDIT.AuditError) as failure:
                 runner.run(["mise", "ls"])
         self.assertNotIn("private-timeout-output", str(failure.exception))
+
+    def test_independent_sections_overlap_and_share_one_tool_snapshot(self):
+        self.tool()
+        self.environment["PATH"] = str(Path(self.runner.paths["node"]).parent) + ":/usr/bin:/bin"
+        expected = self.make().execute()
+        self.runner.calls.clear()
+        original = self.runner.run
+        gate = Barrier(3, timeout=10)
+        independent = {("mise", "ls", "--current", "--json"),
+                       ("mise", "bootstrap", "dotfiles", "status", "--json"),
+                       (str(self.root / "scripts/system-sync.sh"), "--status")}
+
+        def synchronized(command, environment=None):
+            if tuple(command) in independent:
+                gate.wait()
+            return original(command, environment)
+
+        self.runner.run = synchronized
+        self.assertEqual(self.make().execute(), expected)
+        self.assertEqual(sum(command == ["mise", "ls", "--current", "--json"]
+                             for command, _ in self.runner.calls), 1)
+
+    def test_failed_tool_snapshot_is_shared_but_retried_on_the_next_audit(self):
+        command = ("mise", "ls", "--current", "--json")
+        self.runner.failures.add(command)
+        report = self.make().execute()
+        self.assertEqual(report["summary"]["error"], 2)
+        self.assertTrue(report["sections"]["packages"])
+        self.assertEqual(sum(tuple(call) == command for call, _ in self.runner.calls), 1)
+        self.runner.failures.clear()
+        self.assertEqual(self.make().execute()["summary"]["error"], 0)
+        self.assertEqual(sum(tuple(call) == command for call, _ in self.runner.calls), 2)
+
+    def test_command_queries_overlap_deduplicate_and_keep_report_order(self):
+        commands = [("node", "node"), ("python", "python3"), ("uv", "uv"), ("go", "go")]
+        for tool, command in commands:
+            self.tool(tool, command)
+        self.runner.tools["node"].append(dict(self.runner.tools["node"][0], version="2.0.0"))
+        self.environment["PATH"] = ":".join(str(Path(self.runner.paths[command]).parent)
+                                             for _, command in commands) + ":/usr/bin:/bin"
+        expected = self.make().execute(("tools", "path"))
+        self.runner.calls.clear()
+        original = self.runner.run
+        gate = Barrier(4, timeout=10)
+
+        def synchronized(command, environment=None):
+            if command[:2] == ["mise", "which"]:
+                gate.wait()
+            return original(command, environment)
+
+        self.runner.run = synchronized
+        report = self.make().execute(("tools", "path"))
+        self.assertEqual(report, expected)
+        selected = [row["item"] for row in report["sections"]["path"] if row["code"] == "command_selected"]
+        self.assertEqual(selected, ["node", "node", "python3", "uv", "go"])
+        queries = [command for command, _ in self.runner.calls if command[:2] == ["mise", "which"]]
+        self.assertEqual(len(queries), 4)
+
+    def test_failed_command_batch_stops_later_queries_and_preserves_partial_report(self):
+        commands = [("node", "node"), ("python", "python3"), ("ruby", "ruby"),
+                    ("java", "java"), ("uv", "uv"), ("go", "go")]
+        for tool, command in commands:
+            self.tool(tool, command)
+        self.environment["PATH"] = ":".join(str(Path(self.runner.paths[command]).parent)
+                                             for _, command in commands) + ":/usr/bin:/bin"
+        self.runner.failures.add(("mise", "which", "python3"))
+        report = self.make().execute(("path", "config"))
+        self.assertEqual(report["summary"]["error"], 1)
+        selected = [row["item"] for row in report["sections"]["path"] if row["code"] == "command_selected"]
+        self.assertEqual(selected, ["node"])
+        queries = {command[-1] for command, _ in self.runner.calls if command[:2] == ["mise", "which"]}
+        self.assertEqual(queries, {"node", "python3", "ruby", "java"})
 
 
 @unittest.skipUnless(MISE and sys.platform in ("darwin", "linux"), "real mise unavailable")
