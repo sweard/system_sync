@@ -99,7 +99,7 @@ mise run config-dry-run
 | 安装 / 卸载一个系统软件并记录清单 | `mise run package-install <包名>` / `mise run package-uninstall <包名>` |
 | 预览单包操作 | 在上述任务参数中加 `--dry-run` |
 | 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认 |
-| 单独升级 Brewfile 声明项 | `mise run macos-upgrade` |
+| 单独升级 Brewfile 声明项 | `mise run macos-upgrade`，显示阶段及 Homebrew 实时输出 |
 | 查看受管配置的实际差异，无变化时提示无需同步 | `mise run config-dry-run` |
 | 备份、部署并复查本仓库受管配置 | `mise run config-sync`，输入 `yes`；支持 `--dry-run`、`--yes` 和目标路径 |
 | 将当前配置迁为本机独立文件 | `mise run config-detach --dry-run` 预览；`mise run config-detach` 确认执行，见[配置迁出](docs/recovery.md#配置迁出保留本机文件) |

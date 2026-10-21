@@ -41,7 +41,19 @@ case "$*" in
     ;;
   "bundle install "*)
     [[ -f "$SYSTEM_SYNC_RUN_LOG_DIR/Brewfile.before" && -f "$SYSTEM_SYNC_RUN_LOG_DIR/formulae.before.txt" ]] || exit 94
-    if [[ "${SYNC_TEST_INSTALL_ERROR:-0}" == 1 ]]; then exit 95; fi
+    if [[ "${SYNC_TEST_UPGRADE_PROGRESS:-0}" == 1 ]]; then
+      [[ " $* " == *" --upgrade "* && " $* " == *" --verbose "* ]] || exit 97
+      printf '%s\n' 'Fixture: downloading upgrade'
+      IFS= read -r progress_ack
+      [[ "$progress_ack" == download-seen ]] || exit 98
+      printf '%s\n' 'Fixture: installing upgrade' >&2
+      IFS= read -r progress_ack
+      [[ "$progress_ack" == install-seen ]] || exit 98
+    fi
+    if [[ "${SYNC_TEST_INSTALL_ERROR:-0}" == 1 ]]; then
+      printf '%s\n' 'Error: fixture installation failed.' >&2
+      exit 95
+    fi
     ;;
   "trust --formula "*|"trust --cask "*)
     [[ -n "${XDG_CONFIG_HOME:-}" && "$XDG_CONFIG_HOME" != "$SYNC_TEST_REAL_CONFIG" ]] || exit 91
@@ -285,11 +297,34 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
                              for line in self.log.read_text().splitlines()))
 
     def test_upgrade_is_audited_and_does_not_cleanup(self):
-        result = run_terminal(["bash", str(self.script), "--upgrade"], self.environment,
-                              [("输入 yes 继续", "yes")])
+        result = self.run_upgrade_progress()
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.transaction()["phase"], "complete")
-        self.assertIn("bundle install --upgrade", self.log.read_text())
+        self.assertIn("bundle install --upgrade --verbose", self.log.read_text())
+        self.assertNotIn("|bundle cleanup ", self.log.read_text())
+        stages = ("读取本机 Homebrew 安装状态", "检查 Brewfile 声明是否已满足",
+                  "升级 Brewfile 中的软件；实时显示", "Fixture: downloading upgrade",
+                  "Fixture: installing upgrade", "记录升级后的软件状态", "升级完成。")
+        positions = [result.stdout.index(stage) for stage in stages]
+        self.assertEqual(positions, sorted(positions), result.stdout)
+
+    def run_upgrade_progress(self, **variables):
+        # The fake cannot finish until stdout AND stderr have reached the test.
+        # Buffering either stream would leave it blocked waiting for its reply.
+        environment = dict(self.environment, SYNC_TEST_UPGRADE_PROGRESS="1", **variables)
+        return run_terminal(["bash", str(self.script), "--upgrade"], environment,
+                            [("输入 yes 继续", "yes"),
+                             ("Fixture: downloading upgrade", "download-seen"),
+                             ("Fixture: installing upgrade", "install-seen")], timeout=15)
+
+    def test_upgrade_streams_failure_and_preserves_failed_transaction(self):
+        result = self.run_upgrade_progress(SYNC_TEST_INSTALL_ERROR="1")
+        self.assertEqual(result.returncode, 95, result.stdout)
+        self.assertIn("Error: fixture installation failed.", result.stdout)
+        self.assertEqual(self.transaction()["phase"], "failed")
+        self.assertEqual(self.transaction()["last_phase"], "upgrading")
+        self.assertNotIn("升级完成。", result.stdout)
+        self.assertNotIn("记录升级后的软件状态", result.stdout)
         self.assertNotIn("|bundle cleanup ", self.log.read_text())
 
     def test_only_yes_reaches_homebrew_mutations(self):

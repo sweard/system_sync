@@ -419,6 +419,8 @@ cleanup 预演使用独立的临时信任库，每次都初始化 formula 和 ca
 mise run macos-upgrade
 ```
 
+任务会显示读取安装状态、检查声明、执行升级和记录升级结果等阶段。确认升级后，使用 `brew bundle install --upgrade --verbose` 实时显示 Homebrew 的下载、安装及错误输出；失败时保留原退出码和失败审计，不显示升级完成。
+
 ## 隔离测试
 
 完整检查会显式构建本机 Go helper，运行 Go race 检查和 Python 测试；测试使用替身包管理器，不修改本机软件：

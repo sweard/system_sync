@@ -349,6 +349,9 @@ read_trusted_packages formula "$TRUSTED_FORMULAE_FILE" \
 read_trusted_packages cask "$TRUSTED_CASKS_FILE" \
   "$TRUSTED_CASKS_NORMALIZED_FILE" "$DESIRED_CASKS_FILE"
 
+if [[ "$MODE" == "upgrade" ]]; then
+  info "读取本机 Homebrew 安装状态"
+fi
 HOMEBREW_NO_AUTO_UPDATE=1 brew list --formula --full-name \
   | LC_ALL=C sort -u > "$INSTALLED_FORMULAE_FILE"
 HOMEBREW_NO_AUTO_UPDATE=1 brew list --formula --full-name --installed-on-request \
@@ -376,6 +379,9 @@ print_list "未声明的已安装 cask" "$EXTRA_CASKS_FILE"
 print_list "未声明的 tap" "$EXTRA_TAPS_FILE"
 print_list "受保护但未在 Brewfile 声明的项目" "$MISSING_PROTECTED_FILE"
 
+if [[ "$MODE" == "upgrade" ]]; then
+  info "检查 Brewfile 声明是否已满足"
+fi
 set +e
 HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check \
   --no-upgrade --verbose --file="$BREWFILE" > "$BUNDLE_CHECK_FILE" 2>&1
@@ -393,7 +399,9 @@ if [[ "$MODE" == "upgrade" ]]; then
   : > "$CLEANUP_PREVIEW_FILE"
   save_before_state "upgrade"
   system_sync_phase upgrading
-  brew bundle install --upgrade --file="$BREWFILE"
+  info "升级 Brewfile 中的软件；实时显示 Homebrew 下载和安装输出"
+  brew bundle install --upgrade --verbose --file="$BREWFILE"
+  info "记录升级后的软件状态"
   capture_after_state
   system_sync_phase complete
   printf '\n升级完成。审计清单：%s\n' "$RUN_LOG_DIR"
