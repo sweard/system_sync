@@ -1,0 +1,25 @@
+README.md
+  s_00332b4a331471::t_462628cb45ed55 102
+docs/packages.md
+  s_00332b4a331471::t_462628cb45ed55 422-423
+scripts/homebrew-converge.sh
+  s_00332b4a331471::t_462628cb45ed55 352-354,382-384,402-404
+tests/test_homebrew_preview.py
+  s_00332b4a331471::t_462628cb45ed55 44-56,300,303-327
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f877f3cf7ca0f55e6d016d16d9a52dd26989d6be",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
