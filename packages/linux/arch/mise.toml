@@ -1,4 +1,6 @@
-# Arch Linux / Manjaro 的显式根包示例。
+# Arch Linux / Manjaro 的基础声明与 Brewfile 对应软件。
+# 2026-10-21 核对 Arch 官方稳定仓库；对应关系与未匹配项见 README.md。
+# 首次 apply 前仍需合并目标机器的完整 baseline。
 [settings]
 system_packages.managers = ["pacman", "aur"]
 
@@ -11,6 +13,28 @@ system_packages.managers = ["pacman", "aur"]
 "pacman:python" = "latest"
 "pacman:ripgrep" = "latest"
 "pacman:zsh" = "latest"
+
+# Brewfile formula 对应的官方包；git 已在上方声明。
+"pacman:cmake" = "latest"
+"pacman:docker" = "latest"
+"pacman:fastfetch" = "latest"
+"pacman:fd" = "latest"
+"pacman:github-cli" = "latest" # Homebrew: gh
+"pacman:git-lfs" = "latest"
+"pacman:htop" = "latest"
+"pacman:librsvg" = "latest"
+"pacman:llama-cpp" = "latest" # Homebrew: llama.cpp
+"pacman:lsd" = "latest"
+"pacman:neovim" = "latest"
+"pacman:poppler" = "latest"
+"pacman:scrcpy" = "latest"
+"pacman:7zip" = "latest" # Homebrew: sevenzip
+"pacman:mise" = "latest"
+
+# Brewfile cask 对应的官方包。
+"pacman:openai-codex" = "latest" # Homebrew cask: codex（CLI）
+"pacman:firefox" = "latest"
+"pacman:ghostty" = "latest"
 
 # AUR 由 yay 或 paru 执行。先准备其中一个 helper，再按需取消注释。
 # "aur:visual-studio-code-bin" = "latest"

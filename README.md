@@ -110,7 +110,7 @@ mise run config-dry-run
 
 任务脚本要求确认时，统一输入小写 `yes` 继续；直接回车或其他输入取消。mise 的 Yes/No 提示选择 Yes；包管理器自己的事务确认按其提示操作。
 
-Linux 清单仍是结构示例。首次整机应用前必须导入本机 baseline；Linux 统一升级尚未实现，继续使用发行版本身的升级流程。macOS 当前仍使用 Homebrew Bundle。
+Linux 清单尚未导入目标机器的完整 baseline，首次整机应用前必须补齐。Arch 已按 Brewfile 补充官方仓库对应软件，详见 [Arch 对照记录](packages/linux/arch/README.md)。Linux 统一升级尚未实现，继续使用发行版本身的升级流程。macOS 当前仍使用 Homebrew Bundle。
 
 私有变量文件不部署、不提交；ChatGPT / VS Code 只合并来源声明的键。运行时审计保存在 `.system-sync/history/`；应用配置检查点由 mise 的本机历史单独保存，不开启后台捕获或远端历史同步。
 

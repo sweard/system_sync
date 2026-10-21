@@ -16,7 +16,9 @@
 
 mise 原生支持 `apt`、`dnf`、`pacman`、`aur` 和 `zypper`，负责读取声明与安装缺失项；本仓库的 Linux 脚本补充未声明根包的收敛、保护校验和移除事务审阅。
 
-> **重要：** Linux 下的清单只是结构示例，不是你已有系统的 baseline。首次 `apply` 前必须按本文导入本机的手工根包。
+Arch 清单已按 Brewfile 补充确认存在的官方仓库软件；包名转换、未匹配项及查询来源见 [Arch 对照记录](../packages/linux/arch/README.md)。
+
+> **重要：** Linux 清单尚未导入目标机器的完整 baseline。首次 `apply` 前必须按本文导入本机的手工根包。
 
 ## 执行顺序与审计
 
