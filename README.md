@@ -41,7 +41,7 @@ system_sync/
 ├── packages/
 │   ├── macos/                  # Brewfile、保护项与精确信任
 │   └── linux/                  # Arch、Debian、Fedora、openSUSE profile
-├── scripts/                    # 平台 Bash 流程与配置预览入口
+├── scripts/                    # 平台 Bash 流程、配置预览和本机缓存清理
 ├── helper/                     # Go helper 的源码、构建与分发资源
 │   ├── README.md               # helper 开发和使用说明
 │   ├── cmd/system-sync-helper/ # Go CLI 入口
@@ -89,6 +89,7 @@ mise run config-dry-run
 | 导出四平台包到被 Git 忽略的本机目录 | `mise run helper-dist` |
 | 提前初始化或更新仓库版本的 helper | `mise run helper-install`；指定其他本机产物用 `mise run helper-install /绝对路径/产物目录` |
 | 开发验收：校验预编译包、构建并运行完整测试 | `mise run check` |
+| 预览 / 清理本机验证环境与缓存 | `mise run clean` / `mise run clean --apply`，详见[清理范围](docs/recovery.md#清理本机验证环境与缓存) |
 | 安装 / 卸载一个系统软件并记录清单 | `mise run package-install <包名>` / `mise run package-uninstall <包名>` |
 | 预览单包操作 | 在上述任务参数中加 `--dry-run` |
 | 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认 |

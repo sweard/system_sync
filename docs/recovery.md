@@ -4,6 +4,37 @@
 
 本文中的命令默认在仓库根目录执行。系统包流程见[系统软件包](packages.md)，应用配置接管与取消管理见[配置接管](dotfiles.md)。
 
+## 清理本机验证环境与缓存
+
+在相关验证、构建和隔离 VS Code 进程结束后，于仓库根目录执行：
+
+```bash
+# 默认只预览各目录占用及预计回收空间
+mise run clean
+mise run clean --dry-run
+
+# 预览后输入 yes 确认；回车或其他输入取消
+mise run clean --apply
+
+# 已审阅计划的自动化场景
+mise run clean --apply --yes
+```
+
+也可直接调用 `./scripts/clean.sh`，无需 Go helper、Go 或 Python。脚本按自身位置定位仓库，不依赖调用时所在目录；清理目标固定，不接受自定义路径。
+
+| 清理目标（相对仓库根目录） | 内容 |
+|---|---|
+| `.system-sync/rebuild/home` | 新机重建验证的隔离 HOME 及其中安装的工具 |
+| `.system-sync/vscode-validation` | 隔离扩展、用户数据及 VSIX 缓存 |
+| `.system-sync/flutter-validation/project` | Flutter 验证项目副本 |
+| `.system-sync/flutter-validation/pub-cache` | Flutter 验证使用的依赖缓存 |
+| `.system-sync/go/build` | helper 的 Go 构建缓存，下次构建时重新生成 |
+| `.system-sync/dist` | `helper-dist` 导出的本机产物 |
+
+迁移备份、`.system-sync/history/`、当前安装的 `.system-sync/helper/`、Go 模块缓存、重建/Flutter 的结果与日志文件以及 Git 管理的 `helper/prebuilt/` 均保留。路径中出现符号链接或非目录时会停止，缺失目录直接跳过；已经没有目标时明确提示无需清理。预计回收空间来自 `du`，不代表文件系统实际释放量。脚本不与验证工具或构建进程协调加锁。
+
+Finder 等程序可能在删除过程中重建 `.DS_Store`，导致 `Directory not empty`。脚本仅对此类错误最多尝试三次，每次重新校验路径，并检查目标是否已移除；权限等其他错误直接停止。持续有程序写入而仍失败时，先结束相关进程，再执行同一清理命令；清理已完成的部分不会恢复。
+
 ## 配置迁出：保留本机文件
 
 以后希望改为直接维护本机配置时，使用 `config-detach` 将当前配置保留在原目标路径，转为独立的普通文件或目录。内容采用执行时的本机版本；工具版本、已安装软件及外部 SDK 继续保留，开发工具仍由 mise 管理。

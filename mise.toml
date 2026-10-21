@@ -42,6 +42,11 @@ run = [
   "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v",
 ]
 
+[tasks.clean]
+description = "预览本机验证环境与缓存清理；--apply 输入 yes 执行，--apply --yes 跳过确认"
+raw = true
+run = "./scripts/clean.sh"
+
 [tasks.helper-build]
 description = "从仓库 Go 源码构建并安装本机 helper；固定 Go 1.27.3"
 run = "./helper/scripts/build.sh"
