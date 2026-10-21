@@ -21,7 +21,7 @@ usage() {
 
 默认不修改系统，等同于 --dry-run。
 
-  --status   查看 Brewfile、缺失项和 cleanup 预演
+  --status   查看 Brewfile、缺失项和额外软件；不执行 cleanup 预演
   --dry-run  完整预览；不会安装、卸载、untap 或重置信任
   --apply    安装缺失项，再由 Homebrew 展示最终 cleanup 并确认
   --upgrade  单独升级 Brewfile 中的软件，不执行 cleanup
@@ -400,12 +400,13 @@ if [[ "$MODE" == "upgrade" ]]; then
   exit 0
 fi
 
-preview_cleanup
-
 if [[ "$MODE" == "status" ]]; then
   printf '\n状态模式：未做任何修改。bundle check 退出码为 %s。\n' "$BUNDLE_CHECK_RC"
+  printf '完整安装与 cleanup 计划请运行 mise run package-dry-run。\n'
   exit 0
 fi
+
+preview_cleanup
 
 if [[ "$MODE" == "dry-run" ]]; then
   printf '\n预览模式：未做任何修改。\n'

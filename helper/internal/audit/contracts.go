@@ -90,7 +90,7 @@ var SystemPaths = map[string]bool{
 
 var PackageRequired = [][]string{
 	{"Brewfile cask 声明", "Brewfile formula 根声明", "Brewfile tap 声明", "Homebrew 可识别的未声明 requested formula", "受保护但未在 Brewfile 声明的项目", "尚未安装的 cask", "尚未安装的 formula", "尚未添加的 tap", "未声明的 tap", "未声明的已安装 cask"},
-	{"apply 时会从 dependency 提升为 explicit 的声明/保护包", "apply 时会从 explicit 降级为 dependency 的未声明包", "mise 最终生效声明", "声明但尚未以同名具体包安装", "当前 orphan 中因声明或保护规则而跳过的包", "当前显式安装包中未声明、但受保护而保留", "当前真正 orphan 中可清理的包"},
-	{"apply 时会提升为手工根包的声明/保护包", "apply 时会降级为依赖的未声明手工根包", "mise 最终生效声明", "声明但尚未以同名具体包安装", "当前 autoremove 事务中因声明或保护规则冲突的包", "当前 autoremove 事务中的可清理包", "当前手工根包中未声明、但受保护而保留"},
-	{"zypper dry-run 的完整移除事务", "zypper 当前认定的 unneeded 包", "声明但尚未安装", "声明的根包", "拟直接移除的未声明 user-installed 包", "未声明但受保护的 user-installed 包"},
+	{"apply 时会从 dependency 提升为 explicit 的声明/保护包", "apply 时会从 explicit 降级为 dependency 的未声明包", "mise 最终生效声明", "声明但尚未以同名具体包安装", "当前显式安装包中未声明、但受保护而保留"},
+	{"apply 时会提升为手工根包的声明/保护包", "apply 时会降级为依赖的未声明手工根包", "mise 最终生效声明", "声明但尚未以同名具体包安装", "当前手工根包中未声明、但受保护而保留"},
+	{"声明但尚未安装", "声明的根包", "拟直接移除的未声明 user-installed 包", "未声明但受保护的 user-installed 包"},
 }

@@ -8,154 +8,21 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sweard/system_sync/helper/internal/configops"
 	"github.com/sweard/system_sync/helper/internal/localconfig"
 )
 
+func (e Engine) configuration() configops.Engine {
+	return configops.Engine{Root: e.Root, Home: e.Home, Runner: e.Runner, Initializing: true}
+}
 func (e Engine) configPlan(p *Plan) error {
-	output, err := e.Runner.Run([]string{"mise", "bootstrap", "dotfiles", "status", "--json"}, true)
-	if err != nil {
-		return fmt.Errorf("配置状态查询失败，请先运行 config-status")
-	}
-	data, err := decodeState(output)
+	plan, err := e.configuration().Plan(nil)
 	if err != nil {
 		return err
 	}
-	encoded, err := jsonBytes(data)
-	if err != nil {
-		return err
-	}
-	p.configState = string(encoded)
-	other := map[string]bool{}
-	for _, section := range []string{"files", "edits"} {
-		items, ok := data[section].([]any)
-		if !ok {
-			return fmt.Errorf("配置状态缺少 files/edits 数组")
-		}
-		for _, value := range items {
-			item, ok := value.(map[string]any)
-			if !ok {
-				return fmt.Errorf("配置状态条目无法识别")
-			}
-			key := "target"
-			if section == "edits" {
-				key = "path"
-			}
-			value, ok := item[key].(string)
-			if !ok || value == "" {
-				return fmt.Errorf("配置状态缺少目标")
-			}
-			origin := localconfig.Table(item["origin"])
-			config, ok := origin["config"].(string)
-			if !ok {
-				return fmt.Errorf("配置状态缺少来源")
-			}
-			resolved, err := localconfig.RealPath(config)
-			if err != nil {
-				return err
-			}
-			owned := localconfig.Within(resolved, e.Root)
-			if !owned {
-				mode, _ := item["mode"].(string)
-				state, _ := item["state"].(string)
-				if mode == "track" || mode == "track-local" || state == "tracked" || state == "not_on_this_machine" {
-					continue
-				}
-				other[value] = true
-				continue
-			}
-			state, ok := item["state"].(string)
-			if !ok {
-				return fmt.Errorf("配置状态无法识别")
-			}
-			mode, _ := item["mode"].(string)
-			if state == "tracked" || state == "not_on_this_machine" || mode == "track" || mode == "track-local" {
-				continue
-			}
-			if section == "files" && !has([]string{"symlink", "symlink-each", "copy", "template", "content", "permissions", "absent"}, mode) {
-				p.Pending = append(p.Pending, "未知配置模式需人工处理："+mode+" ("+value+")")
-			}
-			target, err := e.target(value)
-			if err != nil {
-				return err
-			}
-			p.ConfigTargets = append(p.ConfigTargets, target)
-			switch state {
-			case "applied":
-			case "missing", "differs":
-				p.configChanged = true
-			default:
-				p.Pending = append(p.Pending, "配置状态需人工处理："+value+" ["+state+"]")
-			}
-			if mode == "absent" {
-				p.Pending = append(p.Pending, "初始化不删除配置："+value)
-			}
-			if mode == "symlink" {
-				if info, err := os.Lstat(target); err == nil {
-					if info.Mode()&os.ModeSymlink == 0 {
-						p.Pending = append(p.Pending, "已有普通文件需先备份并逐项接管："+value)
-					} else {
-						resolved, err := localconfig.RealPath(target)
-						if err != nil || !localconfig.Within(resolved, e.Root) {
-							p.Pending = append(p.Pending, "已有其他来源的配置链接需人工接管："+value)
-						}
-					}
-				} else if !os.IsNotExist(err) {
-					return err
-				}
-			}
-		}
-	}
-	p.ConfigTargets = unique(p.ConfigTargets)
-	for value := range other {
-		if strings.HasPrefix(value, "~/") {
-			value = filepath.Join(e.Home, value[2:])
-		}
-		if has(p.ConfigTargets, value) {
-			p.Pending = append(p.Pending, "同一目标还有仓库外的配置映射，需人工处理："+value)
-		}
-	}
-	if p.configChanged && len(p.ConfigTargets) > 0 {
-		command := append([]string{"mise", "bootstrap", "dotfiles", "diff"}, p.ConfigTargets...)
-		p.ConfigDiff, err = e.Runner.Run(command, true)
-		if err != nil {
-			return fmt.Errorf("配置差异查询失败，请先运行 config-dry-run")
-		}
-	}
-	return nil
-}
-
-func (e Engine) checkConfig(p *Plan) error {
-	current := &Plan{ConfigTargets: []string{}, Pending: []string{}}
-	if err := e.configPlan(current); err != nil {
-		return err
-	}
-	if current.configState != p.configState || current.ConfigDiff != p.ConfigDiff {
-		return fmt.Errorf("确认后配置状态已改变，请重新预览")
-	}
-	return nil
-}
-
-func (e Engine) applyConfig(p *Plan, out io.Writer) error {
-	if err := e.checkConfig(p); err != nil {
-		return err
-	}
-	if !p.configChanged {
-		fmt.Fprintln(out, "[+] 受管配置无需同步。")
-		return nil
-	}
-	command := []string{"mise", "bootstrap", "dotfiles", "apply", "--yes"}
-	command = append(command, p.ConfigTargets...)
-	if _, err := e.Runner.Run(command, false); err != nil {
-		return err
-	}
-	current := &Plan{ConfigTargets: []string{}, Pending: []string{}}
-	if err := e.configPlan(current); err != nil {
-		return err
-	}
-	if current.configChanged || len(current.Pending) > 0 {
-		return fmt.Errorf("配置应用后仍有差异，请运行 config-dry-run 核对")
-	}
-	fmt.Fprintln(out, "[+] 配置已部署；原文件备份仅保存在本机审计目录。")
+	p.config = plan
+	p.ConfigTargets, p.ConfigDiff = plan.Targets, plan.Diff
+	p.Pending = append(p.Pending, plan.Pending...)
 	return nil
 }
 

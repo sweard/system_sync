@@ -19,8 +19,9 @@ config_roots = [
   "packages/linux/opensuse",
 ]
 
-[tasks.status]
-description = "查看当前系统的声明状态和差异（只读）"
+[tasks.package-status]
+alias = "status"
+description = "查看系统软件声明、缺失项和额外软件；不执行安装或清理预演"
 run = "./scripts/system-sync.sh --status"
 
 [tasks.package-capture]
@@ -73,8 +74,9 @@ run = "./helper/scripts/build.sh --bundle"
 description = "从仓库 helper/prebuilt/ 校验安装 helper；可指定本机产物目录，无需 Go 编译器"
 run = "./helper/scripts/install.sh"
 
-[tasks.dry-run]
-description = "预览当前系统将安装、收敛或清理的内容"
+[tasks.package-dry-run]
+alias = "dry-run"
+description = "预览系统软件安装、收敛及清理计划；不修改软件状态"
 run = "./scripts/system-sync.sh --dry-run"
 
 [tasks.system-sync]
@@ -109,9 +111,9 @@ description = "比较受管配置的实际差异；无变化时明确提示无�
 run = "./scripts/config-preview.sh"
 
 [tasks.config-sync]
-description = "应用已启用的 dotfiles 映射；默认需要确认"
-confirm = { message = "这会修改已启用映射对应的用户配置文件。是否继续？", default = "no" }
-run = "mise bootstrap dotfiles apply"
+description = "备份并应用本仓库的配置映射，复查结果；输入 yes 确认，支持 --dry-run、--yes"
+raw = true
+run = "./helper/scripts/run.sh config sync"
 
 [tasks.config-detach]
 description = "将当前受管配置保留为本机独立文件；支持 --dry-run、--yes，备份保存在仓库外"
@@ -119,12 +121,9 @@ raw = true
 run = "./helper/scripts/run.sh config-detach"
 
 [tasks.vscode-status]
+alias = "vscode-dry-run"
 description = "核对当前平台公共 VS Code 扩展及版本，保留清单外扩展"
 run = "./helper/scripts/run.sh vscode status"
-
-[tasks.vscode-dry-run]
-description = "预览公共 VS Code 扩展安装与版本变更"
-run = "./helper/scripts/run.sh vscode sync --dry-run"
 
 [tasks.vscode-sync]
 description = "按清单安装公共 VS Code 扩展；不删除其他扩展"

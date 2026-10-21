@@ -1,11 +1,16 @@
 """Exercise config-dry-run through real mise, using only synthetic HOME files."""
 
 from pathlib import Path
+import json
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
+
+from helper_fixture import prepare_helper
+from test_converge import run_terminal
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +27,7 @@ class ConfigPreviewTest(unittest.TestCase):
         self.home.mkdir()
         (self.project / "scripts").mkdir(parents=True)
         shutil.copy2(ROOT / "scripts/config-preview.sh", self.project / "scripts/config-preview.sh")
+        prepare_helper(self.project)
         self.environment = {
             "HOME": str(self.home), "PATH": f"{Path(MISE).parent}:/usr/bin:/bin:/usr/sbin:/sbin",
             "MISE_CONFIG_DIR": str(self.base / "config"), "MISE_SYSTEM_CONFIG_DIR": str(self.base / "system"),
@@ -30,7 +36,9 @@ class ConfigPreviewTest(unittest.TestCase):
             "MISE_TRUSTED_CONFIG_PATHS": f"{self.base}:{ROOT}", "MISE_OFFLINE": "1", "NO_COLOR": "1",
         }
         task = self.run_mise("config", "get", "--file", str(ROOT / "mise.toml"), "tasks.config-dry-run").stdout
-        self.header = "[settings.task]\nrun_auto_install = false\n[tasks.config-dry-run]\n" + task + "\n[dotfiles]\n"
+        sync = self.run_mise("config", "get", "--file", str(ROOT / "mise.toml"), "tasks.config-sync").stdout
+        self.header = ("[settings.task]\nrun_auto_install = false\n[tasks.config-dry-run]\n" + task
+                       + "\n[tasks.config-sync]\n" + sync + "\n[dotfiles]\n")
         self.source, self.target = self.project / "source", self.home / ".example"
         self.source.write_text("shared=true\n")
         self.target.write_text("shared=true\n")
@@ -136,6 +144,81 @@ class ConfigPreviewTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Usage:", result.stdout)
         self.assertNotIn("检测到以下受管配置差异", result.stdout)
+
+    def test_sync_preserves_private_keys_and_backs_up_before_applying(self):
+        self.source, self.target = self.project / "source.json", self.home / ".example.json"
+        self.source.write_text('{"shared": 2}\n')
+        before = '{"shared": 1, "private": "private-canary"}\n'
+        self.target.write_text(before)
+        (self.project / "mise.toml").write_text(
+            self.header + '"~/.example.json/shared" = {source = "source.json", merge = true}\n')
+        result = self.run_mise("run", "config-sync", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(self.target.read_text()), {"shared": 2, "private": "private-canary"})
+        directories = list((self.project / ".system-sync/history").glob("*-config-sync-*"))
+        self.assertEqual(len(directories), 1)
+        with tarfile.open(directories[0] / "config.before.tar") as archive:
+            self.assertEqual(archive.extractfile(".example.json").read().decode(), before)
+        self.assertEqual(json.loads((directories[0] / "transaction.json").read_text())["phase"], "complete")
+        result = self.run_mise("run", "config-sync", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("无需同步", result.stdout)
+        self.assertEqual(len(list((self.project / ".system-sync/history").iterdir())), 1)
+
+    def test_sync_preview_cancellation_and_shared_lock_do_not_modify_files(self):
+        self.source.write_text("changed=true\n")
+        before = self.snapshot()
+        result = self.run_mise("run", "config-sync", "--dry-run")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.snapshot(), before)
+        self.assertFalse((self.project / ".system-sync/history").exists())
+        for answer in ("y", "no"):
+            result = run_terminal([str(self.project / "helper/scripts/run.sh"), "config", "sync"],
+                                  self.environment, [("输入 yes 确认", answer)])
+            self.assertEqual(result.returncode, 2, result.stdout)
+            self.assertEqual(self.snapshot(), before)
+            self.assertFalse((self.project / ".system-sync/history").exists())
+        from reference.sync_runtime import operation_lock
+        with operation_lock(self.project):
+            result = self.run_mise("run", "config-sync", "--yes")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(self.snapshot(), before)
+
+    def test_sync_only_applies_selected_owned_targets(self):
+        self.configure("copy", extra='"~/.other" = {source = "other", mode = "copy"}\n')
+        self.source.write_text("changed=true\n")
+        (self.project / "other").write_text("other=true\n")
+        result = self.run_mise("run", "config-sync", str(self.target), "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.target.read_text(), "changed=true\n")
+        self.assertFalse((self.home / ".other").exists())
+
+    def test_force_takeover_retains_the_original_file_in_backup(self):
+        self.configure("symlink")
+        before = self.target.read_bytes()
+        result = self.run_mise("run", "config-sync", "--force", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.target.is_symlink())
+        self.assertEqual(self.target.resolve(), self.source)
+        directory, = (self.project / ".system-sync/history").glob("*-config-sync-*")
+        with tarfile.open(directory / "config.before.tar") as archive:
+            self.assertEqual(archive.extractfile(".example").read(), before)
+
+    def test_symlink_each_keeps_unmanaged_files_and_backs_up_the_directory(self):
+        self.source.unlink()
+        self.source.mkdir()
+        (self.source / "shared").write_text("managed\n")
+        self.target.unlink()
+        self.target.mkdir()
+        (self.target / "private").write_text("local-only\n")
+        self.configure("symlink-each")
+        result = self.run_mise("run", "config-sync", str(self.target), "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.target / "shared").is_symlink())
+        self.assertEqual((self.target / "private").read_text(), "local-only\n")
+        directory, = (self.project / ".system-sync/history").glob("*-config-sync-*")
+        with tarfile.open(directory / "config.before.tar") as archive:
+            self.assertEqual(archive.extractfile(".example/private").read().decode(), "local-only\n")
 
 
 if __name__ == "__main__":

@@ -70,7 +70,7 @@ Go 迁移前，2026-10-21 在本机对 `11364be` 与 Python 查询优化实现�
 | 类别 | 检查内容 | 边界 |
 |---|---|---|
 | tools | `mise ls --current --json` 的声明与安装状态；nvm、uv Python、pyenv、rbenv、asdf 和 Bun 的常见安装位置 | 其他安装作为候选；被 mise 链接引用的原安装作为本机保留。不检查项目的 pandas 等依赖，也不把有新版可升级当成漂移。 |
-| packages | 复用当前平台的 `scripts/system-sync.sh --status`；汇总缺失项、未声明根包、保护项及安装原因差异 | 覆盖项目已接入的 Homebrew、pacman/AUR、APT、DNF、zypper；不扫描手工安装的全部软件。未声明根包和可清理依赖是待审阅候选。 |
+| packages | 复用当前平台的 `scripts/system-sync.sh --status`；汇总缺失项、未声明根包、保护项及安装原因差异 | 覆盖项目已接入的 Homebrew、pacman/AUR、APT、DNF、zypper；不扫描手工安装的全部软件。未声明根包是待审阅候选；孤立依赖和完整移除事务由 `package-dry-run` 单独预演。 |
 | PATH | 空项、相对项、重复项、失效目录；共享 PATH 规则是否落实；常用工具的 PATH 优先命令是否符合 `mise which` | 按路径查找可执行文件，不执行候选程序，不解析调用 Shell 的别名、函数和命令缓存。 |
 | config | mise 已声明的文件/合并映射状态；固定白名单中的现有未纳管文件；已取消部署的组文件 | 只读取映射元数据和候选路径，不遍历整个 Home，也不把合并目标中的未声明私有键列为漂移。 |
 
@@ -90,6 +90,6 @@ Flutter 已通过 mise 链接复用原 SDK，共享 PATH 不再额外添加旧�
 
 根配置将 `settings.task.run_auto_install` 设为 `false`，作用于本仓库全部任务；开发工具使用 `mise install` 显式安装。审计子命令也关闭自动工具安装，并断开标准输入，避免查询进入交互式安装流程。相关设置见 [mise 官方说明](https://mise.jdx.dev/configuration/settings.html)。
 
-审计不安装、卸载、升级软件，不改写声明、真实信任库或应用设置。系统包检查复用已有只读状态流程，Homebrew cleanup 预演使用独立临时信任库；原生命令可能更新查询缓存，临时文件在查询结束后清理。
+审计不安装、卸载、升级软件，不改写声明、真实信任库或应用设置。系统包检查复用 `package-status` 的轻量只读流程，不运行 Homebrew cleanup、Linux orphan/移除事务或安装预演；完整事务按需运行 `package-dry-run`。原生命令可能更新查询缓存，临时文件在查询结束后清理。
 
 报告只输出选定的状态、版本和路径字段，不转发外部命令原始错误输出，也不输出完整环境、合并值或凭据。已知敏感环境值进一步脱敏。默认报告只写到标准输出，不自动导入候选、保存报告或运行修复；需要保留本机报告时可写入 Git 忽略的 `.system-sync/`。

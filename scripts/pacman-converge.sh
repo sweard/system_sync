@@ -261,11 +261,13 @@ refresh_plan() {
   LC_ALL=C sort -u "$DESIRED_FILE" "$PROTECTED_INSTALLED_FILE" > "$TMP_DIR/wanted-roots"
   LC_ALL=C comm -12 "$TMP_DIR/wanted-roots" "$DEPENDENCY_FILE" > "$PROMOTE_FILE"
 
-  query_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_ORPHAN_ERROR"
-  filter_orphans \
-    "$CURRENT_ORPHANS_FILE" \
-    "$CURRENT_REMOVABLE_FILE" \
-    "$CURRENT_PROTECTED_ORPHANS_FILE"
+  if [[ "$MODE" != "status" ]]; then
+    query_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_ORPHAN_ERROR"
+    filter_orphans \
+      "$CURRENT_ORPHANS_FILE" \
+      "$CURRENT_REMOVABLE_FILE" \
+      "$CURRENT_PROTECTED_ORPHANS_FILE"
+  fi
 
   awk -F '\t' '{ printf "%s:%s [%s]\n", $1, $2, $3 }' "$DECLARED_TSV" \
     | LC_ALL=C sort -u > "$TMP_DIR/declared-display"
@@ -275,8 +277,10 @@ refresh_plan() {
   print_list "当前显式安装包中未声明、但受保护而保留" "$PROTECTED_EXTRA_FILE"
   print_list "apply 时会从 dependency 提升为 explicit 的声明/保护包" "$PROMOTE_FILE"
   print_list "apply 时会从 explicit 降级为 dependency 的未声明包" "$DEMOTE_FILE"
-  print_list "当前真正 orphan 中可清理的包" "$CURRENT_REMOVABLE_FILE"
-  print_list "当前 orphan 中因声明或保护规则而跳过的包" "$CURRENT_PROTECTED_ORPHANS_FILE"
+  if [[ "$MODE" != "status" ]]; then
+    print_list "当前真正 orphan 中可清理的包" "$CURRENT_REMOVABLE_FILE"
+    print_list "当前 orphan 中因声明或保护规则而跳过的包" "$CURRENT_PROTECTED_ORPHANS_FILE"
+  fi
 
   EXPLICIT_COUNT="$(count_lines "$EXPLICIT_FILE")"
   DEMOTE_COUNT="$(count_lines "$DEMOTE_FILE")"
@@ -286,6 +290,7 @@ refresh_plan
 
 if [[ "$MODE" == "status" ]]; then
   printf '\n状态模式：未做任何修改。\n'
+  printf '完整安装与清理计划请运行 mise run package-dry-run。\n'
   exit 0
 fi
 

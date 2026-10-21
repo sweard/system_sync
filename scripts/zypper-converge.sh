@@ -22,7 +22,7 @@ usage() {
 
 默认不修改系统，等同于 --dry-run。
 
-  --status              查看声明、缺失项和完整移除事务
+  --status              查看声明、缺失项和额外根包；不预演移除事务
   --dry-run             完整预览；不会安装或卸载
   --apply               交互式安装缺失项并移除未声明的 user-installed 包
   --allow-large-change  允许超过安全阈值的移除事务（仍需输入 yes 确认）
@@ -127,7 +127,10 @@ query_state() {
   LC_ALL=C rpm -qa --qf '%{NAME}\n' | LC_ALL=C sort -u > "$INSTALLED_FILE"
   validate_package_file "$INSTALLED_FILE" "RPM 已安装包列表"
   query_zypper_packages --userinstalled "$USER_XML_FILE" "$EXPLICIT_FILE" "$USER_ERROR_FILE"
-  query_zypper_packages --unneeded "$UNNEEDED_XML_FILE" "$UNNEEDED_FILE" "$UNNEEDED_ERROR_FILE"
+  : > "$UNNEEDED_FILE"
+  if [[ "$MODE" != "status" ]]; then
+    query_zypper_packages --unneeded "$UNNEEDED_XML_FILE" "$UNNEEDED_FILE" "$UNNEEDED_ERROR_FILE"
+  fi
 }
 
 build_protected_list() {
@@ -237,7 +240,9 @@ refresh_plan() {
   done < "$DECLARED_TSV"
   build_protected_list
   compute_diffs
-  preview_removal
+  if [[ "$MODE" != "status" ]]; then
+    preview_removal
+  fi
 }
 
 while [[ "$#" -gt 0 ]]; do
@@ -312,11 +317,14 @@ print_list "声明的根包" "$DESIRED_FILE"
 print_list "声明但尚未安装" "$MISSING_FILE"
 print_list "未声明但受保护的 user-installed 包" "$PROTECTED_EXTRA_FILE"
 print_list "拟直接移除的未声明 user-installed 包" "$EXTRA_FILE"
-print_list "zypper 当前认定的 unneeded 包" "$UNNEEDED_FILE"
-print_list "zypper dry-run 的完整移除事务" "$REMOVE_TRANSACTION_FILE"
+if [[ "$MODE" != "status" ]]; then
+  print_list "zypper 当前认定的 unneeded 包" "$UNNEEDED_FILE"
+  print_list "zypper dry-run 的完整移除事务" "$REMOVE_TRANSACTION_FILE"
+fi
 
 if [[ "$MODE" == "status" ]]; then
   printf '\n状态模式：未做任何修改。\n'
+  printf '完整安装与清理计划请运行 mise run package-dry-run。\n'
   exit 0
 fi
 if [[ "$MODE" == "dry-run" ]]; then

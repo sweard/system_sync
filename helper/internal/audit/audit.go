@@ -607,14 +607,14 @@ func (a *Audit) collectPackages() error {
 	if match := regexp.MustCompile(`bundle check 退出码为 ([0-9]+)`).FindStringSubmatch(output); len(match) > 0 {
 		code, _ := strconv.Atoi(match[1])
 		if code != 0 {
-			a.add("packages", "drift", "bundle_check", "Homebrew", "bundle check 未通过，需单独运行 mise run status", nil)
+			a.add("packages", "drift", "bundle_check", "Homebrew", "bundle check 未通过，需单独运行 mise run package-status", nil)
 		}
 	}
 	if _, preview, ok := strings.Cut(output, "Homebrew cleanup 精确预演\n"); ok {
 		preview, _, _ = strings.Cut(preview, "状态模式：")
 		preview = strings.TrimSpace(preview)
 		if preview != "" && preview != "（无输出）" {
-			a.add("packages", "candidate", "cleanup_review", "Homebrew", "cleanup 预演含额外输出，需单独运行 mise run status 审阅", nil)
+			a.add("packages", "candidate", "cleanup_review", "Homebrew", "cleanup 预演含额外输出，需单独运行 mise run package-dry-run 审阅", nil)
 		}
 	}
 	return nil

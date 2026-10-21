@@ -25,8 +25,9 @@ Go 单元测试随源码保存；项目级 CLI、离线安装和 Python 行为�
 | `package-capture` / `machine-init` | Go；默认预览，五平台清单采集、追加候选、分阶段补装、配置备份与工具来源核对；保留已有软件，不调用整机清理 |
 | `parse-status` | Go；校验 mise 包状态结构、状态、名称及非空声明，输出 TSV |
 | `parse-zypper` | Go；校验 XML 根节点、名称、对象种类及完整移除事务 |
-| 整机 `status` / `dry-run` / `system-sync`、`macos-upgrade` | 保留 Bash 平台流程，预检、共享锁、事务日志和解析调用 Go |
+| 系统软件 `package-status` / `package-dry-run` / `system-sync`、`macos-upgrade` | 保留 Bash 平台流程，预检、共享锁、事务日志和解析调用 Go |
 | `package-install` / `package-uninstall` | Go；保留五平台限制、精确信任、单包状态复核、清单原子写入与多文件失败回滚及审计 |
+| `config diff` / `config sync` | Go；与 `machine-init` 共用 `internal/configops/` 的目标筛选、差异、备份和复查；日常同步加入共享锁及本机事务记录 |
 | `config-detach` | Go；保留链接物化、PATH 与锁文件依赖迁出、私有备份、并发检查及事务回滚 |
 | VS Code 扩展 | Go；仍调用官方 CLI，保留清单外扩展、隔离目录、安装后版本复核及超时子进程清理 |
 | 本机配置历史 | Go；仍调用 mise 原生历史能力，保持 `track-local`、手动保存及严格候选范围 |
@@ -49,6 +50,8 @@ mise run helper-install
 
 首次调用自动识别 macOS/Linux 和 ARM64/x86_64，按 `helper/VERSION` 从 `helper/prebuilt/<版本>/` 校验本机归档并解压，无需 Go、Python、网络或 Git LFS。只需系统现有 Bash、tar、awk 及 `sha256sum` 或 `shasum` 等基础命令。初始化只写入仓库本机缓存，安装提示输出到 stderr；审计 JSON/解析 TSV 的 stdout 保持原格式。多个首次调用通过独立安装锁串行激活。
 
+已有克隆更新仓库后，可运行 `mise run helper-install` 将本机缓存切换到仓库当前分发包；开发者修改源码后的构建验收见下文。
+
 后续调用直接校验并复用已安装的二进制。完整开发检查 `mise run check` 需要编译器和测试环境，新机器使用 helper 无需先运行它。审计会执行 mise 和系统包管理器的正常只读查询；helper 的离线初始化不意味着所有系统包查询或安装都无需网络。
 
 ## 修改源码并构建
@@ -63,6 +66,7 @@ mise run helper-install
 | 前置检查、共享锁和日志 | [`internal/syncstate/`](internal/syncstate/) |
 | 查询超时、进程树清理和终端识别 | [`internal/query/`](internal/query/)、[`internal/terminal/`](internal/terminal/) |
 | 单包清单编辑与状态复核 | [`internal/packageedit/`](internal/packageedit/) |
+| 配置计划、同步与初始化共用能力 | [`internal/configops/`](internal/configops/) |
 | 配置迁出、快照与事务回滚 | [`internal/configdetach/`](internal/configdetach/) |
 | VS Code 与本机历史 | [`internal/extensions/`](internal/extensions/)、[`internal/confighistory/`](internal/confighistory/) |
 | TOML、路径与写入命令的进程生命周期 | [`internal/localconfig/`](internal/localconfig/)、[`internal/taskexec/`](internal/taskexec/) |
@@ -71,12 +75,13 @@ mise run helper-install
 构建固定使用 Go 1.27.3。沿用本机已有的 mise 全局 Go 声明，根 `mise.toml` 不再重复声明一套工具版本。修改 `.go` 源码后，在仓库根目录显式执行：
 
 ```bash
-mise run helper-build
 mise run helper-bundle
 mise run check
 ```
 
-如果当前环境未选择这一编译器，可显式运行 `mise exec go@1.27.3 -- mise run helper-build`。mise 可能先安装所指定的编译器；`helper-build` 本身使用 `GOTOOLCHAIN=local` 和关闭的 Go 模块网络，不自动升级工具链或拉取依赖。完整检查还需要 Python 3.11+ 和支持 Go race 检查的本机 C 工具链。
+`check` 已包含本机构建和安装，不需要在完整验收前再运行一次 `helper-build`；开发中仅需快速构建并试用本机版本时，单独使用 `mise run helper-build`。
+
+如果当前环境未选择这一编译器，可显式运行 `mise exec go@1.27.3 -- mise run helper-bundle`。mise 可能先安装所指定的编译器；`helper-build` 本身使用 `GOTOOLCHAIN=local` 和关闭的 Go 模块网络，不自动升级工具链或拉取依赖。完整检查还需要 Python 3.11+ 和支持 Go race 检查的本机 C 工具链。
 
 构建使用 `CGO_ENABLED=0`、`-trimpath` 和固定版本注入，关闭自动 VCS 信息捕获；`REVISION` 记录 Git 提交及是否有本地改动，不嵌入本机配置或绝对源码路径。`helper-build` 构建并启用本机版本；`helper-bundle` 更新随仓库保存的四平台归档。修改源码不会隐式重编译，源码与新的 `helper/prebuilt/<版本>/` 应一同提交。
 

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sweard/system_sync/helper/internal/configops"
 	"github.com/sweard/system_sync/helper/internal/taskexec"
 )
 
@@ -83,7 +84,7 @@ func (f *fake) Run(command []string, capture bool) (string, error) {
 					continue
 				}
 				row["state"] = "applied"
-				target, _ := f.e.target(row["target"].(string))
+				target, _ := f.e.configuration().Target(row["target"].(string))
 				source := row["source"].(string)
 				if err := os.MkdirAll(filepath.Dir(target), 0700); err != nil {
 					return "", err
@@ -477,7 +478,7 @@ func TestPrivateConfigurationBackupHasOriginalContents(t *testing.T) {
 	target := filepath.Join(f.e.Home, ".private-app.toml")
 	write(t, target, "token = 'private-fixture-secret'\n")
 	dir := t.TempDir()
-	if err := backupConfigurations(f.e.Home, dir, []string{target}); err != nil {
+	if err := configops.BackupTargets(f.e.Home, dir, []string{target}); err != nil {
 		t.Fatal(err)
 	}
 	file, err := os.Open(filepath.Join(dir, "config.before.tar"))

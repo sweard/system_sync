@@ -40,7 +40,7 @@ usage() {
   cat <<'EOF'
 默认不修改系统，等同于 --dry-run。
 
-  --status              查看声明、手工根包和当前 orphan
+  --status              查看声明、手工根包和差异；不预演 autoremove
   --dry-run             预览安装原因变化和当前 autoremove 事务
   --apply               交互式调整安装原因，再清理真正 orphan
   --allow-large-change  允许一次降级超过安全阈值（仍需两次确认）
@@ -403,8 +403,10 @@ refresh_plan() {
   done < "$DECLARED_TSV"
   [[ "$VIRTUAL_ERROR" -eq 0 ]] || die "检测到无法安全映射的 virtual package 声明"
 
-  query_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_ORPHANS_RAW_FILE" "$CURRENT_ORPHANS_ERROR_FILE"
-  filter_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_REMOVABLE_FILE" "$CURRENT_PROTECTED_ORPHANS_FILE"
+  if [[ "$MODE" != "status" ]]; then
+    query_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_ORPHANS_RAW_FILE" "$CURRENT_ORPHANS_ERROR_FILE"
+    filter_orphans "$CURRENT_ORPHANS_FILE" "$CURRENT_REMOVABLE_FILE" "$CURRENT_PROTECTED_ORPHANS_FILE"
+  fi
 
   awk -F '\t' '{ printf "%s:%s [%s]\n", $1, $2, $3 }' "$DECLARED_TSV" \
     | LC_ALL=C sort -u > "$TMP_DIR/declared-display"
@@ -413,14 +415,17 @@ refresh_plan() {
   print_list "当前手工根包中未声明、但受保护而保留" "$PROTECTED_EXTRA_FILE"
   print_list "apply 时会提升为手工根包的声明/保护包" "$PROMOTE_FILE"
   print_list "apply 时会降级为依赖的未声明手工根包" "$DEMOTE_FILE"
-  print_list "当前 autoremove 事务中的可清理包" "$CURRENT_REMOVABLE_FILE"
-  print_list "当前 autoremove 事务中因声明或保护规则冲突的包" "$CURRENT_PROTECTED_ORPHANS_FILE"
+  if [[ "$MODE" != "status" ]]; then
+    print_list "当前 autoremove 事务中的可清理包" "$CURRENT_REMOVABLE_FILE"
+    print_list "当前 autoremove 事务中因声明或保护规则冲突的包" "$CURRENT_PROTECTED_ORPHANS_FILE"
+  fi
 }
 
 refresh_plan
 
 if [[ "$MODE" == "status" ]]; then
   printf '\n状态模式：未做任何修改。\n'
+  printf '完整安装与清理计划请运行 mise run package-dry-run。\n'
   exit 0
 fi
 if [[ "$MODE" == "dry-run" ]]; then

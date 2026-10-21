@@ -73,12 +73,12 @@ Go helper 资源集中在 [helper/](helper/)，项目级隔离回归统一放在
 ```bash
 mise trust --all
 
-# 查看系统软件和配置漂移；首次自动校验安装仓库内的 helper
+# 以下按需选择；首次自动校验安装仓库内的 helper
 mise run package-capture
 mise run machine-init
 mise run audit
-mise run status
-mise run dry-run
+mise run package-status
+mise run package-dry-run
 mise run config-status
 mise run config-dry-run
 ```
@@ -87,6 +87,8 @@ mise run config-dry-run
 |---|---|
 | 预览本机根包及清单合并候选 | `mise run package-capture`；`--apply` 仅保存本机快照与候选，见[清单采集](docs/packages.md#从当前系统反向校正清单漂移) |
 | 预览 / 执行机器接入，保留已有软件 | `mise run machine-init` / `machine-init --apply`；支持 `--only packages`、`config`、`tools`，见[分阶段接入](docs/rebuild.md#使用-machine-init-分阶段接入) |
+| 查看系统软件声明、缺失项与额外软件 | `mise run package-status`，不运行安装或清理预演 |
+| 预览系统软件安装、收敛和清理计划 | `mise run package-dry-run` |
 | 汇总四类状态、来源与待纳管候选 | `mise run audit`；JSON 用 `mise run --quiet audit --json` |
 | 修改 Go 源码后构建并启用本机工具 | `mise run helper-build` |
 | 更新随仓库保存的四平台包及源码输入清单 | `mise run helper-bundle`，与源码一同提交 |
@@ -99,9 +101,9 @@ mise run config-dry-run
 | 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认 |
 | 单独升级 Brewfile 声明项 | `mise run macos-upgrade` |
 | 查看受管配置的实际差异，无变化时提示无需同步 | `mise run config-dry-run` |
-| 部署受管配置文件 | `mise run config-sync` |
+| 备份、部署并复查本仓库受管配置 | `mise run config-sync`，输入 `yes`；支持 `--dry-run`、`--yes` 和目标路径 |
 | 将当前配置迁为本机独立文件 | `mise run config-detach --dry-run` 预览；`mise run config-detach` 确认执行，见[配置迁出](docs/recovery.md#配置迁出保留本机文件) |
-| 核对 / 预览 / 安装公共 VS Code 扩展 | `mise run vscode-status` / `vscode-dry-run` / `vscode-sync` |
+| 核对变更 / 安装公共 VS Code 扩展 | `mise run vscode-status` / `vscode-sync` |
 | 登记本机配置历史 / 手动保存 / 查看检查点 | `mise run config-history-init` / `config-save` / `config-history` |
 | 查看当前生效的开发工具、版本和来源 | `mise ls --current` |
 | 安装全局工具并记录完整版本号 | `mise use --global --pin go@latest`，写入受管全局配置 |
@@ -109,6 +111,8 @@ mise run config-dry-run
 | 按已有下载锁安装工具 | `mise install --locked`，平台限制见[新机器重建](docs/rebuild.md) |
 | 预览工具升级 | `mise upgrade --global --bump --no-prune --dry-run uv`，工具名可替换 |
 | 取消全局工具声明并清理无其他配置使用的版本 | `mise unuse --global go` |
+
+旧任务名 `status`、`dry-run`、`vscode-dry-run` 分别作为 `package-status`、`package-dry-run`、`vscode-status` 的兼容别名，参数原样转交。`audit` 汇总状态；需要审阅软件事务时再运行 `package-dry-run`。完整 helper 开发验收使用 `helper-bundle → check`，无需提前重复执行 `helper-build`。
 
 `mise install` 不写入工具声明；`mise use` 安装并写入声明。全局与项目配置、`--pin`、锁文件、升级和完整卸载示例见[工具常用命令](docs/development-environment.md#常用工具命令速查)。
 

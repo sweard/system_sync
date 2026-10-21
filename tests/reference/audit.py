@@ -63,15 +63,12 @@ PACKAGE_REQUIRED = (
     {"mise 最终生效声明", "声明但尚未以同名具体包安装",
      "当前显式安装包中未声明、但受保护而保留",
      "apply 时会从 dependency 提升为 explicit 的声明/保护包",
-     "apply 时会从 explicit 降级为 dependency 的未声明包",
-     "当前真正 orphan 中可清理的包", "当前 orphan 中因声明或保护规则而跳过的包"},
+     "apply 时会从 explicit 降级为 dependency 的未声明包"},
     {"mise 最终生效声明", "声明但尚未以同名具体包安装",
      "当前手工根包中未声明、但受保护而保留", "apply 时会提升为手工根包的声明/保护包",
-     "apply 时会降级为依赖的未声明手工根包", "当前 autoremove 事务中的可清理包",
-     "当前 autoremove 事务中因声明或保护规则冲突的包"},
+     "apply 时会降级为依赖的未声明手工根包"},
     {"声明的根包", "声明但尚未安装", "未声明但受保护的 user-installed 包",
-     "拟直接移除的未声明 user-installed 包", "zypper 当前认定的 unneeded 包",
-     "zypper dry-run 的完整移除事务"},
+     "拟直接移除的未声明 user-installed 包"},
 )
 
 
@@ -106,7 +103,7 @@ def parse_package_status(output):
     for match in re.finditer(pattern, output.replace("\r\n", "\n"), re.MULTILINE):
         title, count, body = match.groups()
         if title not in PACKAGE_GROUPS or title in seen:
-            raise AuditError("系统包状态区段无法识别；请单独运行 mise run status")
+            raise AuditError("系统包状态区段无法识别；请单独运行 mise run package-status")
         items = [line[4:] for line in body.splitlines() if line.startswith("  - ")]
         if len(items) != int(count):
             raise AuditError("系统包状态计数与列表不一致；报告尚未完整")
@@ -276,11 +273,11 @@ class Audit:
                     self.add("packages", "drift", "package_version", title, "存在版本不符或需要修复的声明", items=mismatched)
         result = re.search(r"bundle check 退出码为 ([0-9]+)", output)
         if result and int(result.group(1)):
-            self.add("packages", "drift", "bundle_check", "Homebrew", "bundle check 未通过，需单独运行 mise run status")
+            self.add("packages", "drift", "bundle_check", "Homebrew", "bundle check 未通过，需单独运行 mise run package-status")
         if "Homebrew cleanup 精确预演\n" in output:
             preview = output.split("Homebrew cleanup 精确预演\n", 1)[1].split("状态模式：", 1)[0].strip()
             if preview and preview != "（无输出）":
-                self.add("packages", "candidate", "cleanup_review", "Homebrew", "cleanup 预演含额外输出，需单独运行 mise run status 审阅")
+                self.add("packages", "candidate", "cleanup_review", "Homebrew", "cleanup 预演含额外输出，需单独运行 mise run package-dry-run 审阅")
 
     def policy_paths(self):
         source = self.root / "dotfiles/common/shell/path.sh"

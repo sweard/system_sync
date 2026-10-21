@@ -25,7 +25,7 @@ func ParsePackageStatus(output string) ([]PackageGroup, error) {
 		title := match[1]
 		kind, known := PackageGroups[title]
 		if !known || seen[title] {
-			return nil, query.Error("系统包状态区段无法识别；请单独运行 mise run status")
+			return nil, query.Error("系统包状态区段无法识别；请单独运行 mise run package-status")
 		}
 		items := []string{}
 		for _, line := range strings.Split(strings.TrimSuffix(match[3], "\n"), "\n") {

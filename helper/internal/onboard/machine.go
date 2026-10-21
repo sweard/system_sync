@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sweard/system_sync/helper/internal/localconfig"
+	"github.com/sweard/system_sync/helper/internal/configops"
 	"github.com/sweard/system_sync/helper/internal/packagestate"
 	"github.com/sweard/system_sync/helper/internal/syncstate"
 	"github.com/sweard/system_sync/helper/internal/taskexec"
@@ -26,8 +26,7 @@ type Plan struct {
 	ConfigDiff    string   `json:"config_diff,omitempty"`
 	Tools         []string `json:"tools"`
 	Pending       []string `json:"pending"`
-	configState   string
-	configChanged bool
+	config        *configops.Plan
 	toolInstalled map[string]bool
 	toolSources   map[string]string
 }
@@ -261,7 +260,7 @@ func (e Engine) Apply(ctx context.Context, p *Plan, out io.Writer) (directory st
 	if len(p.Pending) > 0 {
 		return "", fmt.Errorf("接入仍有待处理项；请解决后重跑，或用 --only 选择独立阶段")
 	}
-	parent, err := localDirectory(e.Root, "history")
+	parent, err := syncstate.LocalDirectory(e.Root, "history")
 	if err != nil {
 		return "", err
 	}
@@ -284,10 +283,7 @@ func (e Engine) Apply(ctx context.Context, p *Plan, out io.Writer) (directory st
 		return directory, err
 	}
 	if len(p.ConfigTargets) > 0 {
-		if err = e.checkConfig(p); err != nil {
-			return directory, err
-		}
-		if err = backupConfigurations(e.Home, directory, p.ConfigTargets); err != nil {
+		if err = e.configuration().Backup(p.config, directory); err != nil {
 			return directory, err
 		}
 	}
@@ -310,7 +306,7 @@ func (e Engine) Apply(ctx context.Context, p *Plan, out io.Writer) (directory st
 				err = e.installPackages(ctx, p.Packages, directory, out)
 			}
 		case "config":
-			err = e.applyConfig(p, out)
+			err = e.configuration().Apply(p.config, out)
 		case "tools":
 			err = e.applyTools(p, out)
 		}
@@ -329,24 +325,4 @@ func decodeState(output string) (map[string]any, error) {
 		return nil, fmt.Errorf("mise 状态 JSON 无法识别")
 	}
 	return data, nil
-}
-
-func (e Engine) target(value string) (string, error) {
-	if strings.HasPrefix(value, "~/") {
-		value = filepath.Join(e.Home, value[2:])
-	}
-	if !filepath.IsAbs(value) || value == e.Home || !localconfig.Within(value, e.Home) || localconfig.Within(value, e.Root) {
-		return "", fmt.Errorf("配置目标必须位于 HOME 内且不在仓库中：%s", value)
-	}
-	parent, err := localconfig.RealPath(filepath.Dir(value))
-	if err != nil || !localconfig.Within(parent, e.Home) {
-		return "", fmt.Errorf("配置目标的父路径超出 HOME：%s", value)
-	}
-	if localconfig.IsLink(value) {
-		resolved, err := localconfig.RealPath(value)
-		if err != nil || (!localconfig.Within(resolved, e.Home) && !localconfig.Within(resolved, e.Root)) {
-			return "", fmt.Errorf("配置目标链接指向 HOME/仓库外：%s", value)
-		}
-	}
-	return filepath.Clean(value), nil
 }

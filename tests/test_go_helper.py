@@ -273,7 +273,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
         with (self.root / ".system-sync/operation.lock").open("w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             result = self.run_helper("package", "install", "gitui", text="yes\n", success=False)
-            self.assertIn("另一条包操作", result.stderr)
+            self.assertIn("另一条配置或包操作", result.stderr)
             self.assertEqual(manifest.read_bytes(), before)
         self.run_helper("package", "install", "gitui", text="yes\n")
         self.assertIn('brew "gitui"', manifest.read_text())

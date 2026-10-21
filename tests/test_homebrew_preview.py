@@ -164,6 +164,19 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("Cask tinycast needs to be installed.", result.stdout)
 
+    def test_status_skips_cleanup_and_temporary_trust_even_when_preview_would_fail(self):
+        result = subprocess.run(
+            ["bash", str(self.script), "--status"], cwd=self.project,
+            env=dict(self.environment, SYNC_TEST_CLEANUP_ERROR="1", SYNC_TEST_TRUST_ERROR="1"),
+            stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        calls = self.log.read_text()
+        self.assertNotIn("|bundle cleanup ", calls)
+        self.assertNotIn("|trust ", calls)
+        self.assertNotIn("Homebrew cleanup 精确预演", result.stdout)
+        self.assertIn("bundle check 退出码为 0", result.stdout)
+        self.assertIn("mise run package-dry-run", result.stdout)
+
     def test_installed_cask_uses_isolated_exact_trust(self):
         result = self.run_preview()
         self.assertEqual(result.returncode, 0, result.stdout)

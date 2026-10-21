@@ -25,16 +25,18 @@ Arch 清单已按 Brewfile 补充确认存在的官方仓库软件；包名转�
 统一入口按查看、预览、确认后应用的顺序使用：
 
 ```bash
-mise run status
-mise run dry-run
+mise run package-status
+mise run package-dry-run
 mise run system-sync
 ```
 
-`status` 只读地显示声明、当前根包和差异；`dry-run` 同时预览缺失包安装和收敛计划；`system-sync` 经交互确认后安装缺失项，再单独审阅删除阶段。
+`package-status` 只读地显示声明、缺失项、当前根包和额外软件，不执行安装预览、cleanup、orphan 或 autoremove 事务预演；`package-dry-run` 显示安装、收敛和清理计划；`system-sync` 经交互确认后安装缺失项，再单独审阅删除阶段。
+
+`status`、`dry-run` 保留为上述两个任务的兼容别名。`audit --only packages` 复用轻量状态报告，不检查孤立依赖或移除事务；需要这些信息时运行 `package-dry-run`。mise 原生 `mise run --dry-run system-sync` 只打印任务命令，不执行包状态查询，不能替代本项目的事务预览，见 [mise run 文档](https://mise.jdx.dev/cli/run.html)。
 
 本仓库脚本的确认统一输入小写 `yes`；直接回车或其他输入取消。安装与删除仍分阶段审阅，每个确认点分别输入 `yes`，不会自动回答包管理器自身的事务确认。
 
-平台脚本负责自己的完整预检和写操作保护。macOS 统一入口直接转交 Homebrew 脚本；Linux 的 `status` / `apply` 直接转交对应平台脚本，状态中的原生 JSON 只查询一次。Linux `dry-run` 会先显示原生安装预览，因此在这一步之前仍保留外层预检，再进入平台清理预览。
+平台脚本负责自己的完整预检和写操作保护。macOS 统一入口直接转交 Homebrew 脚本；Linux 的 `--status` / `--apply` 直接转交对应平台脚本，状态中的原生 JSON 只查询一次。Linux `--dry-run` 会先显示原生安装预览，因此在这一步之前仍保留外层预检，再进入平台清理预览。
 
 所有包写入口共用操作锁。Linux apply 的顺序是：**终端/版本预检 → 加锁并建立审计 → 读取声明和当前状态 → 校验保护项及变更阈值 → 输入 `yes` 确认 → 保存安装前状态 → 原生 mise 安装 → 重新校验 → 调整安装原因及再次审阅删除事务 → 执行删除**。直接运行平台脚本同样经过保护；mise 原生安装阶段可能使用非交互参数，因此本仓库的 `yes` 确认始终在它之前。
 
@@ -90,7 +92,7 @@ mise run package-install --cask --trust abue-ammar/tinycast/tinycast
 
 - **成功后才改清单**：同时检查原生命令退出状态与实际安装状态。失败、取消、返回成功但目标仍未达到，都不会提交计划中的配置修改。包已卸载但仍有声明时，确认后可以仅移除该声明。
 - 只记录你点名的根包，不把安装时顺带拉取的依赖写进清单。不会顺便运行 `system-sync`、`cleanup`、`autoremove` 或卸载 tap。
-- Homebrew 关闭隐式升级、安装后 cleanup 和卸载后 autoremove；APT 安装使用 `--no-upgrade --no-remove`，卸载关闭 autoremove/purge。Arch 不执行 `-Sy`、`-Rns`；DNF/zypper 卸载关闭依赖自动清理。升级仍走各平台正常流程，孤立依赖以后用 `mise run dry-run` 单独审阅。
+- Homebrew 关闭隐式升级、安装后 cleanup 和卸载后 autoremove；APT 安装使用 `--no-upgrade --no-remove`，卸载关闭 autoremove/purge。Arch 不执行 `-Sy`、`-Rns`；DNF/zypper 卸载关闭依赖自动清理。升级仍走各平台正常流程，孤立依赖以后用 `mise run package-dry-run` 单独审阅。
 - 卸载目标必须通过现有 `protected-packages.txt` 和内置关键包检查。APT 预演如果将连带删除其他包就停止；RPM 系先用 `rpm -e --test` 检查反向依赖，检查失败也停止。不要为绕过保护而添加 force/ignore-dependencies 参数。原生事务若建议额外删除或替换包，请取消并人工处理；脚本会对比操作前后状态，发现额外移除时报错并保留审计。
 - 第三方 Homebrew 包使用准确的 `owner/tap/name`；首次添加必须 `--trust`，不是全 tap 信任。成功后自动补充 `tap`、完整的 `brew/cask ..., trusted: true` 以及对应的 `trusted-formulae.txt` / `trusted-casks.txt`。卸载时删除对应声明和信任清单项，保留 tap。已有精确信任的完整声明再次安装无需重复 `--trust`。
 - 修改会保留其他条目、注释和支持的单行选项。例如已有 `brew "ruby", link: false` 会保留该选项，并向安装命令传递 `--skip-link`。
@@ -205,8 +207,8 @@ openSUSE / SLE：
 
 ```bash
 git diff -- packages
-mise run status
-mise run dry-run
+mise run package-status
+mise run package-dry-run
 ```
 
 确认没有意外的补装、降级或删除项后，再决定是否运行 `mise run system-sync`。官方 `mise bootstrap packages import` 当前仅导入 Homebrew formula，本项目 macOS 使用 Brewfile，因此不能用它同时导入本项目的 cask、tap 和 Linux profile。
@@ -277,8 +279,8 @@ awk '{ printf "\"zypper:%s\" = \"latest\"\n", $0 }' zypper-user-installed.txt
 
 ```bash
 git diff
-mise run status
-mise run dry-run
+mise run package-status
+mise run package-dry-run
 ```
 
 直到“未声明根包”、“降级”和“移除事务”中只有你确实想删的内容，再执行 `mise run system-sync`。
@@ -357,11 +359,11 @@ cask "visual-studio-code"
 
 ```bash
 git diff -- packages/macos/Brewfile
-mise run dry-run
+mise run package-dry-run
 mise run system-sync
 ```
 
-`dry-run` 会显示 Brewfile 声明、缺失项、未声明的 requested formula/cask/tap、`brew bundle check` 和 Homebrew 自己计算的 cleanup 精确预演。预演会断开标准输入，不会回答 Homebrew 的确认。
+`package-dry-run` 会显示 Brewfile 声明、缺失项、未声明的 requested formula/cask/tap、`brew bundle check` 和 Homebrew 自己计算的 cleanup 精确预演。预演会断开标准输入，不会回答 Homebrew 的确认。
 
 “未声明 requested formula”不等于“一定会删除”。例如某个库因手工重装而被 Homebrew 记成 requested，但它仍是 Brewfile 根包的依赖，cleanup 就会保留它。是否真正移除以“Homebrew cleanup 精确预演”为准。
 
@@ -407,7 +409,7 @@ cask "abue-ammar/tinycast/tinycast", trusted: true
 
 `trusted-casks.txt` 中对应一行 `abue-ammar/tinycast/tinycast`。两个清单中的项目必须在 Brewfile 中声明；信任行采用示例所示的独立一行格式。`brew bundle list --cask` 虽然返回短名称，临时信任仍使用完整名称。
 
-cleanup 预演使用独立的临时信任库，每次都初始化 formula 和 cask 信任，覆盖安装前、安装后两次预演。仅在真实 Homebrew 信任库中执行 `brew trust` 不会影响这个临时库。若日志显示安装已成功、随后预演失败，先修正对应信任清单，再重新运行 `mise run dry-run`；已安装且满足声明的软件无需重装。
+cleanup 预演使用独立的临时信任库，每次都初始化 formula 和 cask 信任，覆盖安装前、安装后两次预演。仅在真实 Homebrew 信任库中执行 `brew trust` 不会影响这个临时库。若日志显示安装已成功、随后预演失败，先修正对应信任清单，再重新运行 `mise run package-dry-run`；已安装且满足声明的软件无需重装。
 
 如果 Homebrew cleanup 报告 formula 依赖图循环，并且同时提出移除受管项目，脚本会显示警告并要求额外输入 `yes` 确认。应先审阅事务，必要时修复 Homebrew 旧 keg 收据后再继续。
 

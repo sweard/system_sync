@@ -23,7 +23,7 @@ func (v *stringsFlag) String() string         { return fmt.Sprint([]string(*v)) 
 func (v *stringsFlag) Set(value string) error { *v = append(*v, value); return nil }
 
 func help(out io.Writer) {
-	fmt.Fprintln(out, "system-sync-helper [--root 仓库绝对路径] <命令>\n\n命令：audit、package-capture、machine-init、parse-status、parse-zypper、runtime、package、config-detach、vscode、config-history\n--version 显示版本；各命令支持 --help。日常调用 helper/scripts/run.sh。")
+	fmt.Fprintln(out, "system-sync-helper [--root 仓库绝对路径] <命令>\n\n命令：audit、package-capture、machine-init、parse-status、parse-zypper、runtime、package、config、config-detach、vscode、config-history\n--version 显示版本；各命令支持 --help。日常调用 helper/scripts/run.sh。")
 }
 
 func Run(args []string, stdin *os.File, stdout, stderr io.Writer, version, revision string) int {
@@ -48,7 +48,7 @@ func Run(args []string, stdin *os.File, stdout, stderr io.Writer, version, revis
 		return 2
 	}
 	command, args := args[0], args[1:]
-	if command == "audit" || command == "runtime" || command == "package" || command == "config-detach" || command == "vscode" || command == "config-history" || command == "package-capture" || command == "machine-init" {
+	if command == "audit" || command == "runtime" || command == "package" || command == "config" || command == "config-detach" || command == "vscode" || command == "config-history" || command == "package-capture" || command == "machine-init" {
 		if *root == "" {
 			fmt.Fprintln(stderr, "错误：需要 --root 指定仓库；请使用 helper/scripts/run.sh")
 			return 2
@@ -96,6 +96,8 @@ func dispatch(command string, args []string, root string, stdin *os.File, stdout
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	switch command {
+	case "config":
+		return configuration(args, root, stdin, stdout, stderr)
 	case "package-capture", "machine-init":
 		return onboarding(command, args, root, stdin, stdout, stderr)
 	case "package", "config-detach", "vscode", "config-history":

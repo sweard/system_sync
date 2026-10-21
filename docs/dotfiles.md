@@ -110,9 +110,10 @@ espanso service restart
 
 ```bash
 mise run vscode-status
-mise run vscode-dry-run
 mise run vscode-sync
 ```
+
+`vscode-status` 已同时列出安装和版本变更计划，旧名称 `vscode-dry-run` 是它的兼容别名；无需连续运行两个查询。
 
 同步只安装缺失项或调整清单内版本，不删除其他扩展；明确同步会按固定版本安装，可能将更新的版本调回清单版本。需要升级时先修改并审阅清单。扩展依赖由 VS Code 安装，若依赖也是清单项，会在最后核对其版本。Settings Sync 的扩展同步若已启用，仍可能与本地固定版本相互覆盖，出现版本漂移时先选择保留的版本再同步。
 
@@ -134,7 +135,7 @@ macOS 可自动找到标准应用目录中的 CLI；其他位置用 `--code <CLI
 
 编辑上述公共来源后，运行 `mise run config-status`、`mise run config-dry-run`，确认后运行 `mise run config-sync`。`/shared` 是 mise 的编辑条目标识，不是实际目录。应用界面修改的共享值可与来源产生差异；私有键的变化不会被视为共享配置漂移。
 
-`config-dry-run` 通过 [config-preview.sh](../scripts/config-preview.sh) 调用 `mise bootstrap dotfiles diff`，显示内容、权限、链接结构等真实差异。没有差异时明确输出 `[+] 未发现需要应用的配置差异，无需同步。`；查询失败则返回非零并提示检查失败，不把失败当作无变化。预览不执行 `apply`，也不运行部署钩子；原生 `diff` 会渲染受信任模板，因此模板中的 `exec()` 仍可能运行，见[官方模板说明](https://mise.jdx.dev/dotfiles/managed.html#templates)。
+`config-dry-run` 通过兼容脚本 [config-preview.sh](../scripts/config-preview.sh) 进入 Go helper 的 `config diff`，与 `config-sync`、`machine-init --only config` 共用 [configops](../helper/internal/configops/) 模块；由 mise 原生 `status --json` 和 `diff` 读取状态、渲染差异，显示内容、权限、链接结构等真实差异。没有差异时明确输出 `[+] 未发现需要应用的配置差异，无需同步。`；查询失败则返回非零并提示检查失败，不把失败当作无变化。预览不执行 `apply`，也不运行部署钩子；原生 `diff` 会渲染受信任模板，因此模板中的 `exec()` 仍可能运行，见[官方模板说明](https://mise.jdx.dev/dotfiles/managed.html#templates)。
 
 只查看一个目标时可传入路径，例如：
 
@@ -146,6 +147,20 @@ mise run config-dry-run ~/.config/mise/miserc.toml
 
 隔离测试覆盖本机私有值、应用新增键、重复同步和 JSONC 拒绝写入；当前 Mac 对比接管前后的完整配置，确认设置值未变。Linux 使用同一公共来源，尚未在真实 Linux 主机验证。
 
+`config-dry-run` 和 `config-sync` 只处理来源属于本仓库的已启用映射；仓库外的映射和本机历史登记不参与应用。同一文件存在仓库外的应用映射时停止，要求先核对冲突。`config-status` 保留原生状态视图，可能同时列出其他来源的映射。
+
+日常同步先显示实际差异，再输入小写 `yes` 确认；无变化时直接提示无需同步，不建立备份。可以指定目标物理路径：
+
+```bash
+mise run config-sync --dry-run
+mise run config-sync ~/.zshrc
+# 自动化：先审阅预览，再显式跳过项目确认
+mise run config-sync --yes
+```
+
+应用过程使用 `.system-sync/operation.lock`，重新核对预览状态，备份目标，调用原生 apply，再复查结果。`machine-init` 使用同一模块，但额外拒绝替换已有普通文件/其他来源链接，以及执行 `absent` 删除；日常同步保留显式接管能力，备份不会替代 mise 自身的冲突检查；需要覆盖冲突文件时使用 `config-sync --force`，仍先备份再交给原生 apply 处理。
+
+备份和事务记录保存在 `.system-sync/history/<时间>-config-sync-*/`；初始化仍保存在 `*-machine-init-*/`。失败保留备份并标记 `needs-review`，需要人工核对，恢复方法见[本机记录](recovery.md#中断与写入失败的恢复)。
 
 ## 后续逐项接管其他配置
 

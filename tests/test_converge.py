@@ -59,6 +59,9 @@ FAKE = r'''#!/usr/bin/env python3
 import json, os, sys
 from pathlib import Path
 name, args = Path(sys.argv[0]).name, sys.argv[1:]
+if os.environ.get("FIXTURE_ALL_QUERIES"):
+    with Path(os.environ["FIXTURE_ALL_QUERIES"]).open("a") as log:
+        log.write(json.dumps([name, *args]) + "\n")
 state_file = Path(os.environ["FIXTURE_STATE"])
 state = json.loads(state_file.read_text())
 profile = state["profile"]
@@ -357,6 +360,28 @@ class ConvergeTest(unittest.TestCase):
                 self.assertEqual(self.calls(), [])
                 self.assertFalse((self.root / ".system-sync/history").exists())
 
+    def test_status_skips_install_and_cleanup_solvers_while_dry_run_includes_them(self):
+        query_log = self.root / "all-queries.jsonl"
+        self.environment["FIXTURE_ALL_QUERIES"] = str(query_log)
+        for profile in ("arch", "debian", "fedora", "opensuse"):
+            with self.subTest(profile=profile):
+                self.configure(profile, initial_orphans=["extra"])
+                query_log.unlink(missing_ok=True)
+                result = self.run_sync("--status", terminal=False)
+                self.assertEqual(result.returncode, 0, result.stdout)
+                calls = [json.loads(line) for line in query_log.read_text().splitlines()]
+                self.assertFalse(any("apply" in call or "autoremove" in call or "--unneeded" in call
+                                     or "-Qdtq" in call or "--dry-run" in call for call in calls), calls)
+                self.assertIn("package-dry-run", result.stdout)
+                query_log.unlink()
+                result = self.run_sync("--dry-run", terminal=False)
+                self.assertEqual(result.returncode, 0, result.stdout)
+                calls = [json.loads(line) for line in query_log.read_text().splitlines()]
+                self.assertIn(["mise", "bootstrap", "packages", "apply", "--dry-run"], calls)
+                self.assertTrue(any("autoremove" in call or "--unneeded" in call or "-Qdtq" in call
+                                    for call in calls), calls)
+                self.assertEqual(self.calls(), [])
+
     def test_missing_mandatory_root_stops_before_install(self):
         for profile in ("arch", "debian", "fedora", "opensuse"):
             with self.subTest(profile=profile):
@@ -434,5 +459,5 @@ class ConvergeTest(unittest.TestCase):
                 with self.subTest(command=command):
                     result = run_terminal(command, self.environment)
                     self.assertNotEqual(result.returncode, 0, result.stdout)
-                    self.assertIn("另一条包操作", result.stdout)
+                    self.assertIn("另一条配置或包操作", result.stdout)
         self.assertEqual(self.calls(), [])

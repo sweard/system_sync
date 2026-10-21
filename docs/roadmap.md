@@ -15,9 +15,10 @@
 - 已将仍有测试用途的 7 个 Python 参考实现移入 `tests/reference/`，删除未引用的旧 `config-history.py`，同步检查入口、导入及隔离测试路径；`scripts/` 仅保留 Shell 执行入口。
 - Go 模块、依赖、版本、许可、构建/启动脚本、预编译包和说明统一集中在 `helper/`；根 `scripts/` 负责平台流程，项目级回归仍在 `tests/`。mise task 名称及根目录 `.system-sync/` 缓存位置保持一致。
 - 新增 `package-capture` / `machine-init`：支持 macOS 及四个 Linux profile，默认预览，只保存本机候选或分阶段补装，保留已有软件和孤立包；配置备份、来源核对及操作锁接入 Go helper。日常接入不要求编译器，候选仍需审阅后手工合并，Linux 真实包事务验收仍待完成。
+- 任务入口已收敛：`package-status` / `package-dry-run` 分别负责轻量状态与事务预览，旧名称保留兼容别名；VS Code 查询统一到 `vscode-status`。日常 `config-sync` 与 `machine-init` 共用 Go 配置计划、备份和复查能力，完整 helper 验收流程简化为 `helper-bundle → check`。
 - 构建和验证命令、源码位置与预编译安装步骤见 [Go helper](../helper/README.md)。未将交叉编译视为 Linux 真实包事务验收。
 
-`v0.2.0` 本机检查通过：65 项 Go 测试（含 race 检查）、187 项 Python 回归、25 项 task 校验及 `go vet`。覆盖无 Python/Go 的日常入口、机器接入的采集/保留/重复执行、配置迁出失败回滚与并发修改保护、扩展进程树超时清理及本机历史范围检查；四平台归档和空模块缓存的离线构建已验证。本轮尚未执行远端 CI。
+`v0.2.0` 本机检查通过：70 项 Go 测试（含 race 检查）、195 项 Python 回归、24 项 task 校验及 `go vet`。覆盖兼容别名参数转交、状态与事务预演分离、共享配置计划/备份/复查、无 Python/Go 的日常入口、机器接入的采集/保留/重复执行、配置迁出失败回滚与并发修改保护、扩展进程树超时清理及本机历史范围检查；四平台归档和空模块缓存的离线构建已验证。本轮尚未执行远端 CI。
 
 ## Go 迁移前的性能核对（2026-10-21）
 
