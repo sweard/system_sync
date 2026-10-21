@@ -1,0 +1,45 @@
+scripts/pacman-converge.sh
+  s_00332b4a331471::t_5235091cf7e143 26,318,320,432,434
+scripts/linux-reason-converge.sh
+  s_00332b4a331471::t_5235091cf7e143 440,442,523,525
+scripts/zypper-converge.sh
+  s_00332b4a331471::t_5235091cf7e143 28,331,333,379,381
+README.md
+  s_00332b4a331471::t_cb3c6481f5dedd 91-92
+scripts/package-command.py
+  s_00332b4a331471::t_5235091cf7e143 453
+tests/test_converge.py
+  s_00332b4a331471::t_170696f8621234 252-259,265,273,281,320,327,341,375,386
+scripts/config-detach.py
+  s_00332b4a331471::t_5235091cf7e143 374
+docs/packages.md
+  s_00332b4a331471::t_cb3c6481f5dedd 33-34,37,77,274,287,303,317,396
+scripts/homebrew-converge.sh
+  s_00332b4a331471::t_5235091cf7e143 236,238,390,392,420,422
+tests/test_homebrew_preview.py
+  s_00332b4a331471::t_170696f8621234 72-75,247,254,265,274,280-304
+  s_00332b4a331471::t_5600ea2d93db88 305
+tests/test_config_detach.py
+  s_00332b4a331471::t_170696f8621234 15-16,101-116
+  s_00332b4a331471::t_fe0f312e8b844e 117
+tests/test_package_command.py
+  s_00332b4a331471::t_170696f8621234 108,111,141-148
+docs/recovery.md
+  s_00332b4a331471::t_cb3c6481f5dedd 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "89bdedcbc25ad99a1ad1c37f4b77dda2f4f4a846",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
