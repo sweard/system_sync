@@ -138,7 +138,7 @@ func OperationLock(root string) (*Lock, error) {
 	}
 	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		file.Close()
-		return nil, fmt.Errorf("另一条配置或包操作正在运行（config-sync/machine-init/package-install/package-uninstall/system-sync/upgrade），请稍后重试")
+		return nil, fmt.Errorf("另一条配置或包操作正在运行（config-sync/vscode-status --capture/machine-init/package-install/package-uninstall/system-sync/upgrade），请稍后重试")
 	}
 	return &Lock{file, true}, nil
 }

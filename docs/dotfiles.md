@@ -108,7 +108,7 @@ espanso service restart
 
 ### 公共扩展清单
 
-`dotfiles/common/vscode/extensions.toml` 固定筛选后的 18 个扩展及核对时版本。当前均为公共项；以后有平台专属扩展时放入 `[macos]` 或 `[linux]`，脚本合并当前平台分组，冲突或格式不明时停止。认证状态和扩展存储不进入清单，此前移除的扩展不重新纳管；清单外扩展继续保留。
+`dotfiles/common/vscode/extensions.toml` 当前固定 19 个公共扩展及核对或采集时的版本，包含本次确认纳管的 `anthropic.claude-code@2.1.304`。当前均位于 `[common]`，macOS 和 Linux 共用；平台专属扩展放入 `[macos]` 或 `[linux]`，脚本合并当前平台分组，冲突或格式不明时停止。认证状态和扩展存储不进入清单；新增纳管需显式确认，清单外扩展继续保留。
 
 ```bash
 mise run vscode-status
@@ -122,7 +122,7 @@ mise run vscode-sync
 ```text
 [~] 保留 1 个清单外扩展：
   - example.local@1.2.3
-[+] 18 个公共扩展均符合清单，无需同步。
+[+] 19 个公共扩展均符合清单，无需同步。
 ```
 
 同步只安装缺失项或调整清单内版本，不删除其他扩展；明确同步会按固定版本安装，可能将更新的版本调回清单版本。需要升级时先修改并审阅清单。扩展依赖由 VS Code 安装，若依赖也是清单项，会在最后核对其版本。Settings Sync 的扩展同步若已启用，仍可能与本地固定版本相互覆盖，出现版本漂移时先选择保留的版本再同步。
@@ -140,6 +140,34 @@ mise run vscode-sync
 macOS 可自动找到标准应用目录中的 CLI；其他位置用 `--code <CLI绝对路径>`。参数依据 [VS Code 官方 CLI 文档](https://code.visualstudio.com/docs/configure/command-line#_working-with-extensions)。扩展清单是独立入口，`config-sync` 只同步应用配置，不自动安装扩展。
 
 当前 `settings.json` 是标准 JSON，符合 mise 合并器要求。VS Code 允许的 JSONC 注释不受当前 mise 合并器支持；文件包含注释、尾逗号或无效内容时，mise 会报错并保留原文件，不会自动剥离注释再覆盖。
+
+### 采集本机未纳管扩展
+
+扩展采集合并在 `vscode-status` task，通过 `--capture` 开启，不另设 `vscode-capture` task。它比较 VS Code 的实际安装列表与当前平台清单，按本机已安装版本生成追加候选，列出待纳管及被筛除扩展的标识、版本和清单 diff。默认只读预览；已有声明、固定版本和注释保持，缺失的旧声明也不会被删除。
+
+```bash
+mise run vscode-status --capture
+mise run vscode-status --capture --exclude example.local
+mise run vscode-status --capture --only example.shared,example.formatter --exclude example.local
+
+# 预览通过后，用相同筛选参数追加；交互输入 yes 确认
+mise run vscode-status --capture --only example.formatter --apply
+
+# 自动化显式跳过确认，仍会显示候选并复查后写入
+mise run vscode-status --capture --only example.formatter --apply --yes
+
+# 平台专属扩展：在对应系统上显式选择分组，预览通过后再加 --apply
+mise run vscode-status --capture --only example.platform --group macos
+# Linux 使用 --group linux
+```
+
+默认写入 `[common]`，macOS 和 Linux 共用；显式指定 `--group common` 效果相同。平台专属扩展在 macOS 上用 `--group macos`、Linux 上用 `--group linux`。不允许从本机写入另一平台分组；公共声明与任一平台版本冲突时停止，交由人工处理。采集只追加未纳管项，不自动移动已有声明的分组，调整范围需编辑清单。
+
+`--only` 和 `--exclude` 可重复或用逗号分隔，使用准确的 `publisher.name`，不接受通配符或版本号；排除优先于选中，不移除已有声明。`--only` 中未安装的扩展会报错，排除未安装扩展则允许。筛选只影响本次采集，不保存为永久排除规则，后续采集仍需传入相同参数。
+
+与 `package-capture --apply` 只保存本机候选不同，`vscode-status --capture --apply` 会在确认后直接追加受管的 `dotfiles/common/vscode/extensions.toml`。原清单与候选保存在 Git 忽略的 `.system-sync/capture/<时间>-vscode-<平台>-*/extensions.toml.before` 和 `extensions.toml.candidate`，目录 `0700`、备份文件 `0600`；清单原权限保持。写入取得共享操作锁，复查文件身份、内容、权限及待追加扩展的实际版本，再原子替换清单；检查失败保留原文件。重复执行没有新候选时明确提示无需修改，不创建备份。
+
+不加 `--capture` 时仍按原方式只读检查状态，不能使用采集筛选或写入参数。采集不安装、卸载或更新扩展，不读取认证或扩展存储。排除的扩展继续留在本机，`vscode-status` 仍列为清单外扩展；采集成功后，其他机器可通过 `vscode-sync` 按新增声明安装。采集中的 `--dry-run` 等同默认预览，不能与 `--apply` 同用；`--yes` 必须与 `--apply` 同用。`--manifest`、`--code` 及成对的隔离目录参数与其他扩展命令共用，便于验收。
 
 ## 应用配置的日常同步
 

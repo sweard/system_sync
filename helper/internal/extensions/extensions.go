@@ -24,6 +24,10 @@ func Declarations(path, platform string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	return declarations(data, platform, false)
+}
+
+func declarations(data map[string]any, platform string, allowEmpty bool) (map[string]string, error) {
 	wanted := map[string]string{}
 	for group, value := range data {
 		if group != "common" && group != "macos" && group != "linux" {
@@ -46,7 +50,7 @@ func Declarations(path, platform string) (map[string]string, error) {
 			}
 		}
 	}
-	if len(wanted) == 0 {
+	if len(wanted) == 0 && !allowEmpty {
 		return nil, fmt.Errorf("当前平台的扩展清单为空，已停止")
 	}
 	return wanted, nil
@@ -104,17 +108,13 @@ func Installed(r Invoker, command []string) (map[string]string, error) {
 	}
 	return versions, nil
 }
-func Run(options Options, runner Invoker, out io.Writer) error {
+func command(options Options) ([]string, error) {
 	platform := localconfig.Platform()
 	if platform == "" {
-		return fmt.Errorf("仅支持 macOS / Linux")
+		return nil, fmt.Errorf("仅支持 macOS / Linux")
 	}
 	if (options.UserDataDir == "") != (options.ExtensionsDir == "") {
-		return fmt.Errorf("隔离验收必须同时指定 --user-data-dir 和 --extensions-dir")
-	}
-	wanted, err := Declarations(options.Manifest, platform)
-	if err != nil {
-		return err
+		return nil, fmt.Errorf("隔离验收必须同时指定 --user-data-dir 和 --extensions-dir")
 	}
 	code := options.Code
 	if code == "" {
@@ -124,19 +124,31 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 		code = "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
 	}
 	if !localconfig.IsFile(code) {
-		return fmt.Errorf("未找到 VS Code CLI，请安装 code 或用 --code 指定")
+		return nil, fmt.Errorf("未找到 VS Code CLI，请安装 code 或用 --code 指定")
 	}
 	command := []string{code}
 	if options.UserDataDir != "" {
 		user, err := localconfig.RealPath(options.UserDataDir)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		ext, err := localconfig.RealPath(options.ExtensionsDir)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		command = append(command, "--user-data-dir", user, "--extensions-dir", ext)
+	}
+	return command, nil
+}
+
+func Run(options Options, runner Invoker, out io.Writer) error {
+	wanted, err := Declarations(options.Manifest, localconfig.Platform())
+	if err != nil {
+		return err
+	}
+	command, err := command(options)
+	if err != nil {
+		return err
 	}
 	current, err := Installed(runner, command)
 	if err != nil {

@@ -122,7 +122,8 @@ run = "./helper/scripts/run.sh config-detach"
 
 [tasks.vscode-status]
 alias = "vscode-dry-run"
-description = "核对公共 VS Code 扩展，列出清单外扩展的标识及版本并保留"
+description = "核对 VS Code 扩展；--capture 预览追加，支持 --only、--exclude、--group，--apply 输入 yes 写入"
+raw = true
 run = "./helper/scripts/run.sh vscode status"
 
 [tasks.vscode-sync]

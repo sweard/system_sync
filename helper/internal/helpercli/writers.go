@@ -105,19 +105,48 @@ func writer(command string, args []string, root string, stdin *os.File, stdout, 
 		}
 	case "vscode":
 		options := extensions.Options{Manifest: filepath.Join(root, "dotfiles/common/vscode/extensions.toml")}
-		fs.BoolVar(&options.DryRun, "dry-run", false, "只预览，不安装")
+		fs.BoolVar(&options.DryRun, "dry-run", false, "只预览，不修改")
 		fs.StringVar(&options.Manifest, "manifest", options.Manifest, "扩展清单")
 		fs.StringVar(&options.Code, "code", "", "VS Code CLI 路径")
 		fs.StringVar(&options.UserDataDir, "user-data-dir", "", "隔离用户目录")
 		fs.StringVar(&options.ExtensionsDir, "extensions-dir", "", "隔离扩展目录")
-		if code, e := parse(fs, interspersed(args, map[string]bool{"--manifest": true, "--code": true, "--user-data-dir": true, "--extensions-dir": true})); e != nil {
+		capture := fs.Bool("capture", false, "status：预览未纳管扩展的清单追加差异；--apply 确认后写入")
+		apply := fs.Bool("apply", false, "capture：备份并追加清单；默认只预览")
+		yes := fs.Bool("yes", false, "capture：已审阅候选，跳过 yes 确认；须同时使用 --apply")
+		group := fs.String("group", "common", "capture：common 或当前平台；默认 common")
+		var only, exclude stringsFlag
+		fs.Var(&only, "only", "capture：仅纳管指定 publisher.name；可重复或逗号分隔")
+		fs.Var(&exclude, "exclude", "capture：排除指定 publisher.name；可重复或逗号分隔，优先于 --only")
+		if code, e := parse(fs, interspersed(args, map[string]bool{"--manifest": true, "--code": true, "--user-data-dir": true, "--extensions-dir": true, "--group": true, "--only": true, "--exclude": true})); e != nil {
 			return code, nil
 		}
-		if fs.NArg() != 1 || (fs.Arg(0) != "status" && fs.Arg(0) != "sync") {
-			return 2, fmt.Errorf("用法：vscode <status|sync> [--dry-run] [--manifest 清单] [--code CLI]")
+		if fs.NArg() != 1 || (fs.Arg(0) != "status" && fs.Arg(0) != "sync" && fs.Arg(0) != "capture") {
+			return 2, fmt.Errorf("用法：vscode <status|sync|capture> [--dry-run] [--manifest 清单] [--code CLI]；status --capture 支持 --only、--exclude、--group、--apply、--yes")
 		}
 		options.Action = fs.Arg(0)
-		err = extensions.Run(options, runner, stdout)
+		if *capture {
+			if options.Action == "sync" {
+				return 2, fmt.Errorf("--capture 只适用于 vscode status")
+			}
+			options.Action = "capture"
+		}
+		if options.Action == "capture" {
+			if *apply && options.DryRun || *yes && !*apply {
+				return 2, fmt.Errorf("--apply 不能与 --dry-run 同时使用；--yes 须同时使用 --apply")
+			}
+			code, err = captureExtensions(ctx, root, extensions.CaptureOptions{Options: options, Group: *group, Only: only, Exclude: exclude}, *apply, *yes, runner, stdin, stdout)
+		} else {
+			captureFlags := false
+			fs.Visit(func(f *flag.Flag) {
+				if f.Name == "apply" || f.Name == "yes" || f.Name == "group" || f.Name == "only" || f.Name == "exclude" {
+					captureFlags = true
+				}
+			})
+			if captureFlags {
+				return 2, fmt.Errorf("采集参数 --apply、--yes、--group、--only、--exclude 须同时使用 --capture")
+			}
+			err = extensions.Run(options, runner, stdout)
+		}
 	case "config-history":
 		description := "manual system-sync checkpoint"
 		fs.StringVar(&description, "description", description, "检查点描述")
