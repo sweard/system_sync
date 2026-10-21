@@ -1,0 +1,60 @@
+docs/dotfiles.md
+  s_00332b4a331471::t_29c34e68c35507 120-127
+mise.toml
+  s_00332b4a331471::t_29c34e68c35507 125,134,138
+helper/internal/confighistory/history.go
+  s_00332b4a331471::t_0f11296f2b379d 82-86,101,103-114,128-130
+helper/internal/extensions/extensions_test.go
+  s_00332b4a331471::t_8c512852eda2c5 4,108-170
+tests/test_config_history.py
+  s_00332b4a331471::t_f28467ece4470b 85-105
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_f28467ece4470b 72,79,87-106
+helper/internal/audit/audit_test.go
+  s_00332b4a331471::t_8c512852eda2c5 129-157
+helper/internal/audit/report.go
+  s_00332b4a331471::t_0f11296f2b379d 167-168
+tests/test_go_helper.py
+  s_00332b4a331471::t_f28467ece4470b 44,76-86,89-90,92-94,96-97
+  s_00332b4a331471::t_0b5857da11ae62 87-88,91,95
+README.md
+  s_00332b4a331471::t_29c34e68c35507 106-107
+tests/reference/audit.py
+  s_00332b4a331471::t_f28467ece4470b 464-465,467-468
+helper/internal/extensions/extensions.go
+  s_00332b4a331471::t_0f11296f2b379d 160,163,166-171
+helper/internal/confighistory/history_test.go
+  s_00332b4a331471::t_8c512852eda2c5 55-58,77-123
+docs/audit.md
+  s_00332b4a331471::t_29c34e68c35507 66-67
+helper/README.md
+  s_00332b4a331471::t_ba36f6ed0f79ff 24,32-33
+  s_00332b4a331471::t_4ab7080a51947b 121
+docs/roadmap.md
+  s_00332b4a331471::t_ba36f6ed0f79ff 19
+  s_00332b4a331471::t_4ab7080a51947b 22
+tests/reference/vscode-extensions.py
+  s_00332b4a331471::t_0f11296f2b379d 102-106
+docs/recovery.md
+  s_00332b4a331471::t_29c34e68c35507 86-87
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_00332b4a331471::t_05086dd3dca0dc 1-4
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_00332b4a331471::t_845f996ff0f5e0 7,10,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "97fcddc998607ad896a11377ade22f8a73c82b20",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
