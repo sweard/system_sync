@@ -1,0 +1,219 @@
+scripts/helper-build.sh
+  s_00332b4a331471::t_1fbe7304aace07 33,39,42
+mise.toml
+  s_00332b4a331471::t_1fbe7304aace07 74,79,104,108,112,117,121,125
+internal/configdetach/plan.go
+  s_00332b4a331471::t_ddd7af6c0cb4c7 681-683
+  s_00332b4a331471::t_9bd07f37817de6 1-18,482,577,688
+  s_6b8270b6e632f5::t_34e77e536e70a0 19-481,483-576,578-680,684-687
+internal/packageedit/command.go
+  s_6b8270b6e632f5::t_34e77e536e70a0 23,25-28,31-43,46-53,56-540,542-558,562-573,575-691,693-700
+  s_00332b4a331471::t_ddd7af6c0cb4c7 559-561
+  s_00332b4a331471::t_1f7968281db384 541,574,692
+  s_00332b4a331471::t_317debedcd9095 1-22,24,29-30,44-45,54-55
+internal/syncstate/runtime.go
+  s_00332b4a331471::t_34be840b319e74 3
+scripts/vscode-extensions.py
+  s_00332b4a331471::t_34be840b319e74 2
+scripts/config-detach.py
+  s_00332b4a331471::t_34be840b319e74 2
+internal/extensions/extensions.go
+  s_6b8270b6e632f5::t_34e77e536e70a0 23-26,29-35,38-40,42-45,49-56,58-62,66-71,74-76,82-85,88-95,97-103,108-118,120-128,131-138,141-144,146-149,151-172,174-187
+  s_00332b4a331471::t_8bf6b676663f9e 1-22,27-28,36-37,41,46-48,57,63-65,72-73,77-81,86-87,96,104-107,119,129-130,139-140,145,150,173,188-191
+scripts/sync_runtime.py
+  s_00332b4a331471::t_34be840b319e74 2
+internal/packageedit/diff.go
+  s_00332b4a331471::t_317debedcd9095 1-10,14,31,41,62-63
+  s_6b8270b6e632f5::t_34e77e536e70a0 11-13,15-30,32-40,42-61
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_1fbe7304aace07 48
+internal/packageedit/command_test.go
+  s_00332b4a331471::t_5dc09eaa587b6d 9,336,350-354,357-359,363-365,372-374,376-377,382,386-389,394-395,399-400,407
+  s_00332b4a331471::t_c1f335df67b87f 1-8,10-15,519
+  s_00332b4a331471::t_6c71686ffc8eae 16-335,337-349,411-518
+  s_6b8270b6e632f5::t_a6de9b4d9ac476 355-356,360-362,366-371,375,378-381,383-385,390-393,396-398,401-406,408-410
+internal/extensions/extensions_test.go
+  s_00332b4a331471::t_aa1ce0d2ad97e1 13-44,59,67-105
+  s_00332b4a331471::t_049b3795759049 1-12,60-66,106
+  s_00332b4a331471::t_5dc09eaa587b6d 45,49-50,58
+  s_6b8270b6e632f5::t_a6de9b4d9ac476 46-48,51-57
+docs/rebuild.md
+  s_00332b4a331471::t_34be840b319e74 5
+prebuilt/README.md
+  s_00332b4a331471::t_34be840b319e74 5
+internal/helpercli/writers.go
+  s_00332b4a331471::t_33d54fdfbe36a8 1-30,49-50,62,106,121,136,152,162,164,231
+  s_6b8270b6e632f5::t_34e77e536e70a0 31-48,51-61,63-105,107-120,122-135,137-151,153-161,163,165-230
+tests/test_config_detach.py
+  s_00332b4a331471::t_1fbe7304aace07 16,39,69,87,99,103
+docs/roadmap.md
+  s_00332b4a331471::t_5dc09eaa587b6d 35
+  s_00332b4a331471::t_8d88cb2cc2356f 17-18
+  s_00332b4a331471::t_34be840b319e74 9,13-14
+scripts/config-history.py
+  s_00332b4a331471::t_34be840b319e74 2
+internal/taskexec/process.go
+  s_00332b4a331471::t_8bf6b676663f9e 1-19,23-24,29-31,36-38,42-43,55-59,64-66,72-75,84-89,94-96,99,103-109,115-117
+  s_6b8270b6e632f5::t_34e77e536e70a0 20-22,25-28,32-35,39-41,44-54,60-63,67-71,76-83,90-93,97-98,100-102,110-114
+scripts/helper-install.sh
+  s_00332b4a331471::t_1fbe7304aace07 22
+docs/go-helper.md
+  s_00332b4a331471::t_34be840b319e74 5,16-18,21,50-53,87,89,105
+  s_00332b4a331471::t_8d88cb2cc2356f 15,101,103
+  s_00332b4a331471::t_73b65b50d32066 104
+internal/packageedit/manifest.go
+  s_00332b4a331471::t_317debedcd9095 1-9,12,14-15,45,48,54,58,67,70-71,74-75,80,93-95,104-106,111-112,117-118,130-131,140-141,148,152,167-169,177-179,190,214-216,223-224,234-238,256
+  s_6b8270b6e632f5::t_34e77e536e70a0 10-11,13,16-44,46-47,49-53,55-57,59-66,68-69,72-73,76-79,81-92,96-103,107-110,113-116,119-129,132-139,142-147,149-151,153-166,170-176,180-189,191-213,217-222,225-233,239-255
+internal/configdetach/plan_test.go
+  s_00332b4a331471::t_aa1ce0d2ad97e1 14-279
+  s_00332b4a331471::t_049b3795759049 1-13,280
+docs/dotfiles.md
+  s_00332b4a331471::t_34be840b319e74 124
+prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_6b8270b6e632f5::t_627ae302428d06 1-64
+internal/configdetach/tree.go
+  s_6b8270b6e632f5::t_34e77e536e70a0 11-21,23-114,116-122,124-127,129-151
+  s_00332b4a331471::t_9bd07f37817de6 1-10,22,115,123,128,152
+go.mod
+  s_00332b4a331471::t_7e3dc2f7e8989e 4-5
+tests/test_go_helper.py
+  s_00332b4a331471::t_ba4f570dd70ad5 234-236,240-319
+  s_00332b4a331471::t_5dc09eaa587b6d 237-239
+  s_00332b4a331471::t_1fbe7304aace07 333,434,461,498,505
+scripts/package-command.py
+  s_00332b4a331471::t_34be840b319e74 2
+scripts/helper-test.sh
+  s_00332b4a331471::t_1fbe7304aace07 8
+internal/taskexec/process_test.go
+  s_00332b4a331471::t_049b3795759049 1-13,26,34
+  s_00332b4a331471::t_aa1ce0d2ad97e1 14-25,27-33,35-42
+prebuilt/v0.2.0/SHA256SUMS
+  s_6b8270b6e632f5::t_627ae302428d06 1-4
+internal/localconfig/config_test.go
+  s_00332b4a331471::t_6c71686ffc8eae 3-40
+  s_00332b4a331471::t_c1f335df67b87f 1-2
+internal/localconfig/config.go
+  s_6b8270b6e632f5::t_4068f96befbfc2 57-62
+  s_00332b4a331471::t_7b05a7c5c301c8 52-56,63-64
+  s_00332b4a331471::t_8bf6b676663f9e 1-16,20-21,29,40,45,73,91-95,101-105,109-110,122,126-128
+  s_6b8270b6e632f5::t_a6de9b4d9ac476 111-118
+  s_6b8270b6e632f5::t_34e77e536e70a0 17-19,22-28,30-39,41-44,46-51,65-72,74-90,96-100,106-108,119-121,123-125
+tests/test_config_history.py
+  s_00332b4a331471::t_1fbe7304aace07 49
+docs/packages.md
+  s_00332b4a331471::t_34be840b319e74 96,200
+scripts/helper-common.sh
+  s_00332b4a331471::t_1fbe7304aace07 55
+helper-version.txt
+  s_00332b4a331471::t_1fbe7304aace07 1
+README.md
+  s_00332b4a331471::t_34be840b319e74 47-48,60
+internal/confighistory/history.go
+  s_00332b4a331471::t_8bf6b676663f9e 1-17,22,30-33,43,51,81-83,95,111-113
+  s_6b8270b6e632f5::t_34e77e536e70a0 18-21,23-29,34-42,44-50,52-80,84-94,96-110
+internal/helpercli/run.go
+  s_00332b4a331471::t_33d54fdfbe36a8 26,51,99-100
+internal/confighistory/history_test.go
+  s_00332b4a331471::t_ddd7af6c0cb4c7 16-108
+  s_00332b4a331471::t_1f7968281db384 1-15,109
+go.sum
+  s_6b8270b6e632f5::t_061c470396029c 1-2
+vendor/github.com/pelletier/go-toml/v2/.dockerignore
+  s_00332b4a331471::t_bebc026871685d 1-2
+vendor/github.com/pelletier/go-toml/v2/.gitattributes
+  s_00332b4a331471::t_a6078c13995216 1-4
+vendor/github.com/pelletier/go-toml/v2/.gitignore
+  s_00332b4a331471::t_60fd1bce0e906a 1-8
+vendor/github.com/pelletier/go-toml/v2/.golangci.toml
+  s_00332b4a331471::t_cfed9021040a4f 1-76
+vendor/github.com/pelletier/go-toml/v2/.goreleaser.yaml
+  s_00332b4a331471::t_3c3b2db5de4292 1-128
+vendor/github.com/pelletier/go-toml/v2/AGENTS.md
+  s_00332b4a331471::t_25153963187331 1-73
+vendor/github.com/pelletier/go-toml/v2/CONTRIBUTING.md
+  s_00332b4a331471::t_00eef7c408afa9 1-254
+vendor/github.com/pelletier/go-toml/v2/Dockerfile
+  s_00332b4a331471::t_01b3548225d643 1-6
+vendor/github.com/pelletier/go-toml/v2/LICENSE
+  s_00332b4a331471::t_e377466072afdb 1-22
+vendor/github.com/pelletier/go-toml/v2/README.md
+  s_00332b4a331471::t_194e57d9bf113f 1-327
+vendor/github.com/pelletier/go-toml/v2/SECURITY.md
+  s_00332b4a331471::t_871cc0d5c046c1 1-16
+vendor/github.com/pelletier/go-toml/v2/capability_baseline.txt
+  s_00332b4a331471::t_74c0a4953355b3 1
+vendor/github.com/pelletier/go-toml/v2/caps.sh
+  s_00332b4a331471::t_4355a7c86158a4 1-101
+vendor/github.com/pelletier/go-toml/v2/ci.sh
+  s_00332b4a331471::t_d97580af2527bb 1-293
+vendor/github.com/pelletier/go-toml/v2/decode.go
+  s_00332b4a331471::t_62f8482179d5cc 1-538
+vendor/github.com/pelletier/go-toml/v2/decode_fused.go
+  s_00332b4a331471::t_38a34f85949f1a 1-362
+vendor/github.com/pelletier/go-toml/v2/doc.go
+  s_00332b4a331471::t_ab44c240805121 1-2
+vendor/github.com/pelletier/go-toml/v2/errors.go
+  s_00332b4a331471::t_0d171b6166eff2 1-233
+vendor/github.com/pelletier/go-toml/v2/internal/parserbridge/parserbridge.go
+  s_00332b4a331471::t_caeb130b7e3e1d 1-37
+vendor/github.com/pelletier/go-toml/v2/internal/tracker/key.go
+  s_00332b4a331471::t_2de50741cd35b9 1-49
+vendor/github.com/pelletier/go-toml/v2/internal/tracker/seen.go
+  s_00332b4a331471::t_5d8bfa2c86f862 1-450
+vendor/github.com/pelletier/go-toml/v2/internal/tracker/tracker.go
+  s_00332b4a331471::t_ac4e10bd0df1d4 1-2
+vendor/github.com/pelletier/go-toml/v2/localtime.go
+  s_00332b4a331471::t_058214f0828f6a 1-121
+vendor/github.com/pelletier/go-toml/v2/marshaler.go
+  s_00332b4a331471::t_230a6a425699d3 1-1697
+vendor/github.com/pelletier/go-toml/v2/strict.go
+  s_00332b4a331471::t_1c87393ff6f14f 1-108
+vendor/github.com/pelletier/go-toml/v2/test-go-versions.sh
+  s_00332b4a331471::t_c51757f129d359 1-597
+vendor/github.com/pelletier/go-toml/v2/toml.abnf
+  s_00332b4a331471::t_dfdaaed2a469ef 1-246
+vendor/github.com/pelletier/go-toml/v2/types.go
+  s_00332b4a331471::t_124eaba5359d9a 1-24
+vendor/github.com/pelletier/go-toml/v2/unmarshaler.go
+  s_00332b4a331471::t_de56759672953e 1-2396
+vendor/github.com/pelletier/go-toml/v2/unstable/ast.go
+  s_00332b4a331471::t_b9f7fa0426e386 1-124
+vendor/github.com/pelletier/go-toml/v2/unstable/bridge.go
+  s_00332b4a331471::t_768487afa8b6a5 1-21
+vendor/github.com/pelletier/go-toml/v2/unstable/doc.go
+  s_00332b4a331471::t_36469875de193e 1-3
+vendor/github.com/pelletier/go-toml/v2/unstable/kind.go
+  s_00332b4a331471::t_60402ca0f8e129 1-83
+vendor/github.com/pelletier/go-toml/v2/unstable/marshaler.go
+  s_00332b4a331471::t_ca016c201883a0 1-29
+vendor/github.com/pelletier/go-toml/v2/unstable/parser.go
+  s_00332b4a331471::t_4ca03e4506faf3 1-1686
+vendor/github.com/pelletier/go-toml/v2/unstable/unmarshaler.go
+  s_00332b4a331471::t_a94b321b00fc78 1-43
+vendor/modules.txt
+  s_00332b4a331471::t_d82102778af45f 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e164ad7b85182f833baa00d755e0768634080bab",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
