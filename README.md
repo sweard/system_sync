@@ -76,6 +76,7 @@ mise run config-dry-run
 | 单独升级 Brewfile 声明项 | `mise run macos-upgrade` |
 | 查看受管配置的实际差异，无变化时提示无需同步 | `mise run config-dry-run` |
 | 部署受管配置文件 | `mise run config-sync` |
+| 将当前配置迁为本机独立文件 | `mise run config-detach --dry-run` 预览；`mise run config-detach` 确认执行，见[配置迁出](docs/recovery.md#配置迁出保留本机文件) |
 | 核对 / 预览 / 安装公共 VS Code 扩展 | `mise run vscode-status` / `vscode-dry-run` / `vscode-sync` |
 | 登记本机配置历史 / 手动保存 / 查看检查点 | `mise run config-history-init` / `config-save` / `config-history` |
 | 查看当前生效的开发工具、版本和来源 | `mise ls --current` |

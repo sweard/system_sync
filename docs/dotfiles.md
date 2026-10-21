@@ -155,7 +155,9 @@ mise run config-dry-run ~/.config/mise/miserc.toml
 4. 处理已有真实文件与 symlink 的首次接管冲突后，再运行 `mise run config-sync`。
 5. zsh 已接管并启用 mise Shell 激活；接管其他应用时继续保留这一个交互激活入口，不重复初始化旧管理器。
 
-从 `[dotfiles]` 删除条目不会自动删除已经应用的目标。取消管理时先执行 `mise bootstrap dotfiles unapply --dry-run`，确认后执行 `mise bootstrap dotfiles unapply`，再删除映射。
+希望保留当前配置并解除仓库链接依赖时，使用 `mise run config-detach --dry-run` 预览，再运行 `mise run config-detach`，见[配置迁出](recovery.md#配置迁出保留本机文件)。
+
+从 `[dotfiles]` 删除条目不会自动删除已经应用的目标。需要移除已部署目标时，先执行 `mise bootstrap dotfiles unapply --dry-run`，确认后执行 `mise bootstrap dotfiles unapply`，再删除映射。
 
 
 ## 参考

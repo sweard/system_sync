@@ -79,6 +79,11 @@ description = "应用已启用的 dotfiles 映射；默认需要确认"
 confirm = { message = "这会修改已启用映射对应的用户配置文件。是否继续？", default = "no" }
 run = "mise bootstrap dotfiles apply"
 
+[tasks.config-detach]
+description = "将当前受管配置保留为本机独立文件；支持 --dry-run、--yes，备份保存在仓库外"
+raw = true
+run = "python3 -B ./scripts/config-detach.py"
+
 [tasks.vscode-status]
 description = "核对当前平台公共 VS Code 扩展及版本，保留清单外扩展"
 run = "python3 -B ./scripts/vscode-extensions.py status"
