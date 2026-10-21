@@ -52,6 +52,10 @@ func TestManualLocalEnrollmentAndSaveDescription(t *testing.T) {
 		if err := Run("init", "", home, runner, &out); err != nil {
 			t.Fatal(err)
 		}
+		if !strings.Contains(out.String(), "  - "+filepath.Join(home, ".codex/config.toml")+"\n") {
+			t.Fatal("enrolled path missing", out.String())
+		}
+		out.Reset()
 	}
 	for path, mode := range map[string]os.FileMode{enrollment: 0600, history: 0700} {
 		info, err := os.Stat(path)
@@ -69,6 +73,53 @@ func TestManualLocalEnrollmentAndSaveDescription(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "canary") {
 		t.Fatal("description or private value leaked")
+	}
+	if !strings.Contains(out.String(), "  - "+wanted[6]+"\n") {
+		t.Fatal("saved path missing", out.String())
+	}
+}
+
+func TestSaveListsSkippedRegisteredFilesAndOnlySavesAvailableTargets(t *testing.T) {
+	for _, allMissing := range []bool{false, true} {
+		t.Run(fmt.Sprint(allMissing), func(t *testing.T) {
+			home, _, _ := historyFixture(t)
+			local := filepath.Join(home, ".zshrc.local")
+			if err := os.WriteFile(local, []byte("private-shell-canary\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			runner := &recordingRunner{}
+			if err := Run("init", "", home, runner, io.Discard); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(local); err != nil {
+				t.Fatal(err)
+			}
+			target := filepath.Join(home, ".codex/config.toml")
+			if allMissing {
+				if err := os.Remove(target); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var out bytes.Buffer
+			err := Run("save", "manual", home, runner, &out)
+			if (err != nil) != allMissing {
+				t.Fatal(err)
+			}
+			if !strings.Contains(out.String(), "[!] 跳过") || !strings.Contains(out.String(), "  - "+local+"\n") {
+				t.Fatal("missing skipped path", out.String())
+			}
+			if allMissing {
+				if runner.command != nil || strings.Contains(out.String(), "已手动保存") ||
+					!strings.Contains(out.String(), "  - "+target+"\n") {
+					t.Fatal(runner.command, out.String())
+				}
+			} else if !reflect.DeepEqual(runner.command[6:], []string{target}) {
+				t.Fatal(runner.command)
+			}
+			if strings.Contains(out.String(), "canary") {
+				t.Fatal("private contents leaked")
+			}
+		})
 	}
 }
 func TestCustomScopeMissingFilesLinksAndNativeFailureFailClosed(t *testing.T) {

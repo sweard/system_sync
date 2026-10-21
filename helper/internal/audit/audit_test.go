@@ -126,6 +126,35 @@ func TestMissingToolsDoNotInstallAnything(t *testing.T) {
 	}
 }
 
+func TestRenderShowsAllNonOKDetailsAndCountsOmittedHealthyItems(t *testing.T) {
+	items := []string{}
+	for i := 1; i <= 12; i++ {
+		items = append(items, fmt.Sprintf("fixture-package-%02d", i))
+	}
+	for _, kind := range []string{"drift", "candidate", "local", "error", "ok"} {
+		t.Run(kind, func(t *testing.T) {
+			report := Report{Context: map[string]any{"path_source": "caller"}, Summary: map[string]int{kind: 1},
+				Sections: map[string][]Finding{"packages": {{
+					"kind": kind, "item": "fixture-group", "message": "12 项", "items": items,
+				}}}}
+			text := Render(report, false)
+			for i, item := range items {
+				expected := kind != "ok" || i < 8
+				if strings.Contains(text, "    - "+item) != expected {
+					t.Fatalf("detail %s: %s", item, text)
+				}
+			}
+			if kind == "ok" {
+				if !strings.Contains(text, "另有 4 项已核对条目，完整列表见 --json 输出") {
+					t.Fatal(text)
+				}
+			} else if strings.Contains(text, "--json") {
+				t.Fatal("non-OK details were truncated", text)
+			}
+		})
+	}
+}
+
 func TestShadowedCommandsAndOtherInstallersRemainCandidates(t *testing.T) {
 	root, home, env, runner := fixture(t)
 	selected := declareTool(t, runner, root, home, "node", "node", true)

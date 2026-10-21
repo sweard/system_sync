@@ -99,9 +99,11 @@ def main():
         pending = {name: version for name, version in wanted.items() if current.get(name) != version}
         for name, version in pending.items():
             print(f"[!] {name}: {current.get(name, '未安装')} -> {version}")
-        extra = len(current.keys() - wanted.keys())
-        if extra:
-            print(f"[~] 保留 {extra} 个清单外扩展")
+        extras = sorted(current.keys() - wanted.keys())
+        if extras:
+            print(f"[~] 保留 {len(extras)} 个清单外扩展：")
+            for name in extras:
+                print(f"  - {name}@{current[name]}")
         if not pending:
             print(f"[+] {len(wanted)} 个公共扩展均符合清单，无需同步。")
         elif args.action == "sync" and not args.dry_run:

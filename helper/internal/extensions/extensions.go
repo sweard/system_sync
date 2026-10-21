@@ -157,14 +157,18 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 			pending = append(pending, name)
 		}
 	}
-	extra := 0
+	extras := []string{}
 	for name := range current {
 		if _, ok := wanted[name]; !ok {
-			extra++
+			extras = append(extras, name)
 		}
 	}
-	if extra > 0 {
-		fmt.Fprintf(out, "[~] 保留 %d 个清单外扩展\n", extra)
+	sort.Strings(extras)
+	if len(extras) > 0 {
+		fmt.Fprintf(out, "[~] 保留 %d 个清单外扩展：\n", len(extras))
+		for _, name := range extras {
+			fmt.Fprintf(out, "  - %s@%s\n", name, current[name])
+		}
 	}
 	if len(pending) == 0 {
 		fmt.Fprintf(out, "[+] %d 个公共扩展均符合清单，无需同步。\n", len(wanted))

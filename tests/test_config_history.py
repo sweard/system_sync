@@ -82,6 +82,27 @@ class ConfigHistoryTest(unittest.TestCase):
         self.assertEqual(self.enrollment.read_bytes(), original)
         self.assertFalse((self.state / "history").exists())
 
+    def test_registration_and_save_list_paths_and_report_missing_registered_files(self):
+        local = self.home / ".zshrc.local"
+        local.write_text("# shell-private-canary\n")
+        output = self.helper("init")
+        self.assertIn("  - " + str(self.target) + "\n", output)
+        self.assertIn("  - " + str(local) + "\n", output)
+        self.assertNotIn("canary", output)
+        local.unlink()
+        output = self.helper("save")
+        self.assertIn("[!] 跳过 1 个不可用的已登记配置：\n  - " + str(local), output)
+        self.assertIn("[+] 已手动保存 1 个配置到本机历史。\n  - " + str(self.target), output)
+        self.assertEqual(len(self.checkpoints()), 1)
+        self.assertNotIn("canary", output)
+        self.target.unlink()
+        output = self.helper("save", success=False)
+        self.assertIn("[!] 跳过 2 个不可用的已登记配置", output)
+        self.assertIn(str(self.target), output)
+        self.assertIn(str(local), output)
+        self.assertNotIn("已手动保存", output)
+        self.assertEqual(len(self.checkpoints()), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

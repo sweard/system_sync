@@ -103,8 +103,8 @@ mise run config-dry-run
 | 查看受管配置的实际差异，无变化时提示无需同步 | `mise run config-dry-run` |
 | 备份、部署并复查本仓库受管配置 | `mise run config-sync`，输入 `yes`；支持 `--dry-run`、`--yes` 和目标路径 |
 | 将当前配置迁为本机独立文件 | `mise run config-detach --dry-run` 预览；`mise run config-detach` 确认执行，见[配置迁出](docs/recovery.md#配置迁出保留本机文件) |
-| 核对变更 / 安装公共 VS Code 扩展 | `mise run vscode-status` / `vscode-sync` |
-| 登记本机配置历史 / 手动保存 / 查看检查点 | `mise run config-history-init` / `config-save` / `config-history` |
+| 核对变更及清单外扩展的标识、版本 / 安装公共扩展 | `mise run vscode-status` / `vscode-sync`，保留清单外扩展 |
+| 登记本机配置历史 / 手动保存 / 查看检查点 | `mise run config-history-init` / `config-save` / `config-history`；登记、保存及跳过的目标均列出路径 |
 | 查看当前生效的开发工具、版本和来源 | `mise ls --current` |
 | 安装全局工具并记录完整版本号 | `mise use --global --pin go@latest`，写入受管全局配置 |
 | 补齐 `[tools]` 已声明的工具版本 | `mise install` |

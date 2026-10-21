@@ -41,7 +41,7 @@ class GoAuditParityTest(unittest.TestCase):
         prepare_helper(fixture.root)
         return fixture
 
-    def compare(self, fixture, selected=reference.AUDIT.SECTIONS, strict=False):
+    def compare(self, fixture, selected=reference.AUDIT.SECTIONS, strict=False, text=False):
         commands = fixture.root / "query-bin"
         commands.mkdir(exist_ok=True)
         state = fixture.root / "query-fixture.json"
@@ -73,6 +73,28 @@ class GoAuditParityTest(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout), expected)
         self.assertNotIn("private-query", result.stdout + result.stderr)
         self.assertNotIn("fixture-private-token", result.stdout)
+        if text:
+            text_args = [arg for arg in args if arg != "--json"] + ["--color", "never"]
+            result = subprocess.run(text_args, cwd=fixture.base, env=environment,
+                                    capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, reference.AUDIT.exit_code(expected, strict), result.stderr)
+            self.assertEqual(result.stdout, reference.AUDIT.render(expected) + "\n")
+            self.assertNotIn("fixture-private-token", result.stdout)
+            return result.stdout
+
+    def test_all_candidate_details_and_healthy_omission_count_match_reference(self):
+        fixture = self.fixture()
+        candidates = [f"fixture-local-{i:02}" for i in range(12)]
+        candidates[10] = "fixture-private-token"
+        fixture.runner.packages = reference.package_status(reference.AUDIT.PACKAGE_REQUIRED[0], {
+            "Brewfile formula 根声明": [f"fixture-root-{i:02}" for i in range(12)],
+            "Homebrew 可识别的未声明 requested formula": candidates,
+        })
+        output = self.compare(fixture, ("packages",), text=True)
+        self.assertIn("    - fixture-local-11", output)
+        self.assertIn("    - [REDACTED]", output)
+        self.assertNotIn("    - fixture-root-11", output)
+        self.assertIn("另有 4 项已核对条目", output)
 
     def test_empty_and_declared_tools_match_reference(self):
         self.compare(self.fixture())

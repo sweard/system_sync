@@ -69,13 +69,14 @@ else:
             result = self.run_cli(*args)
             self.assertIn("[!] example.shared", result.stdout)
             self.assertIn("[~] 保留 1", result.stdout)
+            self.assertIn("  - example.local@4.5.6\n", result.stdout)
         self.assertEqual((self.manifest.read_bytes(), self.state.read_bytes()), before)
         self.assertNotIn("--install-extension", self.log.read_text())
 
     def test_sync_verifies_versions_preserves_extra_and_isolates_both_directories(self):
         args = ("sync", "--user-data-dir", str(self.base / "user data"),
                 "--extensions-dir", str(self.base / "extensions"))
-        self.run_cli(*args)
+        self.assertIn("  - example.local@4.5.6\n", self.run_cli(*args).stdout)
         self.assertEqual(json.loads(self.state.read_text()),
                          {"example.local": "4.5.6", "example.shared": "1.2.3"})
         calls = [json.loads(line) for line in self.log.read_text().splitlines()]
@@ -83,6 +84,26 @@ else:
         self.assertIn("无需同步", self.run_cli(*args).stdout)
         self.assertEqual(sum("--install-extension" in json.loads(line)
                              for line in self.log.read_text().splitlines()), 1)
+        self.assertNotIn("--uninstall-extension", self.log.read_text())
+
+    def test_extra_details_are_sorted_when_managed_extensions_match_and_match_reference(self):
+        state = {"zeta.local": "4.5.6", "example.shared": "1.2.3", "alpha.local": "1.0.0-beta.2"}
+        self.state.write_text(json.dumps(state))
+        expected = ("[~] 保留 2 个清单外扩展：\n"
+                    "  - alpha.local@1.0.0-beta.2\n"
+                    "  - zeta.local@4.5.6\n")
+        for args in (("status",), ("sync", "--dry-run"), ("sync",)):
+            result = self.run_cli(*args)
+            self.assertIn(expected, result.stdout)
+            self.assertIn("无需同步", result.stdout)
+            self.assertEqual(json.loads(self.state.read_text()), state)
+        result = subprocess.run([sys.executable, str(SCRIPT), "status", "--manifest", str(self.manifest),
+                                 "--code", str(self.code)], capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, self.run_cli("status").stdout)
+        self.assertTrue(all("--list-extensions" in json.loads(line) for line in self.log.read_text().splitlines()))
+        self.state.write_text('{"example.shared":"1.2.3"}')
+        self.assertNotIn("清单外扩展", self.run_cli("status").stdout)
 
     def test_unknown_output_and_partial_isolation_fail_closed(self):
         (self.base / "bad-list").touch()

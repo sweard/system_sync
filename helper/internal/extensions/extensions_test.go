@@ -1,6 +1,7 @@
 package extensions
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -102,5 +103,68 @@ func TestExtensionFailuresAreRedactedAndExtrasRetained(t *testing.T) {
 				t.Fatal("preview installed extension")
 			}
 		})
+	}
+}
+
+func TestExtraExtensionDetailsAreSortedAndPreservedForEveryAction(t *testing.T) {
+	for _, action := range []string{"status", "preview", "sync"} {
+		for _, installed := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/installed=%v", action, installed), func(t *testing.T) {
+				dir := t.TempDir()
+				manifest, code := filepath.Join(dir, "extensions.toml"), filepath.Join(dir, "code")
+				if err := os.WriteFile(manifest, []byte("[common]\n\"example.shared\"=\"1.2.3\"\n"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(code, []byte("placeholder"), 0700); err != nil {
+					t.Fatal(err)
+				}
+				fake := &fakeCLI{current: map[string]string{"zeta.local": "4.5.6", "alpha.local": "1.0.0-beta.2"}}
+				if installed {
+					fake.current["example.shared"] = "1.2.3"
+				}
+				options := Options{Action: action, Manifest: manifest, Code: code}
+				if action == "preview" {
+					options.Action, options.DryRun = "sync", true
+				}
+				var out bytes.Buffer
+				if err := Run(options, fake, &out); err != nil {
+					t.Fatal(err)
+				}
+				expected := "[~] 保留 2 个清单外扩展：\n  - alpha.local@1.0.0-beta.2\n  - zeta.local@4.5.6\n"
+				if !strings.Contains(out.String(), expected) {
+					t.Fatal(out.String())
+				}
+				if fake.current["alpha.local"] != "1.0.0-beta.2" || fake.current["zeta.local"] != "4.5.6" {
+					t.Fatal("extra extensions changed")
+				}
+				for _, command := range fake.calls {
+					if strings.Contains(strings.Join(command, " "), "--uninstall-extension") {
+						t.Fatal("extra extension removal requested")
+					}
+				}
+				if (action != "sync" || installed) && len(fake.calls) != 1 {
+					t.Fatal("read-only or unchanged run performed extra operations", fake.calls)
+				}
+			})
+		}
+	}
+}
+
+func TestNoExtraExtensionsHaveNoRetentionBlock(t *testing.T) {
+	dir := t.TempDir()
+	manifest, code := filepath.Join(dir, "extensions.toml"), filepath.Join(dir, "code")
+	if err := os.WriteFile(manifest, []byte("[common]\n\"example.shared\"=\"1.2.3\"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(code, []byte("placeholder"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := Run(Options{Action: "status", Manifest: manifest, Code: code},
+		&fakeCLI{current: map[string]string{"example.shared": "1.2.3"}}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out.String(), "清单外扩展") || !strings.Contains(out.String(), "无需同步") {
+		t.Fatal(out.String())
 	}
 }

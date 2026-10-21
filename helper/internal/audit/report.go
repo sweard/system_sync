@@ -164,8 +164,8 @@ func Render(report Report, color bool) string {
 			}
 			items, _ := finding["items"].([]string)
 			for i, item := range items {
-				if i == 8 {
-					details = append(details, "    更多条目见 --json 输出")
+				if kind == "ok" && i == 8 {
+					details = append(details, fmt.Sprintf("    另有 %d 项已核对条目，完整列表见 --json 输出", len(items)-i))
 					break
 				}
 				details = append(details, "    - "+item)

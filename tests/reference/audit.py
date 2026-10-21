@@ -461,10 +461,11 @@ def render(report, color=False):
             for field in ("source", "path", "actual", "expected"):
                 if finding.get(field):
                     details.append(f"    {field}: {finding[field]}")
-            for item in finding.get("items", [])[:8]:
+            detail_items = finding.get("items", [])
+            for item in detail_items[:8] if kind == "ok" else detail_items:
                 details.append(f"    - {item}")
-            if len(finding.get("items", [])) > 8:
-                details.append("    更多条目见 --json 输出")
+            if kind == "ok" and len(detail_items) > 8:
+                details.append(f"    另有 {len(detail_items) - 8} 项已核对条目，完整列表见 --json 输出")
             lines.append(style(kind, "\n".join(details)))
     lines.append("\n汇总（报告条目数）：" + "，".join(
         style(kind, f"{MARKERS[kind]} {label} {report['summary'][kind]}") if report["summary"][kind]

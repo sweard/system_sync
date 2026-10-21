@@ -79,6 +79,11 @@ func Run(action, description, home string, runner Invoker, out io.Writer) error 
 			return err
 		}
 		fmt.Fprintf(out, "[+] 已登记 %d 个本机配置；自动捕获关闭。运行 mise run config-save 建立检查点。\n", len(entries))
+		for _, path := range candidates {
+			if _, ok := entries[path]; ok {
+				fmt.Fprintf(out, "  - %s\n", path)
+			}
+		}
 		return nil
 	}
 	if !localconfig.IsFile(enrollment) {
@@ -93,9 +98,20 @@ func Run(action, description, home string, runner Invoker, out io.Writer) error 
 		return fmt.Errorf("历史范围或本机隔离模式不符合约定，已停止")
 	}
 	command := []string{"mise", "dot", "save", "--description", description, "--"}
+	skipped := []string{}
 	for _, path := range candidates {
-		if _, ok := entries[path]; ok && localconfig.IsFile(path) {
-			command = append(command, path)
+		if _, ok := entries[path]; ok {
+			if localconfig.IsFile(path) {
+				command = append(command, path)
+			} else {
+				skipped = append(skipped, path)
+			}
+		}
+	}
+	if len(skipped) > 0 {
+		fmt.Fprintf(out, "[!] 跳过 %d 个不可用的已登记配置：\n", len(skipped))
+		for _, path := range skipped {
+			fmt.Fprintf(out, "  - %s\n", path)
 		}
 	}
 	count := len(command) - 6
@@ -109,5 +125,8 @@ func Run(action, description, home string, runner Invoker, out io.Writer) error 
 		return fmt.Errorf("mise 保存失败，请用 mise dot --local status 核对本机历史状态")
 	}
 	fmt.Fprintf(out, "[+] 已手动保存 %d 个配置到本机历史。\n", count)
+	for _, path := range command[6:] {
+		fmt.Fprintf(out, "  - %s\n", path)
+	}
 	return nil
 }

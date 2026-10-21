@@ -83,6 +83,8 @@ mise run config-history
 
 初始化把登记写入 `~/.config/mise/conf.d/system-sync-history.toml`（非默认 XDG / mise 目录遵循对应环境变量），权限 `0600`。登记不部署到其他机器，`autosave = false`，没有启用 watcher 或历史远端。已有人工修改的登记不会被覆盖。新增文件或调整范围后先审阅登记；本机私有内容不进入本项目 Git。
 
+`config-history-init` 在数量汇总后列出实际登记的文件路径；`config-save` 列出成功提交给本机历史的文件，并逐项提示跳过的不可用登记目标。全部目标不可用时返回失败，不建立检查点。明细只显示路径，不显示文件正文或检查点描述中的私有内容。
+
 `config-save` 显式列出已登记的现存文件，因此能保存关闭 autosave 的文件；原生不带路径的 `mise dot save` 会跳过这些条目。检查点存于 `$MISE_STATE_DIR/history-local`，默认 `~/.local/state/mise/history-local`，目录权限 `0700`。本机历史是本机磁盘上的明文 Git 存储，丢失磁盘时不能代替离线备份。原理与隔离边界见 [mise 官方本机历史](https://mise.jdx.dev/dotfiles/history.html#local-only-history)。
 
 恢复前选择具体检查点和目标文件，先预览，再执行：
