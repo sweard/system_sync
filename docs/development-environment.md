@@ -12,6 +12,7 @@
 |---|---|
 | Node | mise 安装和选择版本，停用 nvm 初始化；保留原有其他版本和全局 npm 工具 |
 | Python | mise 安装和选择解释器；Apple Python 及其原有用户依赖保留 |
+| Go | mise 管理 SDK 和默认版本；项目依赖、构建缓存及 `go install` 的命令另行维护 |
 | Ruby | mise 管理默认版本；Homebrew Ruby 可作为 CocoaPods 依赖保留 |
 | Java | `mise link` 注册现有外部 JBR，保留其他 IDE JDK |
 | Rust | mise 内置 rustup 后端；保留 Cargo CLI、rust-src 和交叉编译目标 |
@@ -42,9 +43,61 @@ mise exec -- python3 --version
 
 本仓库的 `settings.task.run_auto_install = false` 禁止任务先自动补装工具，状态和审计入口因此能够报告缺失项。需要补装时显式运行 `mise install`。版本、其他安装来源和实际 PATH 的汇总检查见[只读审计](audit.md)。
 
-### 安装与升级的区别
+### 常用工具命令速查
 
-`mise install` 按已有声明补齐工具，不修改版本声明；固定完整版本号的工具使用 `mise upgrade --bump` 才能升级并更新声明。例如逐个升级 uv：
+| 用途 | 命令 |
+|---|---|
+| 查看当前目录生效的工具、版本和配置来源 | `mise ls --current` |
+| 查看 Go 的已安装版本和路径 | `mise ls go` |
+| 查看 mise 选择的 Go 可执行文件 | `mise which go` |
+| 用当前 mise 环境核对版本 | `mise exec -- go version` |
+| 查看终端实际解析到的命令 | `command -v go` |
+| 查看 mise 生成的 PATH | `mise env --paths` |
+| 新增全局工具并固定本次解析的版本 | `mise use --global --pin go@latest` |
+| 补装当前配置已声明的工具 | `mise install` |
+| 按已有下载锁安装 | `mise install --locked`，限制与例外见[新机器重建](rebuild.md) |
+| 预览全局工具升级 | `mise upgrade --global --bump --no-prune --dry-run go` |
+| 取消全局声明并清理不再被其他配置使用的安装 | `mise unuse --global go` |
+| 仅清理 Go 的 mise 缓存 | `mise cache clear go` |
+
+以下用 Go 举例；其他工具使用其声明名，例如 `node`、`python`、`uv`、`bun` 或 `npm:yarn`。`mise ls` 与 `mise which` 用于核对 mise 的选择，`command -v` 用于核对当前 Shell 的实际来源。
+
+### 新增工具：全局与项目配置
+
+日常全局工具使用 `--global`（简写 `-g`）。本项目已将 `~/.config/mise/config.toml` 链接到仓库来源；新增 Go 会写入 `dotfiles/common/mise/config.toml`：
+
+```bash
+# 安装最新可用版本，并把解析出的完整版本号写入全局配置
+mise use --global --pin go@latest
+
+# 或指定完整版本；已安装时复用现有安装
+mise use --global --pin go@1.27.3
+```
+
+`mise use` 会安装缺失版本并写入配置。不带 `--global` 时，它默认写入最近的项目配置；没有项目配置时在当前目录创建配置。在本仓库运行时可能改到根 `mise.toml`。需要项目独立版本时，到该项目执行 `mise use --pin go@latest`，或用 `--path /path/to/project/mise.toml` 显式指定目标。
+
+`dotfiles/common/mise/miserc.toml` 管理配置发现规则；工具版本写入 `config.toml`。已有工具在全局平台覆盖文件中声明时，`--global` 会更新声明所在的文件，改动后核对实际差异。参见 [mise use 的写入规则](https://mise.jdx.dev/cli/use.html)。
+
+如果误将 Go 写入本仓库根 `mise.toml`，先完成上述全局声明，再只删除项目声明，保留安装：
+
+```bash
+mise use --path ./mise.toml --remove go
+mise lock --global go
+mise ls --current
+```
+
+`--pin` 决定写入形式，`@latest` 决定选择范围。`--pin go@latest` 会选择当前允许的最新版本，再写入完整版本号；`mise use --global go@latest` 通常写入 `go = "latest"`（启用全局 `pin` 设置时除外）。版本选择仍遵守 `minimum_release_age` 等策略，已有锁文件也会影响解析；`latest` 不代表每次打开终端都会自动升级。
+
+### 安装、升级与锁文件
+
+`mise install` 按已有声明补齐工具，不新增或修改版本声明。临时安装指定版本但不加入配置时，可以执行：
+
+```bash
+mise install go@1.27.3
+mise exec go@1.27.3 -- go version
+```
+
+仅安装的版本不会自动成为全局默认。使用 `mise upgrade` 更新固定完整版本号的声明时，需加 `--bump`，例如逐个升级 uv：
 
 ```bash
 mise upgrade --global --bump --no-prune --dry-run uv
@@ -53,11 +106,73 @@ mise upgrade --global --bump --no-prune uv
 
 `--global` 只处理全局工具；`--bump` 允许超出当前版本范围，可能跨大版本；`--no-prune` 保留旧版本。将 `uv` 替换为 `node`、`python`、`rust`、`bun` 或 `npm:yarn` 即可逐项处理。当前外部 JBR 单独按原来源处理。具体规则见 [mise upgrade](https://mise.jdx.dev/cli/upgrade.html)。
 
-全局配置通过 symlink 指向仓库，升级或执行 `mise use -g` 会修改受管来源。验证现有项目后，检查并提交版本变更：
+新增或调整版本后，刷新对应工具的全局下载锁；只刷新锁文件不会安装工具：
 
 ```bash
-git diff -- dotfiles/common/mise/config.toml dotfiles/macos/mise/config.toml
+mise lock --global go
+mise lock --global --sidecars
 ```
+
+`mise lock` 默认保留仍匹配声明的已锁版本。`mise lock --global --bump go` 可以重新解析 `latest` 或版本范围，但不会改写固定版本声明；固定版本升级继续使用 `mise upgrade --bump`。多平台下载锁和依赖 sidecar 的维护见[新机器重建](rebuild.md#全局锁文件)。
+
+全局配置和锁文件通过 symlink 指向仓库，`mise use --global`、升级和锁文件操作都会影响受管来源。验证相关项目后，一并审阅配置、锁文件及依赖 sidecar；确认后再提交：
+
+```bash
+git status --short
+git diff -- dotfiles/common/mise dotfiles/macos/mise
+```
+
+### 卸载工具与清理缓存
+
+日常取消全局工具使用 `mise unuse --global go`：删除全局声明，并清理没有其他已跟踪配置需要的安装。仅运行 `mise uninstall` 会保留声明，后续 `mise install` 可以重新装回。参见 [mise unuse](https://mise.jdx.dev/cli/unuse.html) 和 [mise uninstall](https://mise.jdx.dev/cli/uninstall.html)。
+
+需要完全移除 mise 安装的所有 Go 版本时，先用 `mise ls go` 核对安装版本，并确认其他项目是否仍需要 Go；其他项目的版本声明也应按需调整。若还要清理 Go 自身缓存，在卸载前检查路径并执行：
+
+```bash
+# 先核对模块、构建缓存、命令和用户配置的实际位置
+go env GOPATH GOBIN GOCACHE GOMODCACHE GOENV GOTELEMETRYDIR
+
+# 可选：清理当前用户共享的 Go 缓存，会影响其他 Go 项目的缓存
+go clean -cache -testcache -modcache -fuzzcache
+```
+
+删除声明、全部 Go 安装，并整理锁文件及 mise 缓存：
+
+```bash
+# 先只删除全局声明，保留安装供下一条命令统一卸载
+mise unuse --global --no-prune go
+
+# 预览后卸载 Go 的所有版本
+mise uninstall --all --dry-run go
+mise uninstall --all go
+
+mise lock --global
+mise cache clear go
+mise reshim
+```
+
+`--all` 后保留工具名 `go`；省略工具名会卸载所有工具。`mise cache clear go` 只清理 Go 的 mise 缓存，不删除安装、项目源码或 Go 自身的数据，见 [mise cache clear](https://mise.jdx.dev/cli/cache/clear.html)。
+
+如需清除下载归档和遥测记录，确认目录后再清理。以下是本机 macOS 使用默认 mise 数据目录时的路径；自定义了 `MISE_DATA_DIR` 或 Go 路径时，应改用实际路径：
+
+```bash
+rm -rf -- "$HOME/.local/share/mise/downloads/go"
+rm -rf -- "$HOME/Library/Application Support/go/telemetry"
+```
+
+`go install` 的命令位于 `GOBIN`，未设置时通常位于 `GOPATH/bin`；按前面记录的路径逐项清理。`GOENV` 指向的用户配置同样单独处理。不要整目录删除 `GOPATH`（通常为 `~/go`），其中可能有源码。缓存与遥测的定义见 [Go 命令文档](https://pkg.go.dev/cmd/go)和[Go telemetry](https://go.dev/doc/telemetry)。
+
+最后检查安装记录、终端来源和仓库差异：
+
+```bash
+mise ls go
+command -v go
+git diff -- dotfiles/common/mise dotfiles/macos/mise
+```
+
+未找到 `go` 时，`command -v` 无输出并返回非零状态；仍有输出时，继续按显示路径核对 Homebrew 或其他安装来源。通过 `mise link` 接入的外部 SDK 另按原来源处理，移除注册时应保留仍需使用的原 SDK。
+
+### 项目依赖与现有 SDK
 
 Python 的 pandas、openpyxl 等第三方依赖属于解释器环境或项目虚拟环境，升级 Python 不会自动迁移这些包。项目应记录依赖，再通过 uv 重建环境。工具完全迁出 Homebrew 的声明后，不再用 `mise run package-install` 为同一工具新增系统包声明。
 
