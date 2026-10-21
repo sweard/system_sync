@@ -312,7 +312,6 @@ system_sync_enter "$MODE"
 
 [[ "$(uname -s)" == "Linux" ]] || die "此脚本只允许在 Linux 上运行"
 command -v mise >/dev/null 2>&1 || die "找不到 mise"
-command -v python3 >/dev/null 2>&1 || die "找不到 python3"
 command -v comm >/dev/null 2>&1 || die "找不到 comm（通常由 coreutils 提供）"
 [[ -r "$PROFILE_DIR/mise.toml" ]] || die "profile 配置不可读：$PROFILE_DIR/mise.toml"
 [[ -r "$ALLOWLIST_FILE" ]] || die "保护清单不可读：$ALLOWLIST_FILE"
@@ -377,7 +376,7 @@ refresh_plan() {
     fi
   fi
 
-  if ! python3 "$SCRIPT_DIR/extract-mise-packages.py" \
+  if ! "$SCRIPT_DIR/system-sync-helper.sh" parse-status \
     --manager "$MANAGER" "$STATUS_JSON" > "$DECLARED_TSV"; then
     die "无法从 mise 最终生效配置取得可靠的 $MANAGER 声明"
   fi

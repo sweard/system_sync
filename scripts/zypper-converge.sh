@@ -116,7 +116,7 @@ query_zypper_packages() {
     sed 's/^/  /' "$error_file" >&2
     die "zypper packages $selector 查询失败"
   fi
-  if ! python3 "$SCRIPT_DIR/parse-zypper-xml.py" solvables "$xml_file" > "$output_file"; then
+  if ! "$SCRIPT_DIR/system-sync-helper.sh" parse-zypper solvables "$xml_file" > "$output_file"; then
     die "无法解析 zypper packages $selector 输出"
   fi
   LC_ALL=C sort -u -o "$output_file" "$output_file"
@@ -177,7 +177,7 @@ preview_removal() {
     sed 's/^/  /' "$REMOVE_ERROR_FILE" >&2
     die "zypper remove dry-run 失败（退出码 ${rc}）"
   fi
-  if ! python3 "$SCRIPT_DIR/parse-zypper-xml.py" to-remove \
+  if ! "$SCRIPT_DIR/system-sync-helper.sh" parse-zypper to-remove \
     "$REMOVE_XML_FILE" > "$REMOVE_TRANSACTION_FILE"; then
     die "无法解析 zypper 移除事务"
   fi
@@ -221,7 +221,7 @@ refresh_plan() {
       die "mise 在生成状态时报告警告/错误；拒绝继续"
     fi
   fi
-  python3 "$SCRIPT_DIR/extract-mise-packages.py" --manager zypper "$STATUS_JSON" > "$DECLARED_TSV" \
+  "$SCRIPT_DIR/system-sync-helper.sh" parse-status --manager zypper "$STATUS_JSON" > "$DECLARED_TSV" \
     || die "无法取得可靠的 zypper 根包声明"
   awk -F '\t' '{ print $2 }' "$DECLARED_TSV" | LC_ALL=C sort -u > "$DESIRED_FILE"
   validate_package_file "$DESIRED_FILE" "openSUSE 声明"
@@ -275,7 +275,6 @@ system_sync_enter "$MODE"
 command -v zypper >/dev/null 2>&1 || die "找不到 zypper"
 command -v mise >/dev/null 2>&1 || die "找不到 mise"
 command -v rpm >/dev/null 2>&1 || die "找不到 rpm"
-command -v python3 >/dev/null 2>&1 || die "找不到 python3"
 command -v comm >/dev/null 2>&1 || die "找不到 comm"
 [[ -r "$PROFILE_FILE" && -s "$PROFILE_FILE" ]] || die "软件清单不存在或为空：$PROFILE_FILE"
 [[ -r "$ALLOWLIST_FILE" ]] || die "保护清单不可读：$ALLOWLIST_FILE"

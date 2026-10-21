@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从 zypper --xmlout 的查询或 dry-run 中安全提取包名。"""
+"""Go parse-zypper 的 Python 行为参考；仅保留用于回归测试。"""
 
 from __future__ import annotations
 

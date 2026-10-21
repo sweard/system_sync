@@ -2,7 +2,7 @@
 
 [返回项目首页](../README.md)
 
-先准备 Git、Bash、mise 和系统原生包管理器。当前验收使用 mise 2026.10.15；Python 检查入口要求 3.11+，部署配置本身可先使用不依赖 Python 的原生命令。系统软件、开发工具和应用配置分别安装，不把 Linux 的示例软件清单直接应用到新机器。
+先准备 Git、Bash、mise、tar、SHA256 校验工具和系统原生包管理器。当前验收使用 mise 2026.10.15；Python 检查入口和尚未迁移的 task 要求 3.11+，部署配置本身可先使用不依赖 Python 的原生命令。审计和整机包流程首次运行时，自动从随 clone 保存的 `prebuilt/<版本>/` 安装 [Go helper](go-helper.md)，无需先安装 Go 或联网下载 helper。系统软件、开发工具和应用配置分别安装，不把 Linux 的示例软件清单直接应用到新机器。
 
 ## 部署与安装
 
@@ -10,15 +10,18 @@
 
 ```bash
 mise trust --all
+# 可选：提前初始化 helper；首次 audit/status 也会自动完成
+mise run helper-install
 mise bootstrap dotfiles diff
 mise bootstrap dotfiles apply
 mise install --locked
 mise ls --current
-mise run check
 mise run audit
 ```
 
 普通文件冲突会停止部署。只对已经备份、确认接管的具体目标使用 `mise bootstrap dotfiles apply --force <目标>`。系统包清单按[首次导入 baseline](packages.md)流程另行处理。
+
+`mise install --locked` 安装你声明的开发工具，可能包含 Go；这是开发环境的选择，helper 初始化不依赖这一步。仅准备 helper 时执行 `mise run helper-install` 即可，甚至可以直接运行 `./scripts/system-sync-helper.sh --version`。开发机修改源码后才需要构建和完整 `mise run check`；更新源码时还需通过 `mise run helper-bundle` 一同更新仓库内的预编译包。
 
 公共配置中的 `secrets.env` 是可选文件，zsh 私有覆盖也按存在性加载。缺失时可完成公共配置重建，不会生成假凭据。需要的本机变量、应用认证和私有偏好通过安全渠道另行准备，不能追加到公共来源或锁文件。
 

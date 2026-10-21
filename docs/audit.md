@@ -27,17 +27,17 @@ mise run audit --color always
 mise run audit --color never
 ```
 
-也可通过 `python3 -B scripts/audit.py` 直接运行。项目统一要求 Python 3.11+，不增加第三方 Python 依赖。
+首次运行会自动从仓库 `prebuilt/<版本>/` 校验并解压当前平台的 [Go helper](go-helper.md) 到本机缓存；也可提前执行 `mise run helper-install`。这一初始化不下载或编译，安装提示仅写入 stderr，保持 `--json` 的 stdout 可解析。审计本身不修改系统包和用户配置。也可通过 `./scripts/system-sync-helper.sh audit` 直接运行；日常审计及其系统包状态查询不依赖 Python 或 Go 编译器。`scripts/audit.py` 暂留作行为对照测试的参考实现。
 
 ## 查询执行方式
 
-所选类别最多由 4 个线程并发检查，报告仍按 tools、packages、PATH、config 的固定顺序输出。`--only` 只执行选中的类别。tools 与 PATH 共用本次审计的一份工具状态快照；查询失败时两类分别报告未完成核对，不重复查询，也不阻止其他类别完成。
+所选类别最多由 4 个 Go goroutine 并发检查，报告仍按 tools、packages、PATH、config 的固定顺序输出。`--only` 只执行选中的类别。tools 与 PATH 共用本次审计的一份工具状态快照；查询失败时两类分别报告未完成核对，不重复查询，也不阻止其他类别完成。
 
 命令来源检查按命令名去重，每批最多并发执行 4 次 `mise which`；原生命令查询失败后不再启动后续批次。结果按原工具顺序写入报告，保留失败前已经完成的检查。查询结果只在本次审计中复用，下次运行重新读取本机状态，不持久缓存审计结论。
 
 并发范围限于现有只读查询，包安装、卸载、信任和事务写入仍使用各自的确认与共享锁。macOS 包入口由 Homebrew 平台脚本执行一次预检；Linux 状态入口直接复用平台脚本读取的原生 JSON，避免外层重复查询。Linux 安装预览仍在调用原生 mise 前单独预检。真实主机延迟也受 Homebrew、磁盘和查询缓存影响，不能仅按 Python 或 Go 的计算速度推算。
 
-2026-10-21 在本机对 `11364be` 与本轮实现分别预热一次，再交替测量各 3 次：审计核心耗时中位数由 **3.894 秒降至 3.572 秒，减少约 8.3%**。测量包含 Python 启动，未包含 mise 任务启动与终端报告渲染；所有报告规范化后的校验值一致。数字只代表此次 Mac 和查询缓存状态，本机原始计时保存在 Git 忽略的 `.system-sync/audit-performance-comparison.json`。
+Go 迁移前，2026-10-21 在本机对 `11364be` 与 Python 查询优化实现分别预热一次，再交替测量各 3 次：审计核心耗时中位数由 **3.894 秒降至 3.572 秒，减少约 8.3%**。测量包含 Python 启动，未包含 mise 任务启动与终端报告渲染；所有报告规范化后的校验值一致。这是查询优化的历史结果，不是 Go 迁移的性能数据。本机原始计时保存在 Git 忽略的 `.system-sync/audit-performance-comparison.json`。
 
 ## 报告分类
 
@@ -76,11 +76,11 @@ mise run audit --color never
 
 来源检查覆盖 Node、Python、Ruby、Java、Rust、Bun、uv、Yarn，以及声明后使用的 Go、Deno 和 Flutter 主命令。其他 mise 工具仍检查版本安装状态，不猜测其可执行文件名称。CLI 查询范围及格式依据见 [mise ls](https://mise.jdx.dev/cli/ls.html)、[mise which](https://mise.jdx.dev/cli/which.html)和[dotfiles status](https://mise.jdx.dev/cli/bootstrap/dotfiles/status.html)。
 
-配置候选白名单包括 Git、tmux、Starship、Ghostty、Neovim，以及 VS Code 的快捷键和非空 snippets 目录；具体位置见 [CONFIG_CANDIDATES](../scripts/audit.py)。只有存在且未被当前映射覆盖的路径才列为候选，不读取其内容。`secrets.env`、`.zshrc.local` 和仓库 `mise.local.toml` 按约定列为本机保留。
+配置候选白名单包括 Git、tmux、Starship、Ghostty、Neovim，以及 VS Code 的快捷键和非空 snippets 目录；具体位置见 [ConfigCandidates](../internal/audit/contracts.go)。只有存在且未被当前映射覆盖的路径才列为候选，不读取其内容。`secrets.env`、`.zshrc.local` 和仓库 `mise.local.toml` 按约定列为本机保留。
 
 ## PATH 与调用环境
 
-mise 任务运行器会把工具目录前置到任务 PATH，直接审计任务内部 PATH 可能掩盖调用终端原有的遮蔽问题。因此任务使用 [`get_env()`](https://mise.jdx.dev/templates.html) 读取 mise 启动时的 PATH，通过 `SYSTEM_SYNC_AUDIT_CALLER_PATH` 传给脚本比较；直接执行 Python 脚本时使用当前进程 PATH。报告在 `context.path_source` 标明来源。
+mise 任务运行器会把工具目录前置到任务 PATH，直接审计任务内部 PATH 可能掩盖调用终端原有的遮蔽问题。因此任务使用 [`get_env()`](https://mise.jdx.dev/templates.html) 读取 mise 启动时的 PATH，通过 `SYSTEM_SYNC_AUDIT_CALLER_PATH` 传给 helper 比较；直接执行 helper 时使用当前进程 PATH。报告在 `context.path_source` 标明来源。
 
 系统、包管理器、IDE 和已知宿主运行时注入的路径归入本机保留，即使临时目录当前不存在也单独说明。普通失效目录仍报告漂移；其他未被共享规则声明的目录列为候选。宿主应用内运行与普通终端内运行的结果可以不同，候选分类不证明文件所有权或重复管理。
 

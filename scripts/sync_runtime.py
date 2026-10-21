@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared preflight, process lock and transaction journal for package writers."""
+"""Compatibility runtime for remaining Python writers; lock format matches Go."""
 
 import argparse
 from contextlib import contextmanager

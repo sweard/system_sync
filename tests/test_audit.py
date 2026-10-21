@@ -3,7 +3,6 @@
 import importlib.util
 import json
 from pathlib import Path
-import shlex
 import shutil
 import subprocess
 import sys
@@ -11,6 +10,8 @@ import tempfile
 from threading import Barrier
 import unittest
 from unittest.mock import patch
+
+from helper_fixture import prepare_helper
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -346,7 +347,7 @@ class AuditTaskTest(unittest.TestCase):
             config = home / ".config/mise"
             config.mkdir(parents=True)
             (project / "scripts").mkdir(parents=True)
-            shutil.copy2(ROOT / "scripts/audit.py", project / "scripts/audit.py")
+            prepare_helper(project)
             source = project / "dotfiles/common/shell/path.sh"
             source.parent.mkdir(parents=True)
             shutil.copy2(ROOT / "dotfiles/common/shell/path.sh", source)
@@ -370,8 +371,6 @@ class AuditTaskTest(unittest.TestCase):
                 return result.stdout
 
             task = read_config("tasks.audit")
-            # Use the interpreter running the test without changing the task's other fields.
-            task = task.replace('python3 -B ./scripts/audit.py', shlex.quote(sys.executable) + ' -B ./scripts/audit.py')
             (project / "mise.toml").write_text(
                 '[settings.task]\nrun_auto_install = ' + read_config("settings.task.run_auto_install").strip() +
                 '\n[tools]\nnode = "0.0.0"\npython = "path:' + str(python.parent.parent) + '"\n[tasks.audit]\n' + task)

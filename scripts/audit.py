@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only machine/configuration audit, using Python 3.11+ and existing CLIs."""
+"""Python reference for parity tests; daily audit uses the Go helper."""
 
 import argparse
 from collections import Counter

@@ -42,24 +42,30 @@ system_sync/
 │   ├── macos/                  # Brewfile、保护项与精确信任
 │   └── linux/                  # Arch、Debian、Fedora、openSUSE profile
 ├── scripts/                    # 平台操作、预检、共享锁与审计
+├── cmd/system-sync-helper/      # Go CLI 入口，源码随仓库保留
+├── internal/                   # Go 解析、审计与共享运行时
+├── go.mod                      # Go 模块；目前只使用标准库
+├── helper-version.txt          # 与预编译 helper 匹配的固定版本
+├── prebuilt/                   # 随 clone 保存的四平台归档、SHA256 与源码输入清单
 ├── tests/                      # 隔离环境与模拟包管理器测试
 ├── docs/                       # 分主题的操作说明与后续规划
-└── .system-sync/               # 本机审计与捕获状态，Git 忽略
+└── .system-sync/               # 本机 helper、构建缓存和审计状态，Git 忽略
 ```
 
 包 profile 和配置部署适配器是两条独立配置链。根 `[monorepo].config_roots` 显式列出 Linux 包 profile，不依赖目录扫描，见 [mise monorepo tasks](https://mise.jdx.dev/tasks/monorepo.html)。
 
 ## 常用命令
 
-以下命令在仓库根目录执行。运行时与完整 `check` 均要求 mise 2026.10.11+、Python 3.11+ 和 Bash，系统包管理器由系统准备。CI 在 macOS/Linux 上覆盖 Python 3.11 和 3.15；隔离测试不操作本机真实软件包。
+以下命令在仓库根目录执行。`audit` 和整机包流程首次运行时，自动从随仓库保存的 `prebuilt/<版本>/` 校验并解压本机 helper，无需 Go、Python 或联网准备 helper。单包清单编辑、配置迁出、VS Code 扩展和配置历史仍要求 Python 3.11+。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器。
+
+开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 Go 1.27.3、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](docs/go-helper.md)。
 
 本仓库已关闭任务运行前的自动工具补装，避免审计时先改变本机状态。缺失的开发工具通过 `mise install` 显式安装。
 
 ```bash
 mise trust --all
-mise run check
 
-# 查看系统软件和配置漂移
+# 查看系统软件和配置漂移；首次自动校验安装仓库内的 helper
 mise run audit
 mise run status
 mise run dry-run
@@ -70,6 +76,11 @@ mise run config-dry-run
 | 操作 | 命令 |
 |---|---|
 | 汇总四类状态、来源与待纳管候选 | `mise run audit`；JSON 用 `mise run --quiet audit --json` |
+| 修改 Go 源码后构建并启用本机工具 | `mise run helper-build` |
+| 更新随仓库保存的四平台包及源码输入清单 | `mise run helper-bundle`，与源码一同提交 |
+| 导出四平台包到被 Git 忽略的本机目录 | `mise run helper-dist` |
+| 提前初始化或更新仓库版本的 helper | `mise run helper-install`；指定其他本机产物用 `mise run helper-install /绝对路径/产物目录` |
+| 开发验收：校验预编译包、构建并运行完整测试 | `mise run check` |
 | 安装 / 卸载一个系统软件并记录清单 | `mise run package-install <包名>` / `mise run package-uninstall <包名>` |
 | 预览单包操作 | 在上述任务参数中加 `--dry-run` |
 | 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认 |
@@ -102,6 +113,7 @@ Linux 清单仍是结构示例。首次整机应用前必须导入本机 baselin
 | [系统软件包](docs/packages.md) | 单包操作、漂移捕获、Linux baseline、平台收敛顺序及保护规则 |
 | [全局开发环境](docs/development-environment.md) | 工具命令速查、全局与项目版本、安装升级卸载、zsh、环境变量及 PATH |
 | [新机器重建](docs/rebuild.md) | 公共配置重建、全局锁文件、JBR 与 Flutter 来源及验证范围 |
+| [Go helper](docs/go-helper.md) | 随仓库预编译包、离线初始化、源码与构建、Python 迁移范围 |
 | [应用配置与接管](docs/dotfiles.md) | Espanso、ChatGPT、VS Code、平台映射及日常同步 |
 | [取消、冲突与恢复](docs/recovery.md) | 操作中断、链接和配置恢复、审计及 Git 管理 |
 | [后续规划](docs/roadmap.md) | 核对快照、未启用功能及后续推进顺序 |

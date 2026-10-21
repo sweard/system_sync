@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从 `mise bootstrap packages status --json` 提取指定 manager 的声明。
+"""Go parse-status 的 Python 行为参考；仅保留用于回归测试。
 
 当前官方结构是：
   {"pacman": {"available": true, "packages": [{"package": "base", ...}]}}

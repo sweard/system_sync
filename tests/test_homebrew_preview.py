@@ -8,6 +8,7 @@ import tempfile
 import unittest
 
 from test_converge import run_terminal
+from helper_fixture import prepare_helper
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -93,6 +94,7 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         shutil.copy2(PROJECT_ROOT / "scripts/homebrew-converge.sh", self.script)
         for name in ("sync-runtime.sh", "sync_runtime.py", "system-sync.sh"):
             shutil.copy2(PROJECT_ROOT / "scripts" / name, scripts / name)
+        prepare_helper(self.project)
 
         self.brewfile = self.packages / "Brewfile"
         self.brewfile.write_text(

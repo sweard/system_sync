@@ -12,6 +12,8 @@ import tempfile
 import time
 import unittest
 
+from helper_fixture import prepare_helper
+
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -167,6 +169,7 @@ class ConvergeTest(unittest.TestCase):
         self.root = Path(self.temporary.name) / "system sync"
         shutil.copytree(ROOT / "scripts", self.root / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(ROOT / "packages", self.root / "packages")
+        prepare_helper(self.root)
         detector = self.root / "scripts/detect-linux-profile.sh"
         detector.write_text('#!/bin/sh\nprintf "%s\\n" "$FIXTURE_PROFILE"\n')
         commands = self.root / "bin"
@@ -350,7 +353,7 @@ class ConvergeTest(unittest.TestCase):
                 result = self.run_sync("--dry-run", terminal=False)
                 self.assertEqual(result.returncode, 0, result.stdout)
                 self.assertEqual(self.calls(), [])
-                self.assertFalse((self.root / ".system-sync").exists())
+                self.assertFalse((self.root / ".system-sync/history").exists())
 
     def test_missing_mandatory_root_stops_before_install(self):
         for profile in ("arch", "debian", "fedora", "opensuse"):
@@ -410,7 +413,7 @@ class ConvergeTest(unittest.TestCase):
 
     def test_zero_exit_without_completion_marker_is_rejected(self):
         self.configure()
-        command = [sys.executable, str(self.root / "scripts/sync_runtime.py"), "--root", str(self.root),
+        command = [str(self.root / "scripts/system-sync-helper.sh"), "runtime",
                    "--", "/bin/sh", "-c", "exit 0"]
         result = run_terminal(command, self.environment)
         self.assertNotEqual(result.returncode, 0, result.stdout)
