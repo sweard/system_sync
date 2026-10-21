@@ -1,0 +1,26 @@
+docs/dotfiles.md
+  s_00332b4a331471::t_86b75b138b5539 59-61
+tests/test_espanso.py
+  s_00332b4a331471::t_f2fca25049ed61 1-4,6-104
+  s_00332b4a331471::t_d79d97fe718873 5
+mise.linux.toml
+  s_00332b4a331471::t_86b75b138b5539 5
+mise.macos.toml
+  s_00332b4a331471::t_86b75b138b5539 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59688b569c3cbc739dac3d05512953345d6e3144",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
