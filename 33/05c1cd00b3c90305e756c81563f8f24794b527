@@ -1,0 +1,25 @@
+README.md
+  s_00332b4a331471::t_2ceef6c7dcc041 81-82,84,86,100
+  s_00332b4a331471::t_e027c26280c7c7 88
+  s_00332b4a331471::t_377e7d1ea07a16 87
+docs/development-environment.md
+  s_00332b4a331471::t_2ceef6c7dcc041 15,46,48-72,74-99,109-128,130-156,159-160,163-175
+  s_00332b4a331471::t_e027c26280c7c7 73,100,129
+  s_00332b4a331471::t_4471ba977849b9 176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3305c1cd00b3c90305e756c81563f8f24794b527",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
