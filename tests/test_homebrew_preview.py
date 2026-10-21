@@ -69,6 +69,10 @@ case "$*" in
       printf '%s\n' 'Error: Simulated cleanup failure.'
       exit 1
     fi
+    if [[ "${SYNC_TEST_GRAPH_WARNING:-0}" == 1 ]]; then
+      printf '%s\n' 'Formulae dependency graph sorting found a circular dependency:'
+      printf '%s\n' 'Would uninstall formulae:' 'old-fixture'
+    fi
     ;;
   *) printf 'Unexpected brew invocation: %s\n' "$*" >&2; exit 99 ;;
 esac
@@ -240,14 +244,14 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
 
     def test_wrapper_apply_retains_a_single_guarded_transaction(self):
         result = run_terminal(["bash", str(self.script.parent / "system-sync.sh"), "--apply"],
-                              self.environment, [("APPLY HOMEBREW", "APPLY HOMEBREW")])
+                              self.environment, [("输入 yes 继续", "yes")])
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.transaction()["phase"], "complete")
         self.assertEqual(sum("|bundle install " in line for line in self.log.read_text().splitlines()), 1)
 
     def test_apply_installs_and_cleans_inside_shared_audit(self):
         result = run_terminal(["bash", str(self.script), "--apply"], self.environment,
-                              [("APPLY HOMEBREW", "APPLY HOMEBREW")])
+                              [("输入 yes 继续", "yes")])
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.transaction()["phase"], "complete")
         calls = self.log.read_text().splitlines()
@@ -258,7 +262,7 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
     def test_failed_install_is_audited_without_actual_cleanup(self):
         environment = dict(self.environment, SYNC_TEST_INSTALL_ERROR="1")
         result = run_terminal(["bash", str(self.script), "--apply"], environment,
-                              [("APPLY HOMEBREW", "APPLY HOMEBREW")])
+                              [("输入 yes 继续", "yes")])
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.transaction()["last_phase"], "installing")
         self.assertEqual(self.transaction()["phase"], "failed")
@@ -267,11 +271,37 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
 
     def test_upgrade_is_audited_and_does_not_cleanup(self):
         result = run_terminal(["bash", str(self.script), "--upgrade"], self.environment,
-                              [("UPGRADE HOMEBREW", "UPGRADE HOMEBREW")])
+                              [("输入 yes 继续", "yes")])
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.transaction()["phase"], "complete")
         self.assertIn("bundle install --upgrade", self.log.read_text())
         self.assertNotIn("|bundle cleanup ", self.log.read_text())
+
+    def test_only_yes_reaches_homebrew_mutations(self):
+        for mode, old_phrase in (("--apply", "APPLY HOMEBREW"), ("--upgrade", "UPGRADE HOMEBREW")):
+            for response in ("", "no", "y", old_phrase):
+                with self.subTest(mode=mode, response=response):
+                    self.log.unlink(missing_ok=True)
+                    result = run_terminal(["bash", str(self.script), mode], self.environment,
+                                          [("输入 yes 继续", response)])
+                    self.assertEqual(result.returncode, 2, result.stdout)
+                    calls = self.log.read_text().splitlines()
+                    self.assertFalse(any("|bundle install " in line for line in calls))
+                    self.assertFalse(any(line.startswith(str(self.real_config) + "|bundle cleanup ")
+                                         for line in calls))
+
+    def test_graph_warning_uses_yes_and_retains_separate_cleanup_confirmation(self):
+        environment = dict(self.environment, SYNC_TEST_GRAPH_WARNING="1")
+        for response in ("no", "yes"):
+            with self.subTest(response=response):
+                self.log.unlink(missing_ok=True)
+                result = run_terminal(["bash", str(self.script), "--apply"], environment,
+                                      [("输入 yes 继续（", "yes"), ("输入 yes 继续 cleanup", response)])
+                self.assertEqual(result.returncode, 0 if response == "yes" else 2, result.stdout)
+                calls = self.log.read_text().splitlines()
+                self.assertTrue(any("|bundle install " in line for line in calls))
+                self.assertEqual(any(line.startswith(str(self.real_config) + "|bundle cleanup ")
+                                     for line in calls), response == "yes")
 
 
 if __name__ == "__main__":

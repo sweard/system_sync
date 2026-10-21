@@ -450,8 +450,7 @@ class PackageCommand:
         if self.args.dry_run:
             print("预览结束：未执行安装/卸载，也未修改清单。依赖下载与安装细节以包管理器实际事务为准。")
             return
-        phrase = f"{self.args.action.upper()} {self.name}"
-        if confirm(f"输入 {phrase} 以执行（其他输入取消）：").strip() != phrase:
+        if confirm("输入 yes 以执行（其他输入取消）：").strip() != "yes":
             print("已取消；未执行安装/卸载，未修改清单。")
             return
         self.unchanged()

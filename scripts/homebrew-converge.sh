@@ -233,9 +233,9 @@ confirm_cleanup_graph_warning() {
   if [[ "$CLEANUP_GRAPH_WARNING" -eq 1 && "$CLEANUP_HAS_MANAGED_REMOVALS" -eq 1 ]]; then
     warn "依赖图循环警告下存在 formula/cask/tap 移除计划"
     warn "请只在上面的最终预演内容完全符合预期时继续"
-    printf '请输入精确短语 “ALLOW HOMEBREW GRAPH WARNING” 继续 cleanup：'
+    printf '输入 yes 继续 cleanup（其他输入取消）：'
     IFS= read -r GRAPH_WARNING_CONFIRMATION
-    if [[ "$GRAPH_WARNING_CONFIRMATION" != "ALLOW HOMEBREW GRAPH WARNING" ]]; then
+    if [[ "$GRAPH_WARNING_CONFIRMATION" != "yes" ]]; then
       warn "额外确认不匹配，未执行 cleanup；此前的安装步骤可能已经完成"
       exit 2
     fi
@@ -387,9 +387,9 @@ sed 's/^/  /' "$BUNDLE_CHECK_FILE"
 if [[ "$MODE" == "upgrade" ]]; then
   [[ ! -s "$MISSING_PROTECTED_FILE" ]] || die "保护项缺少声明，拒绝升级"
   [[ -t 0 ]] || die "--upgrade 必须在交互式终端运行"
-  printf '\n升级不会执行 cleanup。请输入精确短语 “UPGRADE HOMEBREW” 继续：'
+  printf '\n升级不会执行 cleanup。输入 yes 继续（其他输入取消）：'
   IFS= read -r UPGRADE_CONFIRMATION
-  [[ "$UPGRADE_CONFIRMATION" == "UPGRADE HOMEBREW" ]] || system_sync_cancel "确认不匹配，未做任何修改"
+  [[ "$UPGRADE_CONFIRMATION" == "yes" ]] || system_sync_cancel "确认不匹配，未做任何修改"
   : > "$CLEANUP_PREVIEW_FILE"
   save_before_state "upgrade"
   system_sync_phase upgrading
@@ -417,9 +417,9 @@ fi
 [[ -t 0 ]] || die "--apply 必须在交互式终端运行"
 
 printf '\n即将安装缺失项；随后 Homebrew 会再次显示完整 cleanup 清单并询问。\n'
-printf '请输入精确短语 “APPLY HOMEBREW” 继续：'
+printf '输入 yes 继续（其他输入取消）：'
 IFS= read -r APPLY_CONFIRMATION
-[[ "$APPLY_CONFIRMATION" == "APPLY HOMEBREW" ]] || system_sync_cancel "确认不匹配，未做任何修改"
+[[ "$APPLY_CONFIRMATION" == "yes" ]] || system_sync_cancel "确认不匹配，未做任何修改"
 
 save_before_state "apply"
 

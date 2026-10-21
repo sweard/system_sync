@@ -30,9 +30,11 @@ mise run system-sync
 
 `status` 只读地显示声明、当前根包和差异；`dry-run` 同时预览缺失包安装和收敛计划；`system-sync` 经交互确认后安装缺失项，再单独审阅删除阶段。
 
+本仓库脚本的确认统一输入小写 `yes`；直接回车或其他输入取消。安装与删除仍分阶段审阅，每个确认点分别输入 `yes`，不会自动回答包管理器自身的事务确认。
+
 平台脚本负责自己的完整预检和写操作保护。macOS 统一入口直接转交 Homebrew 脚本；Linux 的 `status` / `apply` 直接转交对应平台脚本，状态中的原生 JSON 只查询一次。Linux `dry-run` 会先显示原生安装预览，因此在这一步之前仍保留外层预检，再进入平台清理预览。
 
-所有包写入口共用操作锁。Linux apply 的顺序是：**终端/版本预检 → 加锁并建立审计 → 读取声明和当前状态 → 校验保护项及变更阈值 → 精确确认 → 保存安装前状态 → 原生 mise 安装 → 重新校验 → 调整安装原因及再次审阅删除事务 → 执行删除**。直接运行平台脚本同样经过保护；mise 原生安装阶段可能使用非交互参数，因此本仓库的精确确认始终在它之前。
+所有包写入口共用操作锁。Linux apply 的顺序是：**终端/版本预检 → 加锁并建立审计 → 读取声明和当前状态 → 校验保护项及变更阈值 → 输入 `yes` 确认 → 保存安装前状态 → 原生 mise 安装 → 重新校验 → 调整安装原因及再次审阅删除事务 → 执行删除**。直接运行平台脚本同样经过保护；mise 原生安装阶段可能使用非交互参数，因此本仓库的 `yes` 确认始终在它之前。
 
 整机操作和升级的 `transaction.json` 记录 `preflight`、`installing` / `upgrading`、`marking`、`removing` 等阶段，以及最终 `complete` / `cancelled` / `failed` / `interrupted` 状态。安装失败也会保留 `.before` 清单和安装前包列表；包装层要求平台脚本明确记录完成，不能只凭退出码 0 判定成功。审计不是系统事务回滚，失败后应先检查 `last_phase` 与实际包状态。
 
@@ -72,7 +74,7 @@ mise run package-uninstall visual-studio-code-bin
 mise run package-install --cask --trust abue-ammar/tinycast/tinycast
 ```
 
-每次处理**一个准确包名**，先展示原生命令与清单 diff；输入屏幕上显示的 `INSTALL 包名` 或 `UNINSTALL 包名` 后才执行，其他输入取消。保留原生包管理器自身的依赖检查和确认，不自动传递 `--yes`。请用普通用户运行，不要 `sudo mise`；需要提权的 Linux 原生命令会自行调用 `sudo`。
+每次处理**一个准确包名**，先展示原生命令与清单 diff；输入 `yes` 后才执行，直接回车或其他输入取消。保留原生包管理器自身的依赖检查和确认，不自动传递 `--yes`。请用普通用户运行，不要 `sudo mise`；需要提权的 Linux 原生命令会自行调用 `sudo`。
 
 | 检测到的平台 | 安装 / 卸载入口 | 成功后更新 |
 |---|---|---|
@@ -269,7 +271,7 @@ mise run dry-run
 
 ### Arch
 
-1. 先校验声明、保护项与变更阈值，经精确确认并保存安装前状态后，再由 mise 安装缺失的 pacman/AUR 声明。
+1. 先校验声明、保护项与变更阈值，经 `yes` 确认并保存安装前状态后，再由 mise 安装缺失的 pacman/AUR 声明。
 2. 脚本只比较 `pacman -Qqe` 的 explicit 包，不把整棵依赖树当成根包。
 3. 先用 `pacman -D --asexplicit` 保护声明/保护根，再用 `--asdeps` 降级未声明根。
 4. 重新查询 `pacman -Qdtq`，用 `pacman -Rsp` 预演完整递归事务。
@@ -282,7 +284,7 @@ mise run dry-run
 APT 用 `apt-mark manual/auto`，DNF5 用 `dnf mark user/dependency`，DNF4 用对应的 `dnf mark install/remove`。两者都会：
 
 1. 只把 manual/user-installed 包与 mise 声明比较；
-2. 前置校验和精确确认后，保存安装前状态，由 mise 安装缺失声明并重新计算计划，再提升声明和保护根、降级未声明根；
+2. 前置校验和 `yes` 确认后，保存安装前状态，由 mise 安装缺失声明并重新计算计划，再提升声明和保护根、降级未声明根；
 3. 在安装原因变更后重新计算 autoremove；
 4. 若事务触及声明或保护包，立即停止；
 5. 最后交给 APT/DNF 显示自身事务和确认。
@@ -298,7 +300,7 @@ zypper 能查询 user-installed 和 unneeded，但本方案没有一个与 `apt-
 1. 加入 zypper 当前认定的 unneeded 包；
 2. 用 `zypper --xmlout ... remove --dry-run --clean-deps` 解析完整事务；
 3. 校验事务不触及声明/保护包；
-4. 再次精确确认后，由交互式 `zypper --no-refresh remove --clean-deps` 在与预演相同的缓存仓库元数据上执行。
+4. 再次输入 `yes` 确认后，由交互式 `zypper --no-refresh remove --clean-deps` 在与预演相同的缓存仓库元数据上执行。
 
 脚本故意不自动删除 `--orphaned` 包，因为它们可能是本地 RPM 或已移除仓库的必需软件。openSUSE 是四个 Linux profile 中最需人工审核 dry-run 的一个。
 
@@ -312,7 +314,7 @@ zypper 能查询 user-installed 和 unneeded，但本方案没有一个与 `apt-
 - 包名含不安全字符，或 virtual provider 无法映射到具体已安装包；
 - 移除事务触及声明包、硬保护包、profile allowlist 或动态保护的内核/引导包；
 - 一次降级/移除超过数量或比例阈值，且没有显式传入 `--allow-large-change`；
-- `apply` 不在交互式终端中运行，或确认短语不匹配。
+- `apply` 不在交互式终端中运行，或未输入 `yes` 确认。
 
 确认 baseline 完整且大范围变更确属预期时，可直接运行：
 
@@ -391,7 +393,7 @@ cask "abue-ammar/tinycast/tinycast", trusted: true
 
 cleanup 预演使用独立的临时信任库，每次都初始化 formula 和 cask 信任，覆盖安装前、安装后两次预演。仅在真实 Homebrew 信任库中执行 `brew trust` 不会影响这个临时库。若日志显示安装已成功、随后预演失败，先修正对应信任清单，再重新运行 `mise run dry-run`；已安装且满足声明的软件无需重装。
 
-如果 Homebrew cleanup 报告 formula 依赖图循环，并且同时提出移除受管项目，脚本会要求额外的 `ALLOW HOMEBREW GRAPH WARNING` 精确确认。应先审阅事务，必要时修复 Homebrew 旧 keg 收据后再继续。
+如果 Homebrew cleanup 报告 formula 依赖图循环，并且同时提出移除受管项目，脚本会显示警告并要求额外输入 `yes` 确认。应先审阅事务，必要时修复 Homebrew 旧 keg 收据后再继续。
 
 单独升级 Brewfile 声明项、不 cleanup：
 

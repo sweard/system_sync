@@ -12,6 +12,8 @@ import tomllib
 import unittest
 from unittest.mock import patch
 
+from test_converge import run_terminal
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MISE = shutil.which("mise")
@@ -95,6 +97,23 @@ class DeployedDetachTest(unittest.TestCase):
         self.assertEqual(DETACH.snapshot(self.home), before)
         self.assertFalse(self.backups.exists())
         self.assertFalse((self.project / ".system-sync").exists())
+
+    def test_interactive_detach_requires_yes_and_cancellation_leaves_no_backup(self):
+        before = DETACH.snapshot(self.home)
+        command = [sys.executable, "-B", str(self.project / "scripts/config-detach.py")]
+        for response in ("", "no", "y", "DETACH"):
+            with self.subTest(response=response):
+                result = run_terminal(command, self.env, [("输入 yes 确认", response)])
+                self.assertEqual(result.returncode, 2, result.stdout)
+                self.assertEqual(DETACH.snapshot(self.home), before)
+                self.assertFalse(self.backups.exists())
+        result = run_terminal(command, self.env, [("输入 yes 确认", "yes")])
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("配置已保留在本机位置", result.stdout)
+        self.assertFalse(self.config.is_symlink())
+        self.assertFalse(self.enrollment.exists())
+        self.assertTrue(self.backups.exists())
+        self.assertNotIn("private-canary", result.stdout)
 
     def test_detach_preserves_current_values_private_files_and_works_without_repository(self):
         unmanaged = self.espanso / "match/unmanaged.yml"

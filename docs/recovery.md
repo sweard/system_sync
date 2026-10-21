@@ -14,7 +14,7 @@
 # 只列出路径和动作，不输出配置内容、不写配置或建立备份
 mise run config-detach --dry-run
 
-# 审阅计划后执行，输入 DETACH 确认
+# 审阅计划后执行，输入 yes 确认（直接回车或其他输入取消）
 mise run config-detach
 
 # 已审阅计划的自动化场景可显式跳过确认

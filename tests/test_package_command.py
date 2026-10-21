@@ -105,10 +105,10 @@ class PackageCommandTest(unittest.TestCase):
     def make(self, *argv, profile="macos"):
         return MODULE.PackageCommand(self.root, profile, MODULE.parse_args(argv), self.runner)
 
-    def execute(self, operation, accept=True):
+    def execute(self, operation, response="yes"):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
-            operation.execute(confirm=lambda _: f"{operation.args.action.upper()} {operation.name}" if accept else "no")
+            operation.execute(confirm=lambda _: response)
         return output.getvalue()
 
     def test_formula_install_records_only_root(self):
@@ -138,9 +138,14 @@ class PackageCommandTest(unittest.TestCase):
 
     def test_cancel_leaves_everything_untouched(self):
         before = self.brewfile.read_bytes()
-        self.execute(self.make("uninstall", "firefox", "--cask"), accept=False)
-        self.assertEqual(self.runner.mutations, [])
-        self.assertEqual(self.brewfile.read_bytes(), before)
+        for action in ("install", "uninstall"):
+            for response in ("", "no", "y", f"{action.upper()} firefox"):
+                with self.subTest(action=action, response=response):
+                    output = self.execute(self.make(action, "firefox", "--cask"), response=response)
+                    self.assertIn("已取消", output)
+                    self.assertEqual(self.runner.mutations, [])
+                    self.assertEqual(self.brewfile.read_bytes(), before)
+                    self.assertFalse((self.root / ".system-sync").exists())
 
     def test_failed_install_keeps_manifest(self):
         self.runner.fail = True

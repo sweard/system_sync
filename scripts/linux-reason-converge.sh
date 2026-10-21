@@ -437,9 +437,9 @@ EXPLICIT_COUNT="$(count_lines "$EXPLICIT_FILE")"
 DEMOTE_COUNT="$(count_lines "$DEMOTE_FILE")"
 check_large_change "$EXPLICIT_COUNT" "$DEMOTE_COUNT"
 
-printf '\n即将安装缺失声明并修改 %s 安装原因。请输入精确短语 “APPLY %s” 继续：' "$MANAGER_LABEL" "$DEMOTE_COUNT"
+printf '\n即将安装缺失声明并修改 %s 安装原因。输入 yes 继续（其他输入取消）：' "$MANAGER_LABEL"
 IFS= read -r FIRST_CONFIRMATION
-[[ "$FIRST_CONFIRMATION" == "APPLY $DEMOTE_COUNT" ]] || system_sync_cancel "确认不匹配，未做任何修改"
+[[ "$FIRST_CONFIRMATION" == "yes" ]] || system_sync_cancel "确认不匹配，未做任何修改"
 
 if [[ "$EUID" -ne 0 ]]; then
   command -v sudo >/dev/null 2>&1 || die "需要 root 权限，但找不到 sudo"
@@ -520,9 +520,9 @@ fi
 
 printf '\n即将由 %s autoremove 移除上面 %s 个包；不会 purge 配置。\n' \
   "$MANAGER_LABEL" "$FINAL_REMOVE_COUNT"
-printf '请输入精确短语 “REMOVE %s” 继续：' "$FINAL_REMOVE_COUNT"
+printf '即将移除 %s 个包，输入 yes 继续（其他输入取消）：' "$FINAL_REMOVE_COUNT"
 IFS= read -r SECOND_CONFIRMATION
-if [[ "$SECOND_CONFIRMATION" != "REMOVE $FINAL_REMOVE_COUNT" ]]; then
+if [[ "$SECOND_CONFIRMATION" != "yes" ]]; then
   warn "未执行卸载；安装原因已经调整，请按 $RUN_LOG_DIR 中的 demoted.txt 恢复需要保留的包"
   exit 2
 fi

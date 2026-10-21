@@ -23,7 +23,7 @@ usage() {
 
   --status              只读状态报告
   --dry-run             预览将降级的显式包和当前 orphan
-  --apply               交互式执行；需要输入精确确认短语
+  --apply               交互式执行；输入 yes 确认
   --allow-large-change  允许一次降级超过安全阈值（仍需交互确认）
   -h, --help            显示帮助
 
@@ -315,9 +315,9 @@ check_large_change() {
 }
 check_large_change
 
-printf '\n即将安装缺失声明并修改 pacman 安装原因。请输入精确短语 “APPLY %s” 继续：' "$DEMOTE_COUNT"
+printf '\n即将安装缺失声明并修改 pacman 安装原因。输入 yes 继续（其他输入取消）：'
 IFS= read -r FIRST_CONFIRMATION
-[[ "$FIRST_CONFIRMATION" == "APPLY $DEMOTE_COUNT" ]] || system_sync_cancel "确认不匹配，未做任何修改"
+[[ "$FIRST_CONFIRMATION" == "yes" ]] || system_sync_cancel "确认不匹配，未做任何修改"
 
 if [[ "$EUID" -ne 0 ]]; then
   command -v sudo >/dev/null 2>&1 || die "需要 root 权限，但找不到 sudo"
@@ -429,9 +429,9 @@ REMOVE_TRANSACTION_COUNT="$(count_lines "$REMOVE_TRANSACTION_FILE")"
 
 printf '\n即将以 %s 个 orphan 为目标，用 pacman -Rs 移除上面 %s 个包（不会使用 -Rns）。\n' \
   "$FINAL_REMOVE_COUNT" "$REMOVE_TRANSACTION_COUNT"
-printf '请输入精确短语 “REMOVE %s” 继续：' "$REMOVE_TRANSACTION_COUNT"
+printf '即将移除 %s 个包，输入 yes 继续（其他输入取消）：' "$REMOVE_TRANSACTION_COUNT"
 IFS= read -r SECOND_CONFIRMATION
-if [[ "$SECOND_CONFIRMATION" != "REMOVE $REMOVE_TRANSACTION_COUNT" ]]; then
+if [[ "$SECOND_CONFIRMATION" != "yes" ]]; then
   warn "未执行卸载；安装原因调整已经完成，可按日志用 pacman -D --asexplicit 恢复"
   exit 2
 fi

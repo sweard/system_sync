@@ -249,20 +249,20 @@ class ConvergeTest(unittest.TestCase):
 
     def test_cancel_before_install_is_audited(self):
         for profile in ("arch", "debian", "fedora", "opensuse"):
-            with self.subTest(profile=profile):
-                self.configure(profile)
-                phrase = "APPLY ZYPPER" if profile == "opensuse" else "APPLY 0"
-                result = self.run_sync(answers=[(phrase, "no")])
-                self.assertEqual(result.returncode, 2, result.stdout)
-                self.assertEqual(self.calls(), [])
-                self.assertEqual(self.journal()["phase"], "cancelled")
+            old_phrase = "APPLY ZYPPER" if profile == "opensuse" else "APPLY 0"
+            for response in ("", "no", "y", old_phrase):
+                with self.subTest(profile=profile, response=response):
+                    self.configure(profile)
+                    result = self.run_sync(answers=[("输入 yes 继续", response)])
+                    self.assertEqual(result.returncode, 2, result.stdout)
+                    self.assertEqual(self.calls(), [])
+                    self.assertEqual(self.journal()["phase"], "cancelled")
 
     def test_missing_packages_install_inside_audited_transaction(self):
         for profile in ("arch", "debian", "fedora", "opensuse"):
             with self.subTest(profile=profile):
                 self.configure(profile)
-                phrase = "APPLY ZYPPER" if profile == "opensuse" else "APPLY 0"
-                result = self.run_sync(answers=[(phrase, phrase)])
+                result = self.run_sync(answers=[("输入 yes 继续", "yes")])
                 self.assertEqual(result.returncode, 0, result.stdout)
                 self.assertEqual([call["kind"] for call in self.calls()], ["install"])
                 self.assertEqual(self.calls()[0]["phase"], "installing")
@@ -270,7 +270,7 @@ class ConvergeTest(unittest.TestCase):
 
     def test_partial_install_failure_keeps_audit_and_stops_before_marking(self):
         self.configure(install_failure=True)
-        result = self.run_sync(answers=[("APPLY 0", "APPLY 0")])
+        result = self.run_sync(answers=[("输入 yes 继续", "yes")])
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install"])
         self.assertEqual(self.journal()["phase"], "failed")
@@ -278,7 +278,7 @@ class ConvergeTest(unittest.TestCase):
 
     def test_successful_install_with_missing_target_stops(self):
         self.configure(wrong_install_state=True)
-        result = self.run_sync(answers=[("APPLY 0", "APPLY 0")])
+        result = self.run_sync(answers=[("输入 yes 继续", "yes")])
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn("安装后仍有声明包", result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install"])
@@ -317,14 +317,14 @@ class ConvergeTest(unittest.TestCase):
                 mandatory = {"arch":"base", "debian":"base-files", "fedora":"filesystem"}[profile]
                 self.configure(profile, installed=[mandatory,"git","extra"], explicit=[mandatory,"git","extra"],
                                final_orphans=["extra","git"], transaction=["extra","git"])
-                result = self.run_sync(answers=[("APPLY 1", "APPLY 1")])
+                result = self.run_sync(answers=[("输入 yes 继续", "yes")])
                 self.assertNotEqual(result.returncode, 0, result.stdout)
                 self.assertNotIn("remove", [call["kind"] for call in self.calls()])
                 self.assertIn("保护", result.stdout)
 
     def test_cancel_after_marking_preserves_packages_and_restoration_list(self):
         self.configure(installed=["base-files","git","extra"], explicit=["base-files","git","extra"], final_orphans=["extra"])
-        result = self.run_sync(answers=[("APPLY 1", "APPLY 1"), ("REMOVE 1", "no")])
+        result = self.run_sync(answers=[("输入 yes 继续", "yes"), ("即将移除 1 个包，输入 yes", "no")])
         self.assertEqual(result.returncode, 2, result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install","mark"])
         self.assertIn("extra", json.loads(self.state_file.read_text())["installed"])
@@ -338,7 +338,7 @@ class ConvergeTest(unittest.TestCase):
                 mandatory = {"arch":"base", "debian":"base-files", "fedora":"filesystem"}[profile]
                 self.configure(profile, installed=[mandatory,"git","extra"], explicit=[mandatory,"git","extra"],
                                final_orphans=["extra"], dnf4=dnf4)
-                result = self.run_sync(answers=[("APPLY 1", "APPLY 1"), ("REMOVE 1", "REMOVE 1")])
+                result = self.run_sync(answers=[("输入 yes 继续", "yes"), ("即将移除 1 个包，输入 yes", "yes")])
                 self.assertEqual(result.returncode, 0, result.stdout)
                 self.assertEqual([call["kind"] for call in self.calls()], ["install","mark","remove"])
                 self.assertNotIn("extra", json.loads(self.state_file.read_text())["installed"])
@@ -372,7 +372,7 @@ class ConvergeTest(unittest.TestCase):
 
     def test_zypper_native_install_then_protected_cleanup(self):
         self.configure("opensuse", installed=["filesystem","git","extra"], explicit=["filesystem","git","extra"])
-        result = self.run_sync(answers=[("APPLY ZYPPER","APPLY ZYPPER"), ("REMOVE 1","REMOVE 1")])
+        result = self.run_sync(answers=[("输入 yes 继续", "yes"), ("即将移除 1 个包，输入 yes", "yes")])
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install","remove"])
         self.assertEqual(self.calls()[0]["args"], ["mise","bootstrap","packages","apply","--manager","zypper"])
@@ -383,7 +383,7 @@ class ConvergeTest(unittest.TestCase):
     def test_zypper_revalidates_protected_transaction_after_install(self):
         self.configure("opensuse", installed=["filesystem","git","extra"], explicit=["filesystem","git","extra"],
                        final_transaction=["extra","git"])
-        result = self.run_sync(answers=[("APPLY ZYPPER","APPLY ZYPPER")])
+        result = self.run_sync(answers=[("输入 yes 继续", "yes")])
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn("保护包", result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install"])

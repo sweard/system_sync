@@ -25,7 +25,7 @@ usage() {
   --status              查看声明、缺失项和完整移除事务
   --dry-run             完整预览；不会安装或卸载
   --apply               交互式安装缺失项并移除未声明的 user-installed 包
-  --allow-large-change  允许超过安全阈值的移除事务（仍需精确确认）
+  --allow-large-change  允许超过安全阈值的移除事务（仍需输入 yes 确认）
   -h, --help            显示帮助
 
 使用 mise 原生 zypper manager 读取声明和安装缺失项；本脚本补充受保护的根包收敛。
@@ -328,9 +328,9 @@ fi
 
 [[ -t 0 ]] || die "--apply 必须在交互式终端运行"
 check_large_change
-printf '\n即将安装缺失项，并重新计算 zypper 移除事务。请输入精确短语 “APPLY ZYPPER” 继续：'
+printf '\n即将安装缺失项，并重新计算 zypper 移除事务。输入 yes 继续（其他输入取消）：'
 IFS= read -r FIRST_CONFIRMATION
-[[ "$FIRST_CONFIRMATION" == "APPLY ZYPPER" ]] || system_sync_cancel "确认不匹配，未做任何修改"
+[[ "$FIRST_CONFIRMATION" == "yes" ]] || system_sync_cancel "确认不匹配，未做任何修改"
 
 if [[ "$EUID" -ne 0 ]]; then
   command -v sudo >/dev/null 2>&1 || die "需要 root 权限，但找不到 sudo"
@@ -376,9 +376,9 @@ if [[ "$REMOVE_COUNT" -eq 0 ]]; then
 fi
 
 printf '\n即将用 zypper remove --clean-deps 移除上面 %s 个包。\n' "$REMOVE_COUNT"
-printf '请输入精确短语 “REMOVE %s” 继续：' "$REMOVE_COUNT"
+printf '即将移除 %s 个包，输入 yes 继续（其他输入取消）：' "$REMOVE_COUNT"
 IFS= read -r SECOND_CONFIRMATION
-[[ "$SECOND_CONFIRMATION" == "REMOVE $REMOVE_COUNT" ]] \
+[[ "$SECOND_CONFIRMATION" == "yes" ]] \
   || system_sync_cancel "确认不匹配；未执行卸载，缺失包安装可能已经完成"
 
 info "交给 zypper 显示并执行最终事务；请再次核对包管理器自己的确认列表"

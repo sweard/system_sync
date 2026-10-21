@@ -88,6 +88,8 @@ mise run config-dry-run
 
 `mise install` 不写入工具声明；`mise use` 安装并写入声明。全局与项目配置、`--pin`、锁文件、升级和完整卸载示例见[工具常用命令](docs/development-environment.md#常用工具命令速查)。
 
+任务脚本要求确认时，统一输入小写 `yes` 继续；直接回车或其他输入取消。mise 的 Yes/No 提示选择 Yes；包管理器自己的事务确认按其提示操作。
+
 Linux 清单仍是结构示例。首次整机应用前必须导入本机 baseline；Linux 统一升级尚未实现，继续使用发行版本身的升级流程。macOS 当前仍使用 Homebrew Bundle。
 
 私有变量文件不部署、不提交；ChatGPT / VS Code 只合并来源声明的键。运行时审计保存在 `.system-sync/history/`；应用配置检查点由 mise 的本机历史单独保存，不开启后台捕获或远端历史同步。

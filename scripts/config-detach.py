@@ -371,7 +371,7 @@ def main():
     if not args.yes:
         if not sys.stdin.isatty():
             raise RuntimeFailure("请在交互终端运行；自动化请先审阅 --dry-run，再显式使用 --yes")
-        if input("将上述配置迁为本机文件，并取消本项目的本机历史登记。输入 DETACH 确认：").strip() != "DETACH":
+        if input("将上述配置迁为本机文件，并取消本项目的本机历史登记。输入 yes 确认（其他输入取消）：").strip() != "yes":
             print("[-] 已取消，未修改配置。")
             return 2
     backup_root = Path(os.environ.get("XDG_STATE_HOME", home / ".local/state")) / "system-sync/config-detach"
