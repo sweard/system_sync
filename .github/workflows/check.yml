@@ -59,8 +59,8 @@ jobs:
       - name: Verify bundled helper before preparing a compiler
         shell: bash
         run: |
-          ./scripts/helper-verify.sh
-          ./scripts/system-sync-helper.sh --version
+          ./helper/scripts/verify.sh
+          ./helper/scripts/run.sh --version
       - name: Prepare pinned Go compiler for explicit builds
         shell: bash
         run: |
@@ -97,7 +97,7 @@ jobs:
         run: |
           mise trust --all
           mise install go@1.27.3
-          mise exec go@1.27.3 -- ./scripts/helper-build.sh --dist
+          mise exec go@1.27.3 -- ./helper/scripts/build.sh --dist
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: system-sync-helper-${{ github.sha }}

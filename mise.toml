@@ -29,34 +29,34 @@ description = "只读审计 tools、packages、PATH 和配置映射；支持 --j
 raw = true
 # 在任务运行器前置工具目录前保存调用终端的 PATH。
 env.SYSTEM_SYNC_AUDIT_CALLER_PATH = '{{ get_env(name="PATH", default="") }}'
-run = "./scripts/system-sync-helper.sh audit"
+run = "./helper/scripts/run.sh audit"
 
 [tasks.check]
 description = "校验仓库预编译包，显式构建 Go helper 并运行 Go/Python 隔离测试；不修改系统软件"
 run = [
-  "./scripts/helper-verify.sh",
-  "./scripts/helper-build.sh",
+  "./helper/scripts/verify.sh",
+  "./helper/scripts/build.sh",
   "python3 ./tests/reference/sync_runtime.py --check",
   "mise tasks validate",
-  "./scripts/helper-test.sh",
+  "./helper/scripts/test.sh",
   "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v",
 ]
 
 [tasks.helper-build]
 description = "从仓库 Go 源码构建并安装本机 helper；固定 Go 1.27.3"
-run = "./scripts/helper-build.sh"
+run = "./helper/scripts/build.sh"
 
 [tasks.helper-dist]
 description = "构建 macOS/Linux × ARM64/x86_64 预编译归档和 SHA256SUMS"
-run = "./scripts/helper-build.sh --dist"
+run = "./helper/scripts/build.sh --dist"
 
 [tasks.helper-bundle]
-description = "从源码更新 prebuilt/<版本>/ 的四个平台归档与校验清单，需一同提交"
-run = "./scripts/helper-build.sh --bundle"
+description = "从源码更新 helper/prebuilt/<版本>/ 的四个平台归档与校验清单，需一同提交"
+run = "./helper/scripts/build.sh --bundle"
 
 [tasks.helper-install]
-description = "从仓库 prebuilt/ 校验安装 helper；可指定本机产物目录，无需 Go 编译器"
-run = "./scripts/helper-install.sh"
+description = "从仓库 helper/prebuilt/ 校验安装 helper；可指定本机产物目录，无需 Go 编译器"
+run = "./helper/scripts/install.sh"
 
 [tasks.dry-run]
 description = "预览当前系统将安装、收敛或清理的内容"
@@ -71,12 +71,12 @@ run = "./scripts/system-sync.sh --apply"
 [tasks.package-install]
 description = "安装一个系统根包，成功后加入当前平台清单；支持 --dry-run"
 raw = true
-run = "./scripts/system-sync-helper.sh package install"
+run = "./helper/scripts/run.sh package install"
 
 [tasks.package-uninstall]
 description = "卸载一个系统根包，成功后移出当前平台清单；支持 --dry-run"
 raw = true
-run = "./scripts/system-sync-helper.sh package uninstall"
+run = "./helper/scripts/run.sh package uninstall"
 
 [tasks.macos-upgrade]
 description = "单独升级 macOS Brewfile 中声明的软件，不执行 cleanup"
@@ -101,28 +101,28 @@ run = "mise bootstrap dotfiles apply"
 [tasks.config-detach]
 description = "将当前受管配置保留为本机独立文件；支持 --dry-run、--yes，备份保存在仓库外"
 raw = true
-run = "./scripts/system-sync-helper.sh config-detach"
+run = "./helper/scripts/run.sh config-detach"
 
 [tasks.vscode-status]
 description = "核对当前平台公共 VS Code 扩展及版本，保留清单外扩展"
-run = "./scripts/system-sync-helper.sh vscode status"
+run = "./helper/scripts/run.sh vscode status"
 
 [tasks.vscode-dry-run]
 description = "预览公共 VS Code 扩展安装与版本变更"
-run = "./scripts/system-sync-helper.sh vscode sync --dry-run"
+run = "./helper/scripts/run.sh vscode sync --dry-run"
 
 [tasks.vscode-sync]
 description = "按清单安装公共 VS Code 扩展；不删除其他扩展"
 confirm = { message = "这会安装或调整清单中扩展的版本。是否继续？", default = "no" }
-run = "./scripts/system-sync-helper.sh vscode sync"
+run = "./helper/scripts/run.sh vscode sync"
 
 [tasks.config-history-init]
 description = "登记已部署的应用配置和本机 zsh 覆盖；仅本机历史、手动保存"
-run = "./scripts/system-sync-helper.sh config-history init"
+run = "./helper/scripts/run.sh config-history init"
 
 [tasks.config-save]
 description = "手动保存已登记的本机配置检查点；支持 -d 描述"
-run = "./scripts/system-sync-helper.sh config-history save"
+run = "./helper/scripts/run.sh config-history save"
 
 [tasks.config-history]
 description = "列出仅本机保存的配置检查点；支持原生 history ls 参数"

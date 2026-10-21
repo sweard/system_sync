@@ -199,7 +199,7 @@ refresh_plan() {
     warn "mise status 产生了附加诊断；请确认上面的信息无异常"
   fi
 
-  if ! "$SCRIPT_DIR/system-sync-helper.sh" parse-status \
+  if ! "$SCRIPT_DIR/../helper/scripts/run.sh" parse-status \
     --manager pacman --manager aur "$STATUS_JSON" > "$DECLARED_TSV"; then
     die "无法从 mise 最终生效配置中取得可靠的 pacman/AUR 声明"
   fi

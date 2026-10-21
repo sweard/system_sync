@@ -415,7 +415,7 @@ class ConvergeTest(unittest.TestCase):
 
     def test_zero_exit_without_completion_marker_is_rejected(self):
         self.configure()
-        command = [str(self.root / "scripts/system-sync-helper.sh"), "runtime",
+        command = [str(self.root / "helper/scripts/run.sh"), "runtime",
                    "--", "/bin/sh", "-c", "exit 0"]
         result = run_terminal(command, self.environment)
         self.assertNotEqual(result.returncode, 0, result.stdout)

@@ -66,7 +66,7 @@ class DeployedDetachTest(unittest.TestCase):
             '[dotfiles]\n' + json.dumps(str(self.espanso / "match/private.yml")) +
             ' = {source="private-fixture.yml", mode="symlink"}\n')
         self.mise("bootstrap", "dotfiles", "apply")
-        self.command([str(ROOT / "scripts/system-sync-helper.sh"), "config-history", "init"])
+        self.command([str(ROOT / "helper/scripts/run.sh"), "config-history", "init"])
         self.enrollment = self.home / ".config/mise/conf.d/system-sync-history.toml"
         self.backups = self.home / ".local/state/system-sync/config-detach"
         self.original_config = (self.project / "dotfiles/common/mise/config.toml").read_bytes()
@@ -84,7 +84,7 @@ class DeployedDetachTest(unittest.TestCase):
         return self.command([MISE, *args], cwd=cwd).stdout
 
     def detach(self, *args, success=True):
-        return self.command([str(self.project / "scripts/system-sync-helper.sh"), "config-detach", *args], success)
+        return self.command([str(self.project / "helper/scripts/run.sh"), "config-detach", *args], success)
 
     def test_preview_and_noninteractive_refusal_leave_configuration_untouched(self):
         before = DETACH.snapshot(self.home)
@@ -100,7 +100,7 @@ class DeployedDetachTest(unittest.TestCase):
 
     def test_interactive_detach_requires_yes_and_cancellation_leaves_no_backup(self):
         before = DETACH.snapshot(self.home)
-        command = [str(self.project / "scripts/system-sync-helper.sh"), "config-detach"]
+        command = [str(self.project / "helper/scripts/run.sh"), "config-detach"]
         for response in ("", "no", "y", "DETACH"):
             with self.subTest(response=response):
                 result = run_terminal(command, self.env, [("输入 yes 确认", response)])

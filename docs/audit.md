@@ -27,7 +27,7 @@ mise run audit --color always
 mise run audit --color never
 ```
 
-首次运行会自动从仓库 `prebuilt/<版本>/` 校验并解压当前平台的 [Go helper](go-helper.md) 到本机缓存；也可提前执行 `mise run helper-install`。这一初始化不下载或编译，安装提示仅写入 stderr，保持 `--json` 的 stdout 可解析。审计本身不修改系统包和用户配置。也可通过 `./scripts/system-sync-helper.sh audit` 直接运行；日常审计及其系统包状态查询不依赖 Python 或 Go 编译器。[tests/reference/audit.py](../tests/reference/audit.py) 暂留作行为对照测试的参考实现。
+首次运行会自动从仓库 `helper/prebuilt/<版本>/` 校验并解压当前平台的 [Go helper](../helper/README.md) 到本机缓存；也可提前执行 `mise run helper-install`。这一初始化不下载或编译，安装提示仅写入 stderr，保持 `--json` 的 stdout 可解析。审计本身不修改系统包和用户配置。也可通过 `./helper/scripts/run.sh audit` 直接运行；日常审计及其系统包状态查询不依赖 Python 或 Go 编译器。[tests/reference/audit.py](../tests/reference/audit.py) 暂留作行为对照测试的参考实现。
 
 ## 查询执行方式
 
@@ -76,7 +76,7 @@ Go 迁移前，2026-10-21 在本机对 `11364be` 与 Python 查询优化实现�
 
 来源检查覆盖 Node、Python、Ruby、Java、Rust、Bun、uv、Yarn，以及声明后使用的 Go、Deno 和 Flutter 主命令。其他 mise 工具仍检查版本安装状态，不猜测其可执行文件名称。CLI 查询范围及格式依据见 [mise ls](https://mise.jdx.dev/cli/ls.html)、[mise which](https://mise.jdx.dev/cli/which.html)和[dotfiles status](https://mise.jdx.dev/cli/bootstrap/dotfiles/status.html)。
 
-配置候选白名单包括 Git、tmux、Starship、Ghostty、Neovim，以及 VS Code 的快捷键和非空 snippets 目录；具体位置见 [ConfigCandidates](../internal/audit/contracts.go)。只有存在且未被当前映射覆盖的路径才列为候选，不读取其内容。`secrets.env`、`.zshrc.local` 和仓库 `mise.local.toml` 按约定列为本机保留。
+配置候选白名单包括 Git、tmux、Starship、Ghostty、Neovim，以及 VS Code 的快捷键和非空 snippets 目录；具体位置见 [ConfigCandidates](../helper/internal/audit/contracts.go)。只有存在且未被当前映射覆盖的路径才列为候选，不读取其内容。`secrets.env`、`.zshrc.local` 和仓库 `mise.local.toml` 按约定列为本机保留。
 
 ## PATH 与调用环境
 

@@ -41,13 +41,17 @@ system_sync/
 ├── packages/
 │   ├── macos/                  # Brewfile、保护项与精确信任
 │   └── linux/                  # Arch、Debian、Fedora、openSUSE profile
-├── scripts/                    # 平台 Bash 流程与 Go helper 的构建、安装、启动入口
-├── cmd/system-sync-helper/      # Go CLI 入口，源码随仓库保留
-├── internal/                   # Go 解析、审计与共享运行时
-├── go.mod / go.sum             # Go 模块与固定依赖校验值
-├── vendor/                     # TOML 解析库源码与许可，构建不联网取依赖
-├── helper-version.txt          # 与预编译 helper 匹配的固定版本
-├── prebuilt/                   # 随 clone 保存的四平台归档、SHA256 与源码输入清单
+├── scripts/                    # 平台 Bash 流程与配置预览入口
+├── helper/                     # Go helper 的源码、构建与分发资源
+│   ├── README.md               # helper 开发和使用说明
+│   ├── cmd/system-sync-helper/ # Go CLI 入口
+│   ├── internal/               # 实现及 Go 单元测试
+│   ├── go.mod / go.sum         # 独立 Go 模块与固定依赖校验值
+│   ├── vendor/                 # TOML 库源码与许可，构建不联网取依赖
+│   ├── scripts/                # build、install、verify、test、run 及共用函数
+│   ├── VERSION                 # 与预编译 helper 匹配的固定版本
+│   ├── licenses/               # Go 许可文本
+│   └── prebuilt/               # 随 clone 保存的四平台归档与校验清单
 ├── tests/                      # 隔离环境与模拟包管理器测试
 │   └── reference/              # Python 行为参考、检查前置与锁兼容性代码
 ├── docs/                       # 分主题的操作说明与后续规划
@@ -58,11 +62,11 @@ system_sync/
 
 ## 常用命令
 
-以下命令在仓库根目录执行。审计、整机包流程、单包清单编辑、配置迁出、VS Code 扩展和配置历史均已接入 Go helper；日常任务无需 Python 或 Go 编译器。首次运行自动从随仓库保存的 `prebuilt/<版本>/` 校验并解压本机 helper，无需联网准备 helper。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器；扩展管理还需 VS Code CLI。
+以下命令在仓库根目录执行。审计、整机包流程、单包清单编辑、配置迁出、VS Code 扩展和配置历史均已接入 Go helper；日常任务无需 Python 或 Go 编译器。首次运行自动从随仓库保存的 `helper/prebuilt/<版本>/` 校验并解压本机 helper，无需联网准备 helper。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器；扩展管理还需 VS Code CLI。
 
-开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 Go 1.27.3、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](docs/go-helper.md)。
+开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 Go 1.27.3、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
 
-Python 参考实现集中在 [tests/reference/](tests/reference/)，`scripts/` 仅保留实际使用的 Shell 入口；参考实现仍由现有测试使用。
+Go helper 资源集中在 [helper/](helper/)，项目级隔离回归统一放在 `tests/`，Python 参考实现位于 [tests/reference/](tests/reference/)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
 
 本仓库已关闭任务运行前的自动工具补装，避免审计时先改变本机状态。缺失的开发工具通过 `mise install` 显式安装。
 
@@ -117,7 +121,7 @@ Linux 清单仍是结构示例。首次整机应用前必须导入本机 baselin
 | [系统软件包](docs/packages.md) | 单包操作、漂移捕获、Linux baseline、平台收敛顺序及保护规则 |
 | [全局开发环境](docs/development-environment.md) | 工具命令速查、全局与项目版本、安装升级卸载、zsh、环境变量及 PATH |
 | [新机器重建](docs/rebuild.md) | 公共配置重建、全局锁文件、JBR 与 Flutter 来源及验证范围 |
-| [Go helper](docs/go-helper.md) | 随仓库预编译包、离线初始化、源码与构建、Python 迁移范围 |
+| [Go helper](helper/README.md) | 随仓库预编译包、离线初始化、源码与构建、Python 迁移范围 |
 | [应用配置与接管](docs/dotfiles.md) | Espanso、ChatGPT、VS Code、平台映射及日常同步 |
 | [取消、冲突与恢复](docs/recovery.md) | 操作中断、链接和配置恢复、审计及 Git 管理 |
 | [后续规划](docs/roadmap.md) | 核对快照、未启用功能及后续推进顺序 |

@@ -3,7 +3,7 @@ SYSTEM_SYNC_ORIGINAL_ARGS=("$@")
 
 system_sync_enter() {
   local mode="$1"
-  local helper="$SCRIPT_DIR/system-sync-helper.sh"
+  local helper="$SCRIPT_DIR/../helper/scripts/run.sh"
   if [[ "$mode" == "apply" || "$mode" == "upgrade" ]]; then
     if ! "$helper" runtime --inherited-lock; then
       exec "$helper" runtime -- \
@@ -15,7 +15,7 @@ system_sync_enter() {
 }
 
 system_sync_phase() {
-  "$SCRIPT_DIR/system-sync-helper.sh" runtime --phase "$1"
+  "$SCRIPT_DIR/../helper/scripts/run.sh" runtime --phase "$1"
 }
 
 system_sync_cancel() {

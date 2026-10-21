@@ -121,7 +121,7 @@ mise run vscode-sync
 隔离验收同时指定用户数据和扩展目录，避免使用本机 Profiles、认证和已有扩展；单独传一个目录会被拒绝：
 
 ```bash
-./scripts/system-sync-helper.sh vscode sync \
+./helper/scripts/run.sh vscode sync \
   --user-data-dir /tmp/system-sync-code/user-data \
   --extensions-dir /tmp/system-sync-code/extensions
 ```

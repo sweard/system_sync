@@ -17,7 +17,9 @@ def prepare_helper(project):
     shutil.copytree(source, target)
     shutil.copy2(current, target.parent.parent / "current")
     (project / "scripts").mkdir(parents=True, exist_ok=True)
-    for name in ("helper-common.sh", "helper-install.sh", "system-sync-helper.sh"):
-        shutil.copy2(ROOT / "scripts" / name, project / "scripts" / name)
-    shutil.copy2(ROOT / "helper-version.txt", project / "helper-version.txt")
+    scripts = project / "helper/scripts"
+    scripts.mkdir(parents=True)
+    for name in ("common.sh", "install.sh", "run.sh"):
+        shutil.copy2(ROOT / "helper/scripts" / name, scripts / name)
+    shutil.copy2(ROOT / "helper/VERSION", project / "helper/VERSION")
     return target / "system-sync-helper"

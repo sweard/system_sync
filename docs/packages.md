@@ -174,7 +174,7 @@ openSUSE / SLE：
   set -euo pipefail
   mkdir -p .system-sync/capture
   zypper --xmlout --no-refresh packages --userinstalled \
-    | ./scripts/system-sync-helper.sh parse-zypper solvables - \
+    | ./helper/scripts/run.sh parse-zypper solvables - \
     | LC_ALL=C sort -u > .system-sync/capture/opensuse-roots.txt
   {
     printf '[settings]\nsystem_packages.managers = ["zypper"]\n\n[bootstrap.packages]\n'
@@ -197,7 +197,7 @@ mise run dry-run
 
 ## 首次迁移 Linux baseline
 
-所有 Linux profile 都需要先准备 Bash、mise 2026.10.11+、tar、SHA256 校验工具及对应包管理器。[Go helper](go-helper.md) 的四平台归档随仓库保存，首次调用时自动校验并解压，也可提前运行 `mise run helper-install`。共享锁、版本预检、JSON/XML 解析、整机审计及单包清单编辑均使用预编译工具，日常执行不要求 Go 编译器或 Python。各 Linux profile 还声明了 `zsh` 和 `jq`，并将 `zsh` 加入保护清单。
+所有 Linux profile 都需要先准备 Bash、mise 2026.10.11+、tar、SHA256 校验工具及对应包管理器。[Go helper](../helper/README.md) 的四平台归档随仓库保存，首次调用时自动校验并解压，也可提前运行 `mise run helper-install`。共享锁、版本预检、JSON/XML 解析、整机审计及单包清单编辑均使用预编译工具，日常执行不要求 Go 编译器或 Python。各 Linux profile 还声明了 `zsh` 和 `jq`，并将 `zsh` 加入保护清单。
 
 导入后要逐项审阅 `protected-packages.txt`，根据本机的内核、引导、磁盘/加密、网络、远程救援和显卡环境补充保护项。
 
@@ -248,7 +248,7 @@ DNF4 上若没有 `repoquery`，需先安装发行版提供的 `dnf-plugins-core
 
 ```bash
 zypper --xmlout --no-refresh packages --userinstalled \
-  | ./scripts/system-sync-helper.sh parse-zypper solvables - \
+  | ./helper/scripts/run.sh parse-zypper solvables - \
   | LC_ALL=C sort -u > zypper-user-installed.txt
 awk '{ printf "\"zypper:%s\" = \"latest\"\n", $0 }' zypper-user-installed.txt
 ```

@@ -376,7 +376,7 @@ refresh_plan() {
     fi
   fi
 
-  if ! "$SCRIPT_DIR/system-sync-helper.sh" parse-status \
+  if ! "$SCRIPT_DIR/../helper/scripts/run.sh" parse-status \
     --manager "$MANAGER" "$STATUS_JSON" > "$DECLARED_TSV"; then
     die "无法从 mise 最终生效配置取得可靠的 $MANAGER 声明"
   fi

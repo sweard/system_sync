@@ -45,7 +45,7 @@ else:
         self.code.chmod(0o755)
 
     def run_cli(self, *args, success=True):
-        result = subprocess.run([str(ROOT / "scripts/system-sync-helper.sh"), "vscode", *args,
+        result = subprocess.run([str(ROOT / "helper/scripts/run.sh"), "vscode", *args,
                                  "--manifest", str(self.manifest), "--code", str(self.code)],
                                 capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)

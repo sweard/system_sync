@@ -62,7 +62,7 @@ class GoAuditParityTest(unittest.TestCase):
         environment = dict(fixture.environment, GO_HELPER_FIXTURE=str(state),
                            PATH=str(commands) + ":" + fixture.environment["PATH"])
         expected = reference.AUDIT.Audit(fixture.root, environment).execute(selected)
-        args = [str(fixture.root / "scripts/system-sync-helper.sh"), "audit", "--json"]
+        args = [str(fixture.root / "helper/scripts/run.sh"), "audit", "--json"]
         for section in selected:
             args += ["--only", section]
         if strict:
@@ -159,11 +159,10 @@ class GoHelperIntegrationTest(unittest.TestCase):
         self.root = Path(self.temp.name).resolve() / "repo with spaces 中文"
         self.root.mkdir()
         self.binary = prepare_helper(self.root)
-        shutil.copy2(ROOT / "scripts/helper-install.sh", self.root / "scripts/helper-install.sh")
         self.environment = dict(os.environ, MISE_AUTO_INSTALL="false", MISE_TASK_RUN_AUTO_INSTALL="false")
 
     def run_helper(self, *args, text="", success=True):
-        result = subprocess.run([str(self.root / "scripts/system-sync-helper.sh"), *args],
+        result = subprocess.run([str(self.root / "helper/scripts/run.sh"), *args],
                                 cwd=self.root.parent, env=self.environment, input=text,
                                 capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
@@ -200,9 +199,9 @@ class GoHelperIntegrationTest(unittest.TestCase):
         result = self.run_helper("--version", success=False)
         self.assertIn("校验失败", result.stderr)
         self.assertFalse(marker.exists())
-        (self.root / "helper-version.txt").write_text("v99.0.0\n")
+        (self.root / "helper/VERSION").write_text("v99.0.0\n")
         self.assertIn("版本与仓库不符", self.run_helper("--version", success=False).stderr)
-        (self.root / "helper-version.txt").write_text((ROOT / "helper-version.txt").read_text())
+        (self.root / "helper/VERSION").write_text((ROOT / "helper/VERSION").read_text())
         (self.root / ".system-sync/helper/current").unlink()
         self.assertIn("尚未准备", self.run_helper("--version", success=False).stderr)
         self.assertFalse(marker.exists())
@@ -329,8 +328,8 @@ class GoHelperIntegrationTest(unittest.TestCase):
         with tarfile.open(archive, "w:gz") as output:
             for name in ("system-sync-helper", "VERSION", "REVISION", "SHA256SUMS"):
                 output.add(installed / name, arcname=name)
-            output.add(ROOT / "licenses/Go-LICENSE.txt", arcname="LICENSE-Go")
-            output.add(ROOT / "vendor/github.com/pelletier/go-toml/v2/LICENSE", arcname="LICENSE-go-toml")
+            output.add(ROOT / "helper/licenses/Go-LICENSE.txt", arcname="LICENSE-Go")
+            output.add(ROOT / "helper/vendor/github.com/pelletier/go-toml/v2/LICENSE", arcname="LICENSE-go-toml")
             if bad_name:
                 info = tarfile.TarInfo("../outside")
                 info.size = 4
@@ -340,7 +339,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
         return directory, archive
 
     def install(self, directory=None, success=True):
-        command = [str(self.root / "scripts/helper-install.sh")]
+        command = [str(self.root / "helper/scripts/install.sh")]
         if directory is not None:
             command.append(str(directory))
         result = subprocess.run(command,
@@ -373,9 +372,9 @@ class GoHelperIntegrationTest(unittest.TestCase):
         self.run_helper("--version")
 
     def clone_bundle(self):
-        version = (self.root / "helper-version.txt").read_text().strip()
-        target = self.root / "prebuilt" / version
-        shutil.copytree(ROOT / "prebuilt" / version, target)
+        version = (self.root / "helper/VERSION").read_text().strip()
+        target = self.root / "helper/prebuilt" / version
+        shutil.copytree(ROOT / "helper/prebuilt" / version, target)
         shutil.rmtree(self.root / ".system-sync")
         return target
 
@@ -420,7 +419,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
     def test_concurrent_first_launches_publish_one_installation(self):
         self.clone_bundle()
         _, marker = self.deny_build_and_download()
-        processes = [subprocess.Popen([str(self.root / "scripts/system-sync-helper.sh"), "--version"],
+        processes = [subprocess.Popen([str(self.root / "helper/scripts/run.sh"), "--version"],
                                       cwd=self.root.parent, env=self.environment,
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                      for _ in range(6)]
@@ -451,31 +450,29 @@ class GoHelperIntegrationTest(unittest.TestCase):
         self.assertFalse(marker.exists())
 
     def test_existing_corrupt_install_is_not_replaced_by_bundle(self):
-        version = (self.root / "helper-version.txt").read_text().strip()
-        shutil.copytree(ROOT / "prebuilt" / version, self.root / "prebuilt" / version)
+        version = (self.root / "helper/VERSION").read_text().strip()
+        shutil.copytree(ROOT / "helper/prebuilt" / version, self.root / "helper/prebuilt" / version)
         self.binary.write_bytes(self.binary.read_bytes() + b"damaged")
         self.assertIn("校验失败", self.run_helper("--version", success=False).stderr)
 
     def test_bundle_verification_rejects_source_drift_and_damaged_archives(self):
         bundle = self.clone_bundle()
         for name in ("cmd", "internal", "licenses", "vendor"):
-            shutil.copytree(ROOT / name, self.root / name)
-        for name in ("go.mod",):
-            shutil.copy2(ROOT / name, self.root / name)
-        if (ROOT / "go.sum").is_file():
-            shutil.copy2(ROOT / "go.sum", self.root / "go.sum")
-        for name in ("helper-build.sh", "helper-verify.sh"):
-            shutil.copy2(ROOT / "scripts" / name, self.root / "scripts" / name)
+            shutil.copytree(ROOT / "helper" / name, self.root / "helper" / name)
+        for name in ("go.mod", "go.sum"):
+            shutil.copy2(ROOT / "helper" / name, self.root / "helper" / name)
+        for name in ("build.sh", "verify.sh"):
+            shutil.copy2(ROOT / "helper/scripts" / name, self.root / "helper/scripts" / name)
         _, marker = self.deny_build_and_download()
 
         def verify(success=True):
-            result = subprocess.run([str(self.root / "scripts/helper-verify.sh")], cwd=self.root.parent,
+            result = subprocess.run([str(self.root / "helper/scripts/verify.sh")], cwd=self.root.parent,
                                     env=self.environment, capture_output=True, text=True, timeout=15)
             self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
             return result
 
         verify()
-        source = self.root / "cmd/system-sync-helper/main.go"
+        source = self.root / "helper/cmd/system-sync-helper/main.go"
         before = source.read_bytes()
         source.write_bytes(before + b"\n// modified\n")
         self.assertIn("构建输入已变化", verify(False).stderr)
@@ -486,8 +483,8 @@ class GoHelperIntegrationTest(unittest.TestCase):
         self.assertFalse(marker.exists())
 
     def test_all_four_bundles_have_consistent_metadata_and_binary_checksums(self):
-        version = (ROOT / "helper-version.txt").read_text().strip()
-        bundle = ROOT / "prebuilt" / version
+        version = (ROOT / "helper/VERSION").read_text().strip()
+        bundle = ROOT / "helper/prebuilt" / version
         checksums = dict(line.split()[::-1] for line in (bundle / "SHA256SUMS").read_text().splitlines())
         self.assertEqual(len(checksums), 4)
         for target in ("darwin_arm64", "darwin_amd64", "linux_arm64", "linux_amd64"):
@@ -501,5 +498,5 @@ class GoHelperIntegrationTest(unittest.TestCase):
                 expected = contents.extractfile("SHA256SUMS").read().decode().split()
                 self.assertEqual(expected[1:], ["system-sync-helper"])
                 self.assertEqual(hashlib.sha256(contents.extractfile("system-sync-helper").read()).hexdigest(), expected[0])
-                self.assertEqual(contents.extractfile("LICENSE-Go").read(), (ROOT / "licenses/Go-LICENSE.txt").read_bytes())
-                self.assertEqual(contents.extractfile("LICENSE-go-toml").read(), (ROOT / "vendor/github.com/pelletier/go-toml/v2/LICENSE").read_bytes())
+                self.assertEqual(contents.extractfile("LICENSE-Go").read(), (ROOT / "helper/licenses/Go-LICENSE.txt").read_bytes())
+                self.assertEqual(contents.extractfile("LICENSE-go-toml").read(), (ROOT / "helper/vendor/github.com/pelletier/go-toml/v2/LICENSE").read_bytes())

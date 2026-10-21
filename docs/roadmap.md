@@ -6,14 +6,15 @@
 
 ## Go 迁移进度（2026-10-21）
 
-日常管理入口已完成迁移，源码保留在 `cmd/system-sync-helper/` 和 `internal/`，当前 helper 版本为 `v0.2.0`：
+日常管理入口已完成迁移，源码保留在 `helper/cmd/system-sync-helper/` 和 `helper/internal/`，当前 helper 版本为 `v0.2.0`：
 
-- 已建立固定 Go 1.27.3 的构建、四平台归档、SHA256 校验安装和 CI artifact 流程；四平台包保存在 `prebuilt/<版本>/`，随 clone 保存，首次调用直接离线初始化。日常 task 不自动编译或下载；开发者通过 `helper-bundle` 更新分发包，`check` 校验源码输入及归档，避免二进制遗漏更新。
+- 已建立固定 Go 1.27.3 的构建、四平台归档、SHA256 校验安装和 CI artifact 流程；四平台包保存在 `helper/prebuilt/<版本>/`，随 clone 保存，首次调用直接离线初始化。日常 task 不自动编译或下载；开发者通过 `helper-bundle` 更新分发包，`check` 校验源码输入及归档，避免二进制遗漏更新。
 - `audit`、mise 包状态 JSON、zypper XML，以及 Bash 平台流程的版本预检、共享锁和事务日志已接入 Go；原有 task 名称、报告格式和 `yes` 确认保持。
 - 单包清单编辑、配置迁出、VS Code 扩展和本机配置历史均已接入 Go；原 task、`yes` 确认、原生 CLI、精确信任、备份/回滚和本机历史边界保持。TOML 库固定版本并 vendoring，构建仍可离线完成，预编译包同时携带许可。
 - Python 仅作为开发检查、原有测试及参考实现保留；后续可按需迁移测试。运行时迁移不修改本机真实包、扩展或用户配置，验收使用临时 HOME 和模拟命令。
 - 已将仍有测试用途的 7 个 Python 参考实现移入 `tests/reference/`，删除未引用的旧 `config-history.py`，同步检查入口、导入及隔离测试路径；`scripts/` 仅保留 Shell 执行入口。
-- 构建和验证命令、源码位置与预编译安装步骤见 [Go helper](go-helper.md)。未将交叉编译视为 Linux 真实包事务验收。
+- Go 模块、依赖、版本、许可、构建/启动脚本、预编译包和说明统一集中在 `helper/`；根 `scripts/` 负责平台流程，项目级回归仍在 `tests/`。mise task 名称及根目录 `.system-sync/` 缓存位置保持一致。
+- 构建和验证命令、源码位置与预编译安装步骤见 [Go helper](../helper/README.md)。未将交叉编译视为 Linux 真实包事务验收。
 
 `v0.2.0` 本机检查通过：49 项 Go 测试（含 race 检查）、166 项 Python 回归、22 项 task 校验及 `go vet`。新增无 Python/Go 的写入口验收、配置迁出失败回滚与并发修改保护、扩展进程树超时清理及本机历史范围检查；四平台归档和空模块缓存的离线构建已验证。本轮尚未执行远端 CI。
 
