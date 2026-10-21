@@ -1,6 +1,6 @@
 // Package syncstate owns the cross-process package lock and transaction journal.
 // The lock inode and inherited descriptor protocol are compatible with the
-// remaining Python writers throughout the staged migration.
+// Python reference implementations retained for regression tests.
 package syncstate
 
 import (

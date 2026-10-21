@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enroll selected local files and save manual local-only mise checkpoints."""
+"""Python reference for local-history regression tests; daily tasks use the Go helper."""
 
 import argparse
 import json

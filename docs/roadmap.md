@@ -6,12 +6,15 @@
 
 ## Go 迁移进度（2026-10-21）
 
-已开始第一阶段迁移，源码保留在 `cmd/system-sync-helper/` 和 `internal/`，当前 helper 版本为 `v0.1.0`：
+日常管理入口已完成迁移，源码保留在 `cmd/system-sync-helper/` 和 `internal/`，当前 helper 版本为 `v0.2.0`：
 
 - 已建立固定 Go 1.27.3 的构建、四平台归档、SHA256 校验安装和 CI artifact 流程；四平台包保存在 `prebuilt/<版本>/`，随 clone 保存，首次调用直接离线初始化。日常 task 不自动编译或下载；开发者通过 `helper-bundle` 更新分发包，`check` 校验源码输入及归档，避免二进制遗漏更新。
 - `audit`、mise 包状态 JSON、zypper XML，以及 Bash 平台流程的版本预检、共享锁和事务日志已接入 Go；原有 task 名称、报告格式和 `yes` 确认保持。
-- 单包清单编辑、配置迁出、VS Code 扩展和本机配置历史仍使用 Python，按此顺序继续迁移。Python 共享运行时在迁移期间保持与 Go 的锁协议兼容；参考解析器和审计实现暂留用于行为对照。
+- 单包清单编辑、配置迁出、VS Code 扩展和本机配置历史均已接入 Go；原 task、`yes` 确认、原生 CLI、精确信任、备份/回滚和本机历史边界保持。TOML 库固定版本并 vendoring，构建仍可离线完成，预编译包同时携带许可。
+- Python 仅作为开发检查、原有测试及参考实现保留；后续可按需迁移测试。运行时迁移不修改本机真实包、扩展或用户配置，验收使用临时 HOME 和模拟命令。
 - 构建和验证命令、源码位置与预编译安装步骤见 [Go helper](go-helper.md)。未将交叉编译视为 Linux 真实包事务验收。
+
+`v0.2.0` 本机检查通过：49 项 Go 测试（含 race 检查）、166 项 Python 回归、22 项 task 校验及 `go vet`。新增无 Python/Go 的写入口验收、配置迁出失败回滚与并发修改保护、扩展进程树超时清理及本机历史范围检查；四平台归档和空模块缓存的离线构建已验证。本轮尚未执行远端 CI。
 
 ## Go 迁移前的性能核对（2026-10-21）
 
@@ -29,7 +32,7 @@
 
 | 项目 | 实施结果 |
 |---|---|
-| 1. Python 要求 | 已完成：预检、运行时与文档统一为 3.11+，旧解释器会在系统包操作前被拒绝。 |
+| 1. Python 要求 | Go 迁移前已统一为 3.11+；当前日常入口使用 Go，此要求只用于开发检查和参考测试。 |
 | 2. 自动化验收 | 已完成：固定 mise 2026.10.15 和 Actions 提交，macOS / Ubuntu × Python 3.11 / 3.15 四组完整检查已通过；扩展超时回归也纳入相同矩阵。结果见 [dev CI](https://github.com/sweard/system_sync/actions/workflows/check.yml?query=branch%3Adev)。 |
 | 3. 新机重建 | 已完成：全局与 macOS 锁文件随配置部署，npm 依赖图纳入 Git；空 HOME 下重装原有八项工具并运行版本命令，JBR 从官方来源重装成功。详见[新机重建](rebuild.md)。 |
 | 4. Flutter | 已完成：备份 `pubspec.lock` 及补丁，复用 Flutter 3.47.2，Dart 随 SDK 提供；移除旧 PATH 声明。现有项目 master 的 ASCII 路径隔离副本通过依赖恢复、分析、测试，原 SDK 改动和原项目保持。 |

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep deployed configuration in place without depending on this repository."""
+"""Python reference for detach regression tests; daily tasks use the Go helper."""
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone

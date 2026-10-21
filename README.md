@@ -44,7 +44,8 @@ system_sync/
 ├── scripts/                    # 平台操作、预检、共享锁与审计
 ├── cmd/system-sync-helper/      # Go CLI 入口，源码随仓库保留
 ├── internal/                   # Go 解析、审计与共享运行时
-├── go.mod                      # Go 模块；目前只使用标准库
+├── go.mod / go.sum             # Go 模块与固定依赖校验值
+├── vendor/                     # TOML 解析库源码与许可，构建不联网取依赖
 ├── helper-version.txt          # 与预编译 helper 匹配的固定版本
 ├── prebuilt/                   # 随 clone 保存的四平台归档、SHA256 与源码输入清单
 ├── tests/                      # 隔离环境与模拟包管理器测试
@@ -56,7 +57,7 @@ system_sync/
 
 ## 常用命令
 
-以下命令在仓库根目录执行。`audit` 和整机包流程首次运行时，自动从随仓库保存的 `prebuilt/<版本>/` 校验并解压本机 helper，无需 Go、Python 或联网准备 helper。单包清单编辑、配置迁出、VS Code 扩展和配置历史仍要求 Python 3.11+。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器。
+以下命令在仓库根目录执行。审计、整机包流程、单包清单编辑、配置迁出、VS Code 扩展和配置历史均已接入 Go helper；日常任务无需 Python 或 Go 编译器。首次运行自动从随仓库保存的 `prebuilt/<版本>/` 校验并解压本机 helper，无需联网准备 helper。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器；扩展管理还需 VS Code CLI。
 
 开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 Go 1.27.3、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](docs/go-helper.md)。
 

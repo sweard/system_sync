@@ -231,6 +231,92 @@ class GoHelperIntegrationTest(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)["summary"]["error"], 0)
         self.assertFalse(marker.exists())
 
+    def test_write_workflows_and_shared_lock_need_no_python_or_go(self):
+        import fcntl
+        commands, marker = self.deny_build_and_download()
+        home = self.root.parent / "workflow-home"
+        home.mkdir()
+        self.environment.update(HOME=str(home), MISE_CONFIG_DIR=str(home / ".config/mise"),
+                                MISE_STATE_DIR=str(home / ".local/state/mise"),
+                                XDG_STATE_HOME=str(home / ".local/state"))
+        state, status = self.root / "installed", self.root / "dotfiles-status.json"
+        state.write_text("git\nmise\n")
+        status.write_text('{"files":[],"edits":[]}')
+        saved = home / "saved-by-mise"
+        scripts = {
+            "uname": 'printf "Darwin\\n"\n',
+            "mise": 'case "$*" in\n"--version") printf "2026.10.15 fixture\\n" ;;\n'
+                    '"bootstrap dotfiles status --json") /bin/cat ' + shlex.quote(str(status)) + ' ;;\n'
+                    '"dot save --description "*) : > ' + shlex.quote(str(saved)) + ' ;;\n'
+                    '*) exit 91 ;;\nesac\n',
+            "brew": 'case "$1 $2" in\n'
+                    '"info --json=v2") printf \'{"formulae":[{"full_name":"gitui","aliases":[],"oldnames":[]}]}\\n\' ;;\n'
+                    '"list --formula") /bin/cat ' + shlex.quote(str(state)) + ' ;;\n'
+                    '"install --formula")\n'
+                    ' [ "$HOMEBREW_NO_AUTO_UPDATE/$HOMEBREW_NO_INSTALL_CLEANUP/$HOMEBREW_NO_AUTOREMOVE/$HOMEBREW_NO_INSTALL_UPGRADE" = "1/1/1/1" ] || exit 98\n'
+                    ' printf "gitui\\n" >> ' + shlex.quote(str(state)) + ' ;;\n'
+                    '*) exit 92 ;;\nesac\n',
+        }
+        for name, body in scripts.items():
+            executable = commands / name
+            executable.write_text("#!/bin/sh\n" + body)
+            executable.chmod(0o755)
+        package_dir = self.root / "packages/macos"
+        package_dir.mkdir(parents=True)
+        manifest = package_dir / "Brewfile"
+        manifest.write_text('brew "git"\nbrew "mise"\n')
+        (package_dir / "protected-packages.txt").write_text("formula:git\nformula:mise\n")
+        (package_dir / "trusted-formulae.txt").write_text("# exact trust\n")
+        before = manifest.read_bytes()
+        self.run_helper("package", "install", "gitui", "--dry-run")
+        self.assertEqual(manifest.read_bytes(), before)
+        self.assertFalse((self.root / ".system-sync/history").exists())
+        with (self.root / ".system-sync/operation.lock").open("w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            result = self.run_helper("package", "install", "gitui", text="yes\n", success=False)
+            self.assertIn("另一条包操作", result.stderr)
+            self.assertEqual(manifest.read_bytes(), before)
+        self.run_helper("package", "install", "gitui", text="yes\n")
+        self.assertIn('brew "gitui"', manifest.read_text())
+
+        extension_manifest = self.root / "extensions.toml"
+        extension_manifest.write_text('[common]\n"example.shared"="1.2.3"\n')
+        extension_state = self.root / "extension-state"
+        extension_state.write_text("example.local@4.5.6\n")
+        code = commands / "code"
+        code.write_text('#!/bin/sh\nif [ "$1" = --list-extensions ]; then /bin/cat ' +
+                        shlex.quote(str(extension_state)) + '; else\n'
+                        ' [ "$1" = --install-extension ] || exit 93\n'
+                        ' printf "%s\\n" "$2" >> ' + shlex.quote(str(extension_state)) + '\nfi\n')
+        code.chmod(0o755)
+        self.run_helper("vscode", "sync", "--manifest", str(extension_manifest), "--code", str(code))
+        self.assertIn("example.local@4.5.6", extension_state.read_text())
+        self.assertIn("example.shared@1.2.3", extension_state.read_text())
+
+        private = home / ".codex/config.toml"
+        private.parent.mkdir()
+        private.write_text('private_canary="keep-local"\n')
+        self.run_helper("config-history", "init")
+        self.run_helper("config-history", "save", "-d", "isolated --named checkpoint")
+        self.assertTrue(saved.is_file())
+        source = self.root / "private-source"
+        source.write_text("private-canary-content\n")
+        source.chmod(0o600)
+        target = home / "local-config"
+        target.symlink_to(source)
+        status.write_text(json.dumps({"files": [{"mode": "symlink", "target": str(target),
+                            "origin": {"config": str(self.root / "mise.toml"), "source": str(source)}}], "edits": []}))
+        result = self.run_helper("config-detach", "--dry-run")
+        self.assertTrue(target.is_symlink())
+        self.assertNotIn("private-canary-content", result.stdout + result.stderr)
+        self.run_helper("config-detach", "--yes")
+        self.assertFalse(target.is_symlink())
+        self.assertEqual(target.read_bytes(), source.read_bytes())
+        self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(private.read_text(), 'private_canary="keep-local"\n')
+        self.assertFalse((home / ".config/mise/conf.d/system-sync-history.toml").exists())
+        self.assertFalse(marker.exists())
+
     def archive(self, *, bad_name=False):
         source = ROOT / ".system-sync/helper/current"
         version, checksum = source.read_text().split()
@@ -244,6 +330,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
             for name in ("system-sync-helper", "VERSION", "REVISION", "SHA256SUMS"):
                 output.add(installed / name, arcname=name)
             output.add(ROOT / "licenses/Go-LICENSE.txt", arcname="LICENSE-Go")
+            output.add(ROOT / "vendor/github.com/pelletier/go-toml/v2/LICENSE", arcname="LICENSE-go-toml")
             if bad_name:
                 info = tarfile.TarInfo("../outside")
                 info.size = 4
@@ -344,7 +431,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
         version, checksum = (self.root / ".system-sync/helper/current").read_text().split()
         directory = self.root / ".system-sync/helper" / version / checksum
         self.assertEqual({p.name for p in directory.iterdir()},
-                         {"system-sync-helper", "VERSION", "REVISION", "SHA256SUMS", "LICENSE-Go"})
+                         {"system-sync-helper", "VERSION", "REVISION", "SHA256SUMS", "LICENSE-Go", "LICENSE-go-toml"})
         self.assertFalse((self.root / ".system-sync/helper/.install-lock").exists())
         self.assertFalse(marker.exists())
 
@@ -371,7 +458,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
 
     def test_bundle_verification_rejects_source_drift_and_damaged_archives(self):
         bundle = self.clone_bundle()
-        for name in ("cmd", "internal", "licenses"):
+        for name in ("cmd", "internal", "licenses", "vendor"):
             shutil.copytree(ROOT / name, self.root / name)
         for name in ("go.mod",):
             shutil.copy2(ROOT / name, self.root / name)
@@ -408,10 +495,11 @@ class GoHelperIntegrationTest(unittest.TestCase):
             self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(), checksums[archive.name])
             with tarfile.open(archive) as contents:
                 self.assertEqual(set(contents.getnames()),
-                                 {"system-sync-helper", "VERSION", "REVISION", "SHA256SUMS", "LICENSE-Go"})
+                                 {"system-sync-helper", "VERSION", "REVISION", "SHA256SUMS", "LICENSE-Go", "LICENSE-go-toml"})
                 self.assertTrue(all(member.isfile() for member in contents.getmembers()))
                 self.assertEqual(contents.extractfile("VERSION").read().decode().strip(), version)
                 expected = contents.extractfile("SHA256SUMS").read().decode().split()
                 self.assertEqual(expected[1:], ["system-sync-helper"])
                 self.assertEqual(hashlib.sha256(contents.extractfile("system-sync-helper").read()).hexdigest(), expected[0])
                 self.assertEqual(contents.extractfile("LICENSE-Go").read(), (ROOT / "licenses/Go-LICENSE.txt").read_bytes())
+                self.assertEqual(contents.extractfile("LICENSE-go-toml").read(), (ROOT / "vendor/github.com/pelletier/go-toml/v2/LICENSE").read_bytes())

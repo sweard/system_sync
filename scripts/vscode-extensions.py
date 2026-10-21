@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reconcile selected VS Code extension versions through its public CLI (Python 3.11+)."""
+"""Python reference for extension regression tests; daily tasks use the Go helper."""
 
 import argparse
 import os

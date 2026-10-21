@@ -46,7 +46,7 @@ class ConfigHistoryTest(unittest.TestCase):
         return result.stdout
 
     def helper(self, action, success=True):
-        return self.run_command([sys.executable, "-B", str(ROOT / "scripts/config-history.py"), action], success)
+        return self.run_command([str(ROOT / "scripts/system-sync-helper.sh"), "config-history", action], success)
 
     def checkpoints(self, local=True):
         return json.loads(self.run_command([MISE, "dot", *(["--local"] if local else []), "history", "ls", "--json"]))

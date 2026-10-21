@@ -52,6 +52,7 @@ helper_source_manifest() {
       printf '%s\n' go.mod helper-version.txt licenses/Go-LICENSE.txt scripts/helper-build.sh scripts/helper-common.sh
       [[ ! -f go.sum ]] || printf '%s\n' go.sum
       find cmd internal -type f -name '*.go' ! -name '*_test.go'
+      find vendor -type f
     } | LC_ALL=C sort | while IFS= read -r file; do
       printf '%s  %s\n' "$(helper_checksum "$file")" "$file"
     done

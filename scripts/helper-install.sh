@@ -19,7 +19,7 @@ EXPECTED="$(awk -v name="$ARCHIVE" '$2 == name { print $1 }' "$ARTIFACT_DIR/SHA2
 [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ && "$(helper_checksum "$ARTIFACT_DIR/$ARCHIVE")" == "$EXPECTED" ]] \
   || helper_error "预编译归档 SHA256 校验失败"
 CONTENTS="$(tar -tzf "$ARTIFACT_DIR/$ARCHIVE" | LC_ALL=C sort)"
-[[ "$CONTENTS" == $'LICENSE-Go\nREVISION\nSHA256SUMS\nVERSION\nsystem-sync-helper' ]] || helper_error "预编译归档包含不符合约定的路径"
+[[ "$CONTENTS" == $'LICENSE-Go\nLICENSE-go-toml\nREVISION\nSHA256SUMS\nVERSION\nsystem-sync-helper' ]] || helper_error "预编译归档包含不符合约定的路径"
 tar -tvzf "$ARTIFACT_DIR/$ARCHIVE" | awk 'substr($0, 1, 1) != "-" { invalid = 1 } END { exit invalid }' \
   || helper_error "预编译归档只允许普通文件"
 helper_state

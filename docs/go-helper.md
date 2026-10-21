@@ -2,7 +2,7 @@
 
 [返回项目首页](../README.md)
 
-项目采用分阶段迁移。Go 源码、测试、构建脚本及四个平台的预编译归档都随仓库保存。分发包位于 `prebuilt/<版本>/`，解压后的本机安装状态和构建缓存位于 Git 忽略的 `.system-sync/`。目前只使用 Go 标准库，没有第三方 Go 模块依赖。
+Go 源码、测试、构建脚本及四个平台的预编译归档都随仓库保存。当前 helper 为 `v0.2.0`，日常管理入口已经完成迁移。分发包位于 `prebuilt/<版本>/`，解压后的本机安装状态和构建缓存位于 Git 忽略的 `.system-sync/`。TOML 解析固定使用 [go-toml v2.4.3](https://github.com/pelletier/go-toml/releases/tag/v2.4.3)，源码和 MIT 许可保存在 `vendor/`，使用 `-mod=vendor` 离线构建；模块校验记录在 `go.sum`。
 
 ## 已迁移的范围
 
@@ -12,11 +12,13 @@
 | `parse-status` | Go；校验 mise 包状态结构、状态、名称及非空声明，输出 TSV |
 | `parse-zypper` | Go；校验 XML 根节点、名称、对象种类及完整移除事务 |
 | 整机 `status` / `dry-run` / `system-sync`、`macos-upgrade` | 保留 Bash 平台流程，预检、共享锁、事务日志和解析调用 Go |
-| `package-install` / `package-uninstall` | 待迁移；保留 Python 清单编辑和原子写入 |
-| `config-detach`、VS Code 扩展、本机配置历史 | 待迁移；继续使用 Python |
+| `package-install` / `package-uninstall` | Go；保留五平台限制、精确信任、单包状态复核、清单原子写入与多文件失败回滚及审计 |
+| `config-detach` | Go；保留链接物化、PATH 与锁文件依赖迁出、私有备份、并发检查及事务回滚 |
+| VS Code 扩展 | Go；仍调用官方 CLI，保留清单外扩展、隔离目录、安装后版本复核及超时子进程清理 |
+| 本机配置历史 | Go；仍调用 mise 原生历史能力，保持 `track-local`、手动保存及严格候选范围 |
 | 原有 Python 测试 | 保留；另增 Go 测试、CLI 对照和预编译安装回归 |
 
-因此，审计与整机包流程日常运行不需要 Python 或 Go 编译器；整个项目尚未完全取消 Python 依赖。`scripts/audit.py`、`extract-mise-packages.py` 和 `parse-zypper-xml.py` 暂留作对照测试参考，task 不再调用它们。`sync_runtime.py` 继续服务尚未迁移的 Python 写入口，与 Go 共用同一个锁文件和继承描述符协议。
+除开发检查 `check` 外，所有日常 task 均不需要 Python 或 Go 编译器。原有 `.py` 实现暂留作参考和回归测试，不作为日常 task 入口；`sync_runtime.py` 仅用于检查测试解释器要求、参考测试及跨语言锁兼容性测试。Python 测试依赖仍保留，未将运行时迁移等同于测试语言迁移。单包操作与配置迁出继续共享操作锁；单包原生事务失败后保留人工复核记录，配置迁出失败则按原行为回滚且不覆盖并发修改。
 
 ## 新机器直接运行
 
@@ -45,6 +47,10 @@ mise run helper-install
 | JSON/XML 解析 | [`internal/packagestate/`](../internal/packagestate/) |
 | 前置检查、共享锁和日志 | [`internal/syncstate/`](../internal/syncstate/) |
 | 查询超时、进程树清理和终端识别 | [`internal/query/`](../internal/query/)、[`internal/terminal/`](../internal/terminal/) |
+| 单包清单编辑与状态复核 | [`internal/packageedit/`](../internal/packageedit/) |
+| 配置迁出、快照与事务回滚 | [`internal/configdetach/`](../internal/configdetach/) |
+| VS Code 与本机历史 | [`internal/extensions/`](../internal/extensions/)、[`internal/confighistory/`](../internal/confighistory/) |
+| TOML、路径与写入命令的进程生命周期 | [`internal/localconfig/`](../internal/localconfig/)、[`internal/taskexec/`](../internal/taskexec/) |
 | 固定 helper 版本 | [`helper-version.txt`](../helper-version.txt) |
 
 构建固定使用 Go 1.27.3。沿用本机已有的 mise 全局 Go 声明，根 `mise.toml` 不再重复声明一套工具版本。修改 `.go` 源码后，在仓库根目录显式执行：
@@ -78,9 +84,9 @@ mise run helper-install /绝对路径/产物目录
 ./scripts/system-sync-helper.sh --version
 ```
 
-`helper-bundle` 写入 `prebuilt/<helper 版本>/`；`helper-dist` 写入 `.system-sync/dist/<helper 版本>/`。文件名为 `system-sync-helper_<版本>_<系统>_<架构>.tar.gz`，目标为 `darwin_arm64`、`darwin_amd64`、`linux_arm64`、`linux_amd64`；四个压缩包总计约 5.6 MiB，作为普通 Git 文件保存。归档只携带二进制、版本、构建 revision、内部 SHA256 和 Go 许可文本 `LICENSE-Go`。跨平台构建方式见 [Go 构建文档](https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies)和[目标平台变量](https://go.dev/doc/install/source#environment)。
+`helper-bundle` 写入 `prebuilt/<helper 版本>/`；`helper-dist` 写入 `.system-sync/dist/<helper 版本>/`。文件名为 `system-sync-helper_<版本>_<系统>_<架构>.tar.gz`，目标为 `darwin_arm64`、`darwin_amd64`、`linux_arm64`、`linux_amd64`，作为普通 Git 文件保存。归档只携带二进制、版本、构建 revision、内部 SHA256、Go 许可文本 `LICENSE-Go` 和 TOML 解析库许可 `LICENSE-go-toml`。跨平台构建方式见 [Go 构建文档](https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies)和[目标平台变量](https://go.dev/doc/install/source#environment)。
 
-每批产物同时生成外层 `SHA256SUMS` 和 `SOURCE_SHA256SUMS`。后者只记录非测试 Go 源码、Go 模块文件、helper 版本、构建脚本和 Go 许可等公共构建输入，不收集 dotfiles、本机历史、私有配置或日志。`./scripts/helper-verify.sh` 无需 Go 即可校验四平台归档及源码输入；它也作为 `mise run check` 的第一步，源码或构建输入改变但未更新分发包时会停止并提示运行 `helper-bundle`。它用于防止遗漏更新，不是可重现构建的证明。
+每批产物同时生成外层 `SHA256SUMS` 和 `SOURCE_SHA256SUMS`。后者只记录非测试 Go 源码、Go 模块文件、vendored 依赖、helper 版本、构建脚本和许可等公共构建输入，不收集 dotfiles、本机历史、私有配置或日志。`./scripts/helper-verify.sh` 无需 Go 即可校验四平台归档及源码输入；它也作为 `mise run check` 的第一步，源码或构建输入改变但未更新分发包时会停止并提示运行 `helper-bundle`。它用于防止遗漏更新，不是可重现构建的证明。
 
 安装器默认从**随仓库保存的本机目录**读取归档，不下载工具、不编译源码。它校验外层归档 SHA256、内部二进制 SHA256、固定版本、协议和当前平台，拒绝额外路径、链接及不支持的归档结构。归档和校验清单应来自同一次可信构建；SHA256 用于检测文件损坏，不替代发布者身份认证。
 
@@ -92,6 +98,8 @@ CI 在准备编译器前校验并启动仓库内的预编译工具，再运行�
 
 `mise run check` 先校验仓库分发包，再显式重建本机 helper、检查前置版本和 task 配置，运行 Go race 检查和原有 Python 测试。Go 覆盖安全解析、查询超时清理、并发和共享状态、锁冲突与继承、日志状态；CLI 对照测试使用临时 HOME、合成私有值和替身命令，比较两种实现的完整报告。预编译回归另覆盖空缓存首次调用、并发初始化、禁用 Go/Python/下载命令、JSON 输出、四平台归档校验、源码漂移及损坏拒绝执行。
 
-2026-10-21 本机 macOS ARM64 已通过 23 项 Go 测试（含 race 检查）、165 项 Python 回归（含 18 项 CLI/安装回归）和 22 项 task 校验。空缓存、隔离 mise 的真实 `mise run audit` 在禁用 Go、Python 和下载命令的环境中完成首次初始化并输出有效 JSON，缺失的 Go 声明未被自动安装。四个平台归档及内外两层 SHA256 已核对；此前真实只读审计与 Python 参考报告逐字段一致。新 CI 流程尚未在远端执行。
+2026-10-21 本机 macOS ARM64 的 `v0.2.0` 已通过 49 项 Go 测试（含 race 检查）、166 项 Python 回归（含 19 项 CLI/安装回归）、22 项 task 校验及 `go vet`。原有隔离部署、扩展安装和本机历史测试已改为调用 Go，原 Python 单元测试作为参考继续保留。新增验证在禁用 Go、Python 和下载命令的环境中完成单包安装、共享锁冲突检查、配置迁出、扩展同步及本机历史登记/保存；配置内容保持本机，输出不含测试私有值。
 
-后续顺序为：单包清单编辑与写入 → 配置迁出事务 → VS Code 扩展与本机历史 → 按需要迁移测试。每项都先保留参考行为和失败场景覆盖，完成验收后再移除相应 Python 实现。当前 Linux 原生包管理器的真实主机验收仍待完成，交叉编译成功不代表已完成真实 Linux 系统安装/卸载验收。
+四个平台归档、内外两层 SHA256、目标格式及 Linux 静态链接均已核对，压缩包合计约 6.4 MiB；模块缓存为空且关闭网络时，仍可从 `vendor/` 构建。此前真实只读审计与 Python 参考报告逐字段一致。上述验证均未修改本机真实软件包、扩展或用户配置；新 CI 流程尚未在远端执行。
+
+日常管理入口的迁移已完成；后续按需要迁移测试，再移除对应 Python 参考实现。当前 Linux 原生包管理器的真实主机验收仍待完成，交叉编译成功不代表已完成真实 Linux 系统安装/卸载验收。

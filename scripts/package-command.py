@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Targeted native package operations followed by checked manifest edits (Python 3.11+).
+"""Python reference for package-edit regression tests; daily tasks use the Go helper.
 
 This is not a package-manager hook or a generic Ruby/TOML rewriter. Only this
 repository's static, single-line declarations are editable. mise validates TOML;

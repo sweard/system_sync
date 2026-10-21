@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compatibility runtime for remaining Python writers; lock format matches Go."""
+"""Test preflight and Python reference runtime; daily writers use Go."""
 
 import argparse
 from contextlib import contextmanager

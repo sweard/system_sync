@@ -30,15 +30,16 @@ fi
 for TARGET in "${TARGETS[@]}"; do
   mkdir -p -- "$STAGING/$TARGET"
   CGO_ENABLED=0 GOOS="${TARGET%_*}" GOARCH="${TARGET#*_}" \
-    go build -mod=readonly -buildvcs=false -trimpath \
+    go build -mod=vendor -buildvcs=false -trimpath \
     -ldflags "-s -w -X main.version=$VERSION -X main.revision=$REVISION" \
     -o "$STAGING/$TARGET/system-sync-helper" ./cmd/system-sync-helper
   printf '%s\n' "$VERSION" > "$STAGING/$TARGET/VERSION"
   printf '%s\n' "$REVISION" > "$STAGING/$TARGET/REVISION"
   cp -- "$HELPER_ROOT/licenses/Go-LICENSE.txt" "$STAGING/$TARGET/LICENSE-Go"
+  cp -- "$HELPER_ROOT/vendor/github.com/pelletier/go-toml/v2/LICENSE" "$STAGING/$TARGET/LICENSE-go-toml"
   printf '%s  system-sync-helper\n' "$(helper_checksum "$STAGING/$TARGET/system-sync-helper")" > "$STAGING/$TARGET/SHA256SUMS"
   ARCHIVE="system-sync-helper_${VERSION}_${TARGET}.tar.gz"
-  COPYFILE_DISABLE=1 tar -czf "$STAGING/$ARCHIVE" -C "$STAGING/$TARGET" system-sync-helper VERSION REVISION SHA256SUMS LICENSE-Go
+  COPYFILE_DISABLE=1 tar -czf "$STAGING/$ARCHIVE" -C "$STAGING/$TARGET" system-sync-helper VERSION REVISION SHA256SUMS LICENSE-Go LICENSE-go-toml
   printf '%s  %s\n' "$(helper_checksum "$STAGING/$ARCHIVE")" "$ARCHIVE" >> "$STAGING/SHA256SUMS"
 done
 if [[ "$MODE" == --dist || "$MODE" == --bundle ]]; then

@@ -2,7 +2,7 @@
 
 [返回项目首页](../README.md)
 
-先准备 Git、Bash、mise、tar、SHA256 校验工具和系统原生包管理器。当前验收使用 mise 2026.10.15；Python 检查入口和尚未迁移的 task 要求 3.11+，部署配置本身可先使用不依赖 Python 的原生命令。审计和整机包流程首次运行时，自动从随 clone 保存的 `prebuilt/<版本>/` 安装 [Go helper](go-helper.md)，无需先安装 Go 或联网下载 helper。系统软件、开发工具和应用配置分别安装，不把 Linux 的示例软件清单直接应用到新机器。
+先准备 Git、Bash、mise、tar、SHA256 校验工具和系统原生包管理器。当前验收使用 mise 2026.10.15；日常管理任务已经不依赖 Python，只有开发检查和参考测试仍要求 Python 3.11+。首次调用自动从随 clone 保存的 `prebuilt/<版本>/` 安装 [Go helper](go-helper.md)，无需先安装 Go 或联网下载 helper。系统软件、开发工具和应用配置分别安装，不把 Linux 的示例软件清单直接应用到新机器。
 
 ## 部署与安装
 
