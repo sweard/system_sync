@@ -1,0 +1,65 @@
+tests/reference/package-command.py
+  s_00332b4a331471::t_3501fb4602afff 1-520
+tests/test_runtime.py
+  s_00332b4a331471::t_3501fb4602afff 10
+tests/test_audit.py
+  s_00332b4a331471::t_3501fb4602afff 18
+tests/test_homebrew_preview.py
+  s_00332b4a331471::t_3501fb4602afff 95
+docs/go-helper.md
+  s_00332b4a331471::t_3501fb4602afff 21
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_3501fb4602afff 13
+tests/test_parsers.py
+  s_00332b4a331471::t_3501fb4602afff 13
+docs/roadmap.md
+  s_00332b4a331471::t_f169417b22641b 60
+  s_00332b4a331471::t_3501fb4602afff 15
+tests/test_config_detach.py
+  s_00332b4a331471::t_3501fb4602afff 21-22
+tests/reference/README.md
+  s_00332b4a331471::t_3501fb4602afff 1-18
+tests/reference/config-detach.py
+  s_00332b4a331471::t_3501fb4602afff 1-394
+tests/reference/vscode-extensions.py
+  s_00332b4a331471::t_3501fb4602afff 1-121
+tests/reference/audit.py
+  s_00332b4a331471::t_3501fb4602afff 1-497
+tests/reference/sync_runtime.py
+  s_00332b4a331471::t_3501fb4602afff 1-177
+README.md
+  s_00332b4a331471::t_3501fb4602afff 44,52,65
+  s_0d8ca484078544::t_2acbd873527a7e 66
+tests/test_package_command.py
+  s_00332b4a331471::t_3501fb4602afff 17-18
+mise.toml
+  s_00332b4a331471::t_3501fb4602afff 39
+docs/audit.md
+  s_00332b4a331471::t_3501fb4602afff 30
+tests/test_converge.py
+  s_00332b4a331471::t_3501fb4602afff 19,171-172,429
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a03d8a27a868e5f607dd8ac98841ee5b092b1f8d",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_0d8ca484078544": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a0e5fd-fe0f-7e81-af51-36d8c9952c11",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
