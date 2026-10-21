@@ -1,0 +1,148 @@
+helper/internal/audit/report.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-186
+helper/internal/configdetach/plan_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-280
+docs/rebuild.md
+  s_00332b4a331471::t_a87a6294910aab 5,24
+helper/internal/audit/contracts.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-96
+.github/workflows/check.yml
+  s_00332b4a331471::t_e30ee19b83a0f5 62-63,100
+docs/packages.md
+  s_00332b4a331471::t_a87a6294910aab 177,200,251
+helper/go.mod
+  s_00332b4a331471::t_e30ee19b83a0f5 1-5
+helper/internal/packageedit/command.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-700
+helper/README.md
+  s_00332b4a331471::t_a87a6294910aab 1-6,20-48,50-101,103-118
+  s_00332b4a331471::t_af2e213c19d84c 7-19,49,102
+helper/prebuilt/README.md
+  s_00332b4a331471::t_a66ad9f0d2fd16 1-9
+helper/cmd/system-sync-helper/main.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-16
+helper/internal/taskexec/process.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-117
+docs/dotfiles.md
+  s_00332b4a331471::t_a87a6294910aab 124
+tests/test_converge.py
+  s_00332b4a331471::t_e30ee19b83a0f5 418
+helper/internal/configdetach/plan.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-688
+helper/internal/confighistory/history.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-113
+scripts/zypper-converge.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 119,180,224
+helper/scripts/run.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 1-24
+helper/scripts/verify.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 1-11,13-25
+  s_00332b4a331471::t_a148a223b4c059 12
+tests/test_config_detach.py
+  s_00332b4a331471::t_e30ee19b83a0f5 69,87,103
+helper/internal/confighistory/history_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-109
+helper/internal/helpercli/run.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-243
+helper/scripts/test.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 1-6,8
+  s_00332b4a331471::t_a148a223b4c059 7
+docs/roadmap.md
+  s_00332b4a331471::t_a87a6294910aab 9,11,17
+  s_00332b4a331471::t_af2e213c19d84c 16
+helper/scripts/build.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 1-8,10-22,24-62
+  s_00332b4a331471::t_a148a223b4c059 9,23
+helper/internal/configdetach/tree.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-152
+helper/internal/localconfig/config.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-128
+docs/audit.md
+  s_00332b4a331471::t_a87a6294910aab 30,79
+helper/internal/packageedit/manifest.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-256
+tests/test_config_history.py
+  s_00332b4a331471::t_e30ee19b83a0f5 49
+helper/internal/audit/audit.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-670
+scripts/pacman-converge.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 202
+helper/internal/packagestate/parsers_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-97
+helper/internal/localconfig/config_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-40
+mise.toml
+  s_00332b4a331471::t_e30ee19b83a0f5 32,37-38,41,47,51,55,59,74,79,104,108,112,117,121,125
+  s_00332b4a331471::t_a148a223b4c059 54,58
+scripts/linux-reason-converge.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 379
+helper/internal/query/query.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-116
+tests/test_go_helper.py
+  s_00332b4a331471::t_e30ee19b83a0f5 65,165,422
+  s_00332b4a331471::t_a87a6294910aab 202,204,331-332,342,375-377,453-454,461-465,469,475,486-487,501-502
+helper/internal/query/query_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-47
+tests/helper_fixture.py
+  s_00332b4a331471::t_a148a223b4c059 20-24
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_e30ee19b83a0f5 48
+helper/internal/packagestate/status.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-139
+helper/internal/terminal/terminal_linux.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-13
+helper/internal/syncstate/runtime_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-116
+helper/internal/audit/audit_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-409
+helper/internal/helpercli/writers.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-231
+README.md
+  s_00332b4a331471::t_af2e213c19d84c 44-54
+  s_00332b4a331471::t_a87a6294910aab 65,67,124
+  s_00332b4a331471::t_d476fd69488b86 69
+helper/internal/packageedit/command_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-519
+helper/internal/extensions/extensions.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-191
+helper/internal/extensions/extensions_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-106
+helper/internal/packagestate/zypper.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-97
+helper/internal/taskexec/process_test.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-42
+helper/scripts/common.sh
+  s_00332b4a331471::t_a148a223b4c059 2-3,51,53
+  s_00332b4a331471::t_e30ee19b83a0f5 1,4-50,52,54-61
+helper/internal/packageedit/diff.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-63
+helper/scripts/install.sh
+  s_00332b4a331471::t_a148a223b4c059 7
+  s_00332b4a331471::t_e30ee19b83a0f5 1-6,8-69
+scripts/sync-runtime.sh
+  s_00332b4a331471::t_e30ee19b83a0f5 6,18
+helper/internal/syncstate/runtime.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-318
+helper/internal/terminal/terminal_darwin.go
+  s_00332b4a331471::t_e30ee19b83a0f5 1-13
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_00332b4a331471::t_bf631ae248efa5 1-4
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_00332b4a331471::t_d9a4240bb2f636 1-3,5,7-13,15,21,26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8dc2177cdc05be72e0e611e692465615a0155f6a",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
