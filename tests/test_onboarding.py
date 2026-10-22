@@ -12,6 +12,7 @@ import tempfile
 import unittest
 
 from helper_fixture import prepare_helper
+from test_converge import run_terminal
 
 
 FAKE = r'''
@@ -42,6 +43,12 @@ elif program == "brew" and args[:2] == ["bundle", "install"]:
     assert os.environ.get("HOMEBREW_NO_INSTALL_CLEANUP") == "1"
     assert os.environ.get("HOMEBREW_NO_AUTOREMOVE") == "1"
     assert "--no-upgrade" in args
+    assert "--verbose" in args
+    if data.get("live_progress"):
+        print("Fixture: onboard download", flush=True)
+        assert input() == "download-seen"
+        print("Fixture: onboard install", file=sys.stderr, flush=True)
+        assert input() == "install-seen"
     target = next(item.split("=", 1)[1] for item in args if item.startswith("--file="))
     added = re.findall(r'^brew "([^"]+)"', Path(target).read_text(), re.M)
     assert added == ["missing-tool"], added
@@ -176,6 +183,18 @@ class OnboardingCLITest(unittest.TestCase):
             self.run_helper(*args, success=False)
         self.assertEqual(self.data()["mutations"], [])
         self.assertFalse((self.root / ".system-sync/history").exists())
+
+    def test_machine_init_streams_homebrew_output_and_reports_verification(self):
+        data = self.data()
+        data["live_progress"] = True
+        self.state.write_text(json.dumps(data))
+        result = run_terminal([str(self.root / "helper/scripts/run.sh"), "machine-init", "--only", "packages", "--apply", "--yes"],
+                              self.environment, [("Fixture: onboard download", "download-seen"),
+                                                 ("Fixture: onboard install", "install-seen")])
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("开始接入阶段 1/1：packages", result.stdout)
+        self.assertLess(result.stdout.index("Fixture: onboard install"), result.stdout.index("复核补装结果"))
+        self.assertIn("缺失软件已补装", result.stdout)
 
     def test_query_failure_does_not_publish_partial_capture(self):
         self.write_manifest("arch")

@@ -129,6 +129,7 @@ run = "./helper/scripts/run.sh vscode status"
 [tasks.vscode-sync]
 description = "按清单安装公共 VS Code 扩展；不删除其他扩展"
 confirm = { message = "这会安装或调整清单中扩展的版本。是否继续？", default = "no" }
+raw = true
 run = "./helper/scripts/run.sh vscode sync"
 
 [tasks.config-history-init]
@@ -137,6 +138,7 @@ run = "./helper/scripts/run.sh config-history init"
 
 [tasks.config-save]
 description = "手动保存本机配置检查点，列出保存及跳过的路径；支持 -d 描述"
+raw = true
 run = "./helper/scripts/run.sh config-history save"
 
 [tasks.config-history]

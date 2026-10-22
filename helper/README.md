@@ -65,6 +65,7 @@ mise run helper-install
 | JSON/XML 解析 | [`internal/packagestate/`](internal/packagestate/) |
 | 前置检查、共享锁和日志 | [`internal/syncstate/`](internal/syncstate/) |
 | 查询超时、进程树清理和终端识别 | [`internal/query/`](internal/query/)、[`internal/terminal/`](internal/terminal/) |
+| 安全阶段及定时等待提示 | [`internal/taskexec/progress.go`](internal/taskexec/progress.go)，与捕获输出分离，保持私有诊断过滤 |
 | 单包清单编辑与状态复核 | [`internal/packageedit/`](internal/packageedit/) |
 | 配置计划、同步与初始化共用能力 | [`internal/configops/`](internal/configops/) |
 | 配置迁出、快照与事务回滚 | [`internal/configdetach/`](internal/configdetach/) |
@@ -118,7 +119,7 @@ CI 在准备编译器前校验并启动仓库内的预编译工具，再运行�
 
 `mise run check` 先校验仓库分发包，再显式重建本机 helper、检查前置版本和 task 配置，运行 Go race 检查和原有 Python 测试。Go 覆盖安全解析、查询超时清理、并发和共享状态、锁冲突与继承、日志状态；CLI 对照测试使用临时 HOME、合成私有值和替身命令，比较两种实现的完整报告。预编译回归另覆盖空缓存首次调用、并发初始化、禁用 Go/Python/下载命令、JSON 输出、四平台归档校验、源码漂移及损坏拒绝执行。
 
-2026-10-21 本机 macOS ARM64 的 `v0.2.0` 已通过 84 项 Go 测试（含 race 检查）、207 项 Python 回归、24 项 task 校验及 `go vet`。扩展采集回归覆盖选择与排除、默认公共分组与显式平台范围、已有分组保持、保留原声明与注释、权限和备份、重复执行、并发修改及锁冲突；真实 mise 的合并入口在隔离 HOME 中通过。输出回归覆盖清单外扩展的版本明细与保留、长列表完整展开与脱敏，以及历史登记/保存/跳过的路径。机器接入覆盖五平台采集与补装、保留清单外软件和 orphan、重复执行、固定版本阻止误装、失败与并发检查；另有 7 项接入 CLI 回归，包含真实 mise 在临时 HOME 中部署、私有键保留及备份核对。原有隔离部署、扩展安装和本机历史测试继续调用 Go，Python 参考测试保留；禁用 Go、Python CLI 和下载命令的接入验收通过。真实 Mac 只读预览已运行，未在宿主执行初始化或扩展采集 apply。
+2026-10-22 本机 macOS ARM64 的 `v0.2.0` 已通过 86 项 Go 测试（含 race 检查）、212 项 Python 回归、24 项 task 校验及 `go vet`。扩展采集回归覆盖选择与排除、默认公共分组与显式平台范围、已有分组保持、保留原声明与注释、权限和备份、重复执行、并发修改及锁冲突；真实 mise 的合并入口在隔离 HOME 中通过。安装与同步输出回归覆盖五平台实时 stdout/stderr、机器初始化、扩展安装过程、失败退出码、阶段顺序及安全等待提示。输出回归覆盖清单外扩展的版本明细与保留、长列表完整展开与脱敏，以及历史登记/保存/跳过的路径。机器接入覆盖五平台采集与补装、保留清单外软件和 orphan、重复执行、固定版本阻止误装、失败与并发检查；另有 7 项接入 CLI 回归，包含真实 mise 在临时 HOME 中部署、私有键保留及备份核对。原有隔离部署、扩展安装和本机历史测试继续调用 Go，Python 参考测试保留；禁用 Go、Python CLI 和下载命令的接入验收通过。真实 Mac 只读预览已运行，未在宿主执行初始化或扩展采集 apply。
 
 四个平台归档、内外两层 SHA256、目标格式及 Linux 静态链接均已核对，压缩包合计约 6.4 MiB；模块缓存为空且关闭网络时，仍可从 `helper/vendor/` 构建。此前真实只读审计与 Python 参考报告逐字段一致。上述验证均未修改本机真实软件包、扩展或用户配置；新 CI 流程尚未在远端执行。
 

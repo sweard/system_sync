@@ -150,7 +150,16 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	current, err := Installed(runner, command)
+	var progressOut io.Writer
+	if options.Action == "sync" && !options.DryRun {
+		progressOut = out
+	}
+	var current map[string]string
+	err = taskexec.Progress(progressOut, "查询 VS Code 已安装扩展", func() error {
+		var err error
+		current, err = Installed(runner, command)
+		return err
+	})
 	if err != nil {
 		return err
 	}
@@ -187,12 +196,22 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 		return nil
 	}
 	if options.Action == "sync" && !options.DryRun {
-		for _, name := range pending {
-			if _, err := invoke(runner, append(append([]string{}, command...), "--install-extension", name+"@"+wanted[name], "--force")); err != nil {
+		for i, name := range pending {
+			label := fmt.Sprintf("安装 VS Code 扩展 %d/%d：%s@%s", i+1, len(pending), name, wanted[name])
+			err := taskexec.Progress(out, label, func() error {
+				_, err := invoke(runner, append(append([]string{}, command...), "--install-extension", name+"@"+wanted[name], "--force"))
+				return err
+			})
+			if err != nil {
 				return err
 			}
 		}
-		after, err := Installed(runner, command)
+		var after map[string]string
+		err := taskexec.Progress(out, "复查 VS Code 扩展安装版本", func() error {
+			var err error
+			after, err = Installed(runner, command)
+			return err
+		})
 		if err != nil {
 			return err
 		}

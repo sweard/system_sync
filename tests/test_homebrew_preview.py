@@ -41,12 +41,19 @@ case "$*" in
     ;;
   "bundle install "*)
     [[ -f "$SYSTEM_SYNC_RUN_LOG_DIR/Brewfile.before" && -f "$SYSTEM_SYNC_RUN_LOG_DIR/formulae.before.txt" ]] || exit 94
-    if [[ "${SYNC_TEST_UPGRADE_PROGRESS:-0}" == 1 ]]; then
-      [[ " $* " == *" --upgrade "* && " $* " == *" --verbose "* ]] || exit 97
-      printf '%s\n' 'Fixture: downloading upgrade'
+    if [[ "${SYNC_TEST_UPGRADE_PROGRESS:-0}" == 1 || "${SYNC_TEST_INSTALL_PROGRESS:-0}" == 1 ]]; then
+      [[ " $* " == *" --verbose "* ]] || exit 97
+      progress_kind=install
+      if [[ "${SYNC_TEST_UPGRADE_PROGRESS:-0}" == 1 ]]; then
+        [[ " $* " == *" --upgrade "* ]] || exit 97
+        progress_kind=upgrade
+      else
+        [[ " $* " == *" --no-upgrade "* ]] || exit 97
+      fi
+      printf 'Fixture: downloading %s\n' "$progress_kind"
       IFS= read -r progress_ack
       [[ "$progress_ack" == download-seen ]] || exit 98
-      printf '%s\n' 'Fixture: installing upgrade' >&2
+      printf 'Fixture: installing %s\n' "$progress_kind" >&2
       IFS= read -r progress_ack
       [[ "$progress_ack" == install-seen ]] || exit 98
     fi
@@ -276,6 +283,17 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         self.assertEqual(self.transaction()["phase"], "complete")
         self.assertEqual(sum("|bundle install " in line for line in self.log.read_text().splitlines()), 1)
 
+    def test_system_sync_streams_brew_install_output_before_cleanup(self):
+        environment = dict(self.environment, SYNC_TEST_INSTALL_PROGRESS="1")
+        result = run_terminal(["bash", str(self.script.parent / "system-sync.sh"), "--apply"],
+                              environment, [("输入 yes 继续", "yes"),
+                                            ("Fixture: downloading install", "download-seen"),
+                                            ("Fixture: installing install", "install-seen")])
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(self.transaction()["phase"], "complete")
+        self.assertIn("bundle install --no-upgrade --verbose", self.log.read_text())
+        self.assertLess(result.stdout.index("Fixture: installing install"), result.stdout.index("确认 Brewfile 声明均已满足"))
+
     def test_apply_installs_and_cleans_inside_shared_audit(self):
         result = run_terminal(["bash", str(self.script), "--apply"], self.environment,
                               [("输入 yes 继续", "yes")])
@@ -287,9 +305,11 @@ class HomebrewPreviewTrustTest(unittest.TestCase):
         self.assertLess(install, cleanup)
 
     def test_failed_install_is_audited_without_actual_cleanup(self):
-        environment = dict(self.environment, SYNC_TEST_INSTALL_ERROR="1")
+        environment = dict(self.environment, SYNC_TEST_INSTALL_ERROR="1", SYNC_TEST_INSTALL_PROGRESS="1")
         result = run_terminal(["bash", str(self.script), "--apply"], environment,
-                              [("输入 yes 继续", "yes")])
+                              [("输入 yes 继续", "yes"),
+                               ("Fixture: downloading install", "download-seen"),
+                               ("Fixture: installing install", "install-seen")])
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertEqual(self.transaction()["last_phase"], "installing")
         self.assertEqual(self.transaction()["phase"], "failed")

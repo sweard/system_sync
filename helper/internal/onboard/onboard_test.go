@@ -97,6 +97,9 @@ func (f *fake) Run(command []string, capture bool) (string, error) {
 		}
 		if command[0] == "mise" && has(command, "install") {
 			for _, tool := range command[3:] {
+				if strings.HasPrefix(tool, "-") {
+					continue
+				}
 				f.tools[shortTool(tool)] = true
 			}
 			return "", nil
@@ -334,6 +337,9 @@ func TestInstallOnlyAcrossFiveProfilesAndRepeatedApply(t *testing.T) {
 			}
 			if profile == "macos" {
 				path := strings.TrimPrefix(f.mutations[0][len(f.mutations[0])-1], "--file=")
+				if !has(f.mutations[0], "--verbose") {
+					t.Fatal("Homebrew installation output is hidden", f.mutations[0])
+				}
 				data, _ := os.ReadFile(path)
 				if strings.Contains(string(data), `brew "git"`) || !strings.Contains(string(data), `brew "missing-tool", link: false`) {
 					t.Fatal(string(data))
@@ -419,6 +425,9 @@ func TestConfigAndToolsAreStagedBackedUpAndIdempotent(t *testing.T) {
 	}
 	if len(f.mutations) != 3 || f.mutations[0][0] != "sudo" || !has(f.mutations[1], "apply") || !has(f.mutations[2], "node@1.2.3") {
 		t.Fatal(f.mutations)
+	}
+	if !has(f.mutations[2], "--raw") {
+		t.Fatal("mise tool installation output is buffered", f.mutations[2])
 	}
 	if _, err = os.Stat(filepath.Join(dir, "config.before.tar")); err != nil {
 		t.Fatal(err)

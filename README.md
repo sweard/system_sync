@@ -98,7 +98,7 @@ mise run config-dry-run
 | 预览 / 清理本机验证环境与缓存 | `mise run clean` / `mise run clean --apply`，详见[清理范围](docs/recovery.md#清理本机验证环境与缓存) |
 | 安装 / 卸载一个系统软件并记录清单 | `mise run package-install <包名>` / `mise run package-uninstall <包名>` |
 | 预览单包操作 | 在上述任务参数中加 `--dry-run` |
-| 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认 |
+| 按系统软件清单安装并收敛 | `mise run system-sync`，进入交互确认，显示阶段及包管理器实时输出 |
 | 单独升级 Brewfile 声明项 | `mise run macos-upgrade`，显示阶段及 Homebrew 实时输出 |
 | 查看受管配置的实际差异，无变化时提示无需同步 | `mise run config-dry-run` |
 | 备份、部署并复查本仓库受管配置 | `mise run config-sync`，输入 `yes`；支持 `--dry-run`、`--yes` 和目标路径 |
@@ -113,6 +113,8 @@ mise run config-dry-run
 | 取消全局工具声明并清理无其他配置使用的版本 | `mise unuse --global go` |
 
 旧任务名 `status`、`dry-run`、`vscode-dry-run` 分别作为 `package-status`、`package-dry-run`、`vscode-status` 的兼容别名，参数原样转交。`audit` 汇总状态；需要审阅软件事务时再运行 `package-dry-run`。完整 helper 开发验收使用 `helper-bundle → check`，无需提前重复执行 `helper-build`。
+
+安装及同步过程会显示当前阶段；系统包和开发工具安装透传原生命令输出。VS Code 安装、配置查询/备份及本机历史保存使用安全阶段提示，耗时操作每 10 秒报告仍在执行，保留原有私有内容过滤。详见[系统软件输出](docs/packages.md#执行过程的状态输出)和[配置同步](docs/dotfiles.md#应用配置的日常同步)。
 
 `mise install` 不写入工具声明；`mise use` 安装并写入声明。全局与项目配置、`--pin`、锁文件、升级和完整卸载示例见[工具常用命令](docs/development-environment.md#常用工具命令速查)。
 

@@ -97,7 +97,16 @@ func onboarding(command string, args []string, root string, stdin *os.File, out,
 		fmt.Fprintln(out, "[+] 受管清单未修改；请审阅候选、来源和保护项后手工合并。")
 		return 0, nil
 	}
-	plan, err := e.Plan(only)
+	var plan *onboard.Plan
+	progressOut := out
+	if !*apply {
+		progressOut = nil
+	}
+	err = taskexec.Progress(progressOut, "读取机器接入计划", func() error {
+		var err error
+		plan, err = e.Plan(only)
+		return err
+	})
 	if err != nil {
 		return 1, err
 	}

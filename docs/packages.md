@@ -421,6 +421,14 @@ mise run macos-upgrade
 
 任务会显示读取安装状态、检查声明、执行升级和记录升级结果等阶段。确认升级后，使用 `brew bundle install --upgrade --verbose` 实时显示 Homebrew 的下载、安装及错误输出；失败时保留原退出码和失败审计，不显示升级完成。
 
+## 执行过程的状态输出
+
+`system-sync` 的 macOS 安装与 `macos-upgrade` 都启用 Homebrew Bundle 的 `--verbose`，实时显示下载、安装和错误信息；`machine-init --apply` 的 Homebrew 补装使用同样的输出方式。Brewfile 检查、cleanup 预演及安装后的复查都有阶段提示，完整 cleanup 计划仍在计算完成后展示，不自动回答确认。
+
+Arch、Debian、Fedora、openSUSE 的安装入口显式使用 `mise bootstrap packages apply --raw`，连接包管理器的终端输出；查询用 JSON/XML 继续单独捕获和校验。单包安装/卸载保留原生实时输出，并显示清单核对、备份、执行、结果复查和清单更新阶段。
+
+`machine-init --apply` 显示阶段编号，开发工具通过 `mise install --locked --raw` 输出安装过程。默认预览和 `--json` 输出保持原职责，不混入执行过程的等待提示。所有成功提示仍在实际状态复查通过后输出；失败、取消和共享锁规则保持。
+
 ## 隔离测试
 
 完整检查会显式构建本机 Go helper，运行 Go race 检查和 Python 测试；测试使用替身包管理器，不修改本机软件：

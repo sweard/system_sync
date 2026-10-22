@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sweard/system_sync/helper/internal/syncstate"
+	"github.com/sweard/system_sync/helper/internal/taskexec"
 )
 
 // Sync is the everyday transaction. Its caller holds the shared operation lock.
@@ -41,7 +42,8 @@ func (e Engine) Sync(p *Plan, out io.Writer) (directory string, err error) {
 	if err = os.WriteFile(filepath.Join(directory, "plan.json"), data, 0600); err != nil {
 		return directory, err
 	}
-	if err = e.Backup(p, directory); err != nil {
+	err = taskexec.Progress(out, "复核并备份受管配置", func() error { return e.Backup(p, directory) })
+	if err != nil {
 		return directory, err
 	}
 	if err = syncstate.Journal(directory, "applying", nil); err != nil {

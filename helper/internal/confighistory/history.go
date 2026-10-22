@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sweard/system_sync/helper/internal/localconfig"
+	"github.com/sweard/system_sync/helper/internal/taskexec"
 )
 
 type Invoker interface {
@@ -118,7 +119,11 @@ func Run(action, description, home string, runner Invoker, out io.Writer) error 
 	if count == 0 {
 		return fmt.Errorf("已登记的目标均不存在，未建立检查点")
 	}
-	if _, err := runner.Invoke(command, true, time.Minute); err != nil {
+	err = taskexec.Progress(out, "保存本机配置历史检查点", func() error {
+		_, err := runner.Invoke(command, true, time.Minute)
+		return err
+	})
+	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return err
 		}

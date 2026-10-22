@@ -574,6 +574,9 @@ func (p *Command) commitFiles(ctx context.Context) (err error) {
 	return ctx.Err()
 }
 func (p *Command) Execute(ctx context.Context, confirm func() (bool, error), out io.Writer) (err error) {
+	if !p.Options.DryRun {
+		fmt.Fprintln(out, "[~] 核对单包清单、来源和安装状态")
+	}
 	if err = p.Prepare(); err != nil {
 		return err
 	}
@@ -623,6 +626,7 @@ func (p *Command) Execute(ctx context.Context, confirm func() (bool, error), out
 	if err = p.unchanged(); err != nil {
 		return err
 	}
+	fmt.Fprintln(out, "[~] 复核确认后的包状态并备份清单")
 	again, err := p.Installed()
 	if err != nil {
 		return err
@@ -640,10 +644,12 @@ func (p *Command) Execute(ctx context.Context, confirm func() (bool, error), out
 		}
 	}()
 	if !skip {
+		fmt.Fprintf(out, "[~] 执行系统包操作：%s；实时显示包管理器输出\n", p.Name)
 		if _, err = p.Runner.Run(command, false); err != nil {
 			return err
 		}
 	}
+	fmt.Fprintln(out, "[~] 复查包操作结果")
 	remaining, err := p.Installed()
 	if err != nil {
 		return err
@@ -689,6 +695,7 @@ func (p *Command) Execute(ctx context.Context, confirm func() (bool, error), out
 	if err = p.saveAudit("native-succeeded", command, ""); err != nil {
 		return err
 	}
+	fmt.Fprintln(out, "[~] 原子更新系统包清单")
 	if err = p.commitFiles(ctx); err != nil {
 		return err
 	}

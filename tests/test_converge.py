@@ -107,6 +107,12 @@ elif name == "mise":
     elif args[:3] == ["bootstrap", "packages", "apply"]:
         if "--dry-run" in args: print("fixture install preview")
         else:
+            if state.get("live_progress"):
+                assert "--raw" in args, args
+                print("Fixture: native download", flush=True)
+                assert input() == "download-seen"
+                print("Fixture: native install", file=sys.stderr, flush=True)
+                assert input() == "install-seen"
             state["did_install"] = True
             installed = set(state["installed"]) | set(state["declared"])
             if state.get("wrong_install_state"): installed = set(state["installed"])
@@ -225,6 +231,17 @@ class ConvergeTest(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0, result.stdout)
                 self.assertIn("交互式终端", result.stdout)
                 self.assertEqual(self.calls(), [])
+
+    def test_linux_install_output_is_live_through_system_sync_for_all_profiles(self):
+        for profile in ("arch", "debian", "fedora", "opensuse"):
+            with self.subTest(profile=profile):
+                self.configure(profile, live_progress=True)
+                result = self.run_sync(answers=[("输入 yes 继续", "yes"),
+                                               ("Fixture: native download", "download-seen"),
+                                               ("Fixture: native install", "install-seen")])
+                self.assertEqual(result.returncode, 0, result.stdout)
+                self.assertEqual(self.journal()["phase"], "complete")
+                self.assertIn("Fixture: native install", result.stdout)
 
     def test_wrapper_status_uses_one_preflight_and_one_package_snapshot(self):
         queries = self.root / "query-calls.jsonl"
@@ -405,7 +422,7 @@ class ConvergeTest(unittest.TestCase):
         result = self.run_sync(answers=[("输入 yes 继续", "yes"), ("即将移除 1 个包，输入 yes", "yes")])
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install","remove"])
-        self.assertEqual(self.calls()[0]["args"], ["mise","bootstrap","packages","apply","--manager","zypper"])
+        self.assertEqual(self.calls()[0]["args"], ["mise","bootstrap","packages","apply","--manager","zypper","--raw"])
         self.assertEqual(self.calls()[1]["phase"], "removing")
         self.assertNotIn("extra", json.loads(self.state_file.read_text())["installed"])
         self.assertEqual(self.journal()["phase"], "complete")

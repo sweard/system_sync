@@ -250,6 +250,7 @@ func detach(ctx context.Context, root string, dryRun, yes bool, runner taskexec.
 		return 1, err
 	}
 	defer lock.Close()
+	fmt.Fprintln(out, "[~] 备份并迁出受管配置，保留本机独立文件")
 	backup, err := plan.Apply(ctx, backupRoot, stderr)
 	if err != nil {
 		return 1, err

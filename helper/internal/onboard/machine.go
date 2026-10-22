@@ -173,6 +173,7 @@ func (e Engine) installCommands(c *Capture) ([][]string, error) {
 }
 
 func (e Engine) installPackages(ctx context.Context, c *Capture, directory string, out io.Writer) error {
+	fmt.Fprintln(out, "[~] 复核补装前的系统软件状态")
 	if err := unchanged(c.Sources); err != nil {
 		return err
 	}
@@ -205,7 +206,7 @@ func (e Engine) installPackages(ctx context.Context, c *Capture, directory strin
 		if err = os.WriteFile(path, []byte(content.String()), 0600); err != nil {
 			return err
 		}
-		commands = [][]string{{"brew", "bundle", "install", "--no-upgrade", "--file=" + path}}
+		commands = [][]string{{"brew", "bundle", "install", "--no-upgrade", "--verbose", "--file=" + path}}
 	}
 	// APT can enforce a no-removal transaction itself; also inspect its preview.
 	if e.Profile == "debian" {
@@ -232,6 +233,7 @@ func (e Engine) installPackages(ctx context.Context, c *Capture, directory strin
 			return err
 		}
 	}
+	fmt.Fprintln(out, "[~] 复核补装结果及原有软件是否保留")
 	remaining, err := e.inventory()
 	if err != nil {
 		return err
@@ -283,20 +285,24 @@ func (e Engine) Apply(ctx context.Context, p *Plan, out io.Writer) (directory st
 		return directory, err
 	}
 	if len(p.ConfigTargets) > 0 {
-		if err = e.configuration().Backup(p.config, directory); err != nil {
+		err = taskexec.Progress(out, "复核并备份原有配置", func() error {
+			return e.configuration().Backup(p.config, directory)
+		})
+		if err != nil {
 			return directory, err
 		}
 	}
 	if err = syncstate.Journal(directory, "pending", map[string]any{"profile": e.Profile}); err != nil {
 		return directory, err
 	}
-	for _, stage := range p.Stages {
+	for i, stage := range p.Stages {
 		if err = ctx.Err(); err != nil {
 			return directory, err
 		}
 		if err = syncstate.Journal(directory, stage, map[string]any{"completed_stages": completed}); err != nil {
 			return directory, err
 		}
+		fmt.Fprintf(out, "[~] 开始接入阶段 %d/%d：%s\n", i+1, len(p.Stages), stage)
 		switch stage {
 		case "packages":
 			var saved string

@@ -67,7 +67,16 @@ func configuration(args []string, root string, stdin *os.File, out, stderr io.Wr
 		defer lock.Close()
 	}
 	e := configops.Engine{Root: root, Home: home, Runner: runner, Force: *force}
-	plan, err := e.Plan(fs.Args())
+	var plan *configops.Plan
+	progressOut := out
+	if preview {
+		progressOut = nil
+	}
+	err = taskexec.Progress(progressOut, "读取受管配置状态与差异", func() error {
+		var err error
+		plan, err = e.Plan(fs.Args())
+		return err
+	})
 	if err != nil {
 		return 1, fmt.Errorf("配置差异检查失败，无法确认是否需要同步；未写入配置：%w", err)
 	}

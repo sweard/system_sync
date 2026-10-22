@@ -14,6 +14,7 @@ import (
 
 	"github.com/sweard/system_sync/helper/internal/localconfig"
 	"github.com/sweard/system_sync/helper/internal/packagestate"
+	"github.com/sweard/system_sync/helper/internal/taskexec"
 )
 
 type Runner interface {
@@ -236,7 +237,7 @@ func (e Engine) Apply(p *Plan, out io.Writer) error {
 	if len(p.Pending) > 0 {
 		return fmt.Errorf("配置仍有待处理项，未应用配置")
 	}
-	if err := e.Check(p); err != nil {
+	if err := taskexec.Progress(out, "复核配置应用前的状态", func() error { return e.Check(p) }); err != nil {
 		return err
 	}
 	if !p.Changed {
@@ -251,10 +252,16 @@ func (e Engine) Apply(p *Plan, out io.Writer) error {
 		command = append(command, "--force")
 	}
 	command = append(command, p.Targets...)
+	fmt.Fprintf(out, "[~] 应用 %d 个受管配置目标\n", len(p.Targets))
 	if _, err := e.Runner.Run(command, false); err != nil {
 		return err
 	}
-	current, err := e.Plan(p.selectors)
+	var current *Plan
+	err := taskexec.Progress(out, "复查配置应用结果", func() error {
+		var err error
+		current, err = e.Plan(p.selectors)
+		return err
+	})
 	if err != nil {
 		return err
 	}

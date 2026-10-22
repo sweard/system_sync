@@ -195,11 +195,13 @@ func (e Engine) applyTools(p *Plan, out io.Writer) error {
 			return fmt.Errorf("预览后开发工具安装状态发生变化，请重新运行")
 		}
 	}
-	command := []string{"mise", "install", "--locked"}
+	fmt.Fprintln(out, "[~] 补装固定版本开发工具；实时显示 mise 安装输出")
+	command := []string{"mise", "install", "--locked", "--raw"}
 	command = append(command, p.Tools...)
 	if _, err = e.Runner.Run(command, false); err != nil {
 		return err
 	}
+	fmt.Fprintln(out, "[~] 复核开发工具版本及原有版本是否保留")
 	_, after, err := e.readTools()
 	if err != nil {
 		return err

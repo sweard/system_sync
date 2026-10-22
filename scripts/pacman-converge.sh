@@ -346,8 +346,10 @@ printf 'mode=apply\ncreated_utc=%s\n' "$RUN_ID" > "$RUN_LOG_DIR/run.meta"
 info "本次变更清单已保存到 $RUN_LOG_DIR"
 
 system_sync_phase installing
-(cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply)
+info "安装缺失声明；实时显示包管理器输出"
+(cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --raw)
 system_sync_phase validating-after-install
+info "安装后重新核对包状态和收敛计划"
 refresh_plan
 [[ ! -s "$MISSING_DESIRED_FILE" ]] || die "安装后仍有声明包未以同名具体包安装；拒绝修改安装原因或卸载"
 check_large_change

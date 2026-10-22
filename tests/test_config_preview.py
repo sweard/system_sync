@@ -154,6 +154,10 @@ class ConfigPreviewTest(unittest.TestCase):
             self.header + '"~/.example.json/shared" = {source = "source.json", merge = true}\n')
         result = self.run_mise("run", "config-sync", "--yes")
         self.assertEqual(result.returncode, 0, result.stderr)
+        stages = ("读取受管配置状态与差异", "复核并备份受管配置", "复核配置应用前的状态",
+                  "应用 1 个受管配置目标", "复查配置应用结果", "配置已部署并复查")
+        positions = [result.stdout.index(stage) for stage in stages]
+        self.assertEqual(positions, sorted(positions), result.stdout)
         self.assertEqual(json.loads(self.target.read_text()), {"shared": 2, "private": "private-canary"})
         directories = list((self.project / ".system-sync/history").glob("*-config-sync-*"))
         self.assertEqual(len(directories), 1)

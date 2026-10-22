@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import select
 import subprocess
 import sys
 import tempfile
@@ -39,6 +40,13 @@ with log.open('a') as f: f.write(json.dumps(sys.argv[1:]) + '\\n')
 data = json.loads(state.read_text())
 if '--install-extension' in sys.argv:
     if (state.parent / 'fail-install').exists(): sys.exit(7)
+    if (state.parent / 'wait-install').exists():
+        import time
+        print('private-install-token', flush=True)
+        deadline = time.monotonic() + 5
+        while not (state.parent / 'release-install').exists():
+            if time.monotonic() > deadline: sys.exit(98)
+            time.sleep(0.01)
     name, version = sys.argv[sys.argv.index('--install-extension')+1].split('@')
     if not (state.parent / 'wrong-version').exists(): data[name] = version
     state.write_text(json.dumps(data))
@@ -273,6 +281,40 @@ else:
                 result = self.run_cli("sync", success=False)
                 self.assertNotIn("[+] 已同步", result.stdout)
                 path.unlink()
+
+    def test_sync_reports_installation_before_completion_without_private_output(self):
+        (self.base / "wait-install").touch()
+        process = subprocess.Popen([str(ROOT / "helper/scripts/run.sh"), "vscode", "sync",
+                                    "--manifest", str(self.manifest), "--code", str(self.code)],
+                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output, released = bytearray(), False
+        deadline = time.monotonic() + 10
+        try:
+            while time.monotonic() < deadline:
+                ready, _, _ = select.select([process.stdout], [], [], 0.1)
+                if ready:
+                    part = os.read(process.stdout.fileno(), 65536)
+                    if not part:
+                        break
+                    output.extend(part)
+                    if "安装 VS Code 扩展 1/1：example.shared@1.2.3" in output.decode(errors="replace"):
+                        (self.base / "release-install").touch()
+                        released = True
+                elif process.poll() is not None:
+                    break
+            tail, _ = process.communicate(timeout=3)
+            output.extend(tail)
+            text = output.decode(errors="replace")
+            self.assertEqual(process.returncode, 0, text)
+            self.assertTrue(released, "installation had no status before completing")
+            self.assertIn("复查 VS Code 扩展安装版本", text)
+            self.assertIn("已同步 1 个公共扩展", text)
+            self.assertNotIn("private-install-token", text)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            process.stdout.close()
 
     @unittest.skipUnless(sys.platform in ("darwin", "linux"), "requires process groups")
     def test_timeout_stops_child_installer_from_writing_after_failure(self):

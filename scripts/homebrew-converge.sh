@@ -179,6 +179,7 @@ find_missing_protected() {
 
 preview_cleanup() {
   local rc
+  info "计算 Homebrew cleanup 预演；完成后显示完整计划"
   CLEANUP_GRAPH_WARNING=0
   CLEANUP_HAS_MANAGED_REMOVALS=0
   : > "$CLEANUP_PREVIEW_FILE"
@@ -349,7 +350,7 @@ read_trusted_packages formula "$TRUSTED_FORMULAE_FILE" \
 read_trusted_packages cask "$TRUSTED_CASKS_FILE" \
   "$TRUSTED_CASKS_NORMALIZED_FILE" "$DESIRED_CASKS_FILE"
 
-if [[ "$MODE" == "upgrade" ]]; then
+if [[ "$MODE" == "upgrade" || "$MODE" == "apply" ]]; then
   info "读取本机 Homebrew 安装状态"
 fi
 HOMEBREW_NO_AUTO_UPDATE=1 brew list --formula --full-name \
@@ -379,7 +380,7 @@ print_list "未声明的已安装 cask" "$EXTRA_CASKS_FILE"
 print_list "未声明的 tap" "$EXTRA_TAPS_FILE"
 print_list "受保护但未在 Brewfile 声明的项目" "$MISSING_PROTECTED_FILE"
 
-if [[ "$MODE" == "upgrade" ]]; then
+if [[ "$MODE" == "upgrade" || "$MODE" == "apply" ]]; then
   info "检查 Brewfile 声明是否已满足"
 fi
 set +e
@@ -434,7 +435,7 @@ save_before_state "apply"
 
 system_sync_phase installing
 info "安装 Brewfile 中缺失的项目；不主动升级已安装项目"
-brew bundle install --no-upgrade --file="$BREWFILE"
+brew bundle install --no-upgrade --verbose --file="$BREWFILE"
 
 info "确认 Brewfile 声明均已满足"
 brew bundle check --no-upgrade --verbose --file="$BREWFILE"
@@ -459,6 +460,7 @@ if [[ "$CLEANUP_RC" -ne 0 ]]; then
   exit "$CLEANUP_RC"
 fi
 
+info "记录同步后的软件状态"
 capture_after_state
 system_sync_phase complete
 printf '\n同步完成。审计与恢复清单：%s\n' "$RUN_LOG_DIR"

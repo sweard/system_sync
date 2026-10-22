@@ -362,7 +362,7 @@ info "本次操作前清单已保存到 $RUN_LOG_DIR"
 
 system_sync_phase installing
 info "交给 mise 原生 zypper manager 安装缺失声明"
-(cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --manager zypper)
+(cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --manager zypper --raw)
 
 info "安装后重新计算完整移除事务"
 system_sync_phase validating-after-install
