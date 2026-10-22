@@ -1,0 +1,29 @@
+docs/roadmap.md
+  s_00332b4a331471::t_8aef34f2e29010 24,27
+tests/test_task_feedback.py
+  s_00332b4a331471::t_49ca52d6a84f4f 9,230-286
+helper/README.md
+  s_00332b4a331471::t_8aef34f2e29010 124
+scripts/task-output.sh
+  s_00332b4a331471::t_06604135a6364a 12-14,17
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_00332b4a331471::t_44a2a16ad624ae 1-4
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_00332b4a331471::t_6d73fe71c3a5f9 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8667744e34e8dba1675c65e531e8550babb436ac",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
