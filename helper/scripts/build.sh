@@ -10,6 +10,7 @@ case "$MODE" in
   *) helper_error "用法：build.sh [--native|--dist|--bundle]" ;;
 esac
 command -v go >/dev/null 2>&1 || helper_error "构建需要 Go 1.27.3；可通过 mise exec go@1.27.3 -- mise run helper-build 显式准备"
+printf '[~] 检查固定 Go 工具链与构建输入\n' >&2
 export GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOTELEMETRY=off
 export GOENV=off GOWORK=off GOFLAGS="" GOEXPERIMENT="" GOAMD64=v1 GOARM64=v8.0
 export GOCACHE="$REPO_ROOT/.system-sync/go/build" GOMODCACHE="$REPO_ROOT/.system-sync/go/mod"
@@ -29,10 +30,16 @@ fi
 : > "$STAGING/SHA256SUMS"
 for TARGET in "${TARGETS[@]}"; do
   mkdir -p -- "$STAGING/$TARGET"
-  CGO_ENABLED=0 GOOS="${TARGET%_*}" GOARCH="${TARGET#*_}" \
+  if system_sync_step "构建 helper：$TARGET" env CGO_ENABLED=0 GOOS="${TARGET%_*}" GOARCH="${TARGET#*_}" \
     go build -mod=vendor -buildvcs=false -trimpath \
     -ldflags "-s -w -X main.version=$VERSION -X main.revision=$REVISION" \
-    -o "$STAGING/$TARGET/system-sync-helper" ./cmd/system-sync-helper
+    -o "$STAGING/$TARGET/system-sync-helper" ./cmd/system-sync-helper; then
+    printf '[+] helper 构建完成：%s\n' "$TARGET" >&2
+  else
+    rc=$?
+    printf '[x] helper 构建失败（%s，退出码 %s）；未发布新产物。\n' "$TARGET" "$rc" >&2
+    exit "$rc"
+  fi
   printf '%s\n' "$VERSION" > "$STAGING/$TARGET/VERSION"
   printf '%s\n' "$REVISION" > "$STAGING/$TARGET/REVISION"
   cp -- "$HELPER_DIR/licenses/Go-LICENSE.txt" "$STAGING/$TARGET/LICENSE-Go"

@@ -49,7 +49,11 @@ func onboarding(command string, args []string, root string, stdin *os.File, out,
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	profile, err := syncstate.Preflight(root)
+	var preflightOut io.Writer = stderr
+	if *jsonOutput {
+		preflightOut = nil
+	}
+	profile, err := syncstate.Preflight(root, preflightOut)
 	if err != nil {
 		return 1, err
 	}
@@ -77,7 +81,16 @@ func onboarding(command string, args []string, root string, stdin *os.File, out,
 	runner := taskexec.Runner{Context: ctx, Dir: root, Env: query.EnvList(env), Stdin: stdin, Stdout: out, Stderr: stderr}
 	e := onboard.Engine{Root: root, Home: home, Profile: profile, Runner: runner, Environment: env, UID: os.Geteuid()}
 	if command == "package-capture" {
-		capture, err := e.Capture()
+		var capture *onboard.Capture
+		var progressOut io.Writer = stderr
+		if *jsonOutput {
+			progressOut = nil
+		}
+		err := taskexec.Progress(progressOut, "采集本机软件清单与来源", func() error {
+			var err error
+			capture, err = e.Capture()
+			return err
+		})
 		if err != nil {
 			return 1, err
 		}
@@ -100,6 +113,9 @@ func onboarding(command string, args []string, root string, stdin *os.File, out,
 	var plan *onboard.Plan
 	progressOut := out
 	if !*apply {
+		progressOut = stderr
+	}
+	if *jsonOutput {
 		progressOut = nil
 	}
 	err = taskexec.Progress(progressOut, "读取机器接入计划", func() error {

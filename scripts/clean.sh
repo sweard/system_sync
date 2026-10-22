@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+source "$SCRIPT_DIR/task-output.sh"
 TARGETS=(
   .system-sync/rebuild/home
   .system-sync/vscode-validation
@@ -122,7 +123,7 @@ done
 for relative in "${TARGETS[@]}"; do
   target="$PROJECT_ROOT/$relative"
   [[ -d "$target" ]] || continue
-  usage_kib="$(du -sk -- "$target")" || fail "无法统计目录占用：$relative"
+  usage_kib="$(system_sync_step "统计目录占用：$relative" du -sk -- "$target")" || fail "无法统计目录占用：$relative"
   read -r size _ <<< "$usage_kib"
   [[ "$size" =~ ^[0-9]+$ ]] || fail "无法识别目录占用：$relative"
   PENDING[COUNT]="$relative"
@@ -157,7 +158,7 @@ for relative in "${PENDING[@]}"; do
   validate_target "$relative"
 done
 for relative in "${PENDING[@]}"; do
-  remove_target "$relative"
+  system_sync_step "清理目录：$relative" remove_target "$relative"
   printf '[+] 已清理：%s\n' "$relative"
 done
 printf '[+] 清理完成；需要的构建缓存会在下次构建时重新生成。\n'

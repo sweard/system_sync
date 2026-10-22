@@ -123,17 +123,17 @@ read_allowlist() {
 query_package_state() {
   case "$MANAGER" in
     apt)
-      LC_ALL=C dpkg-query -W -f='${db:Status-Abbrev}\t${binary:Package}\n' \
+      LC_ALL=C system_sync_step "查询 dpkg 已安装包" dpkg-query -W -f='${db:Status-Abbrev}\t${binary:Package}\n' \
         | awk -F '\t' 'substr($1, 1, 2) == "ii" { print $2 }' \
         | LC_ALL=C sort -u > "$INSTALLED_FILE"
-      LC_ALL=C apt-mark showmanual | LC_ALL=C sort -u > "$TMP_DIR/explicit-raw"
-      LC_ALL=C apt-mark showauto | LC_ALL=C sort -u > "$TMP_DIR/dependencies-raw"
+      LC_ALL=C system_sync_step "查询 APT 手工安装包" apt-mark showmanual | LC_ALL=C sort -u > "$TMP_DIR/explicit-raw"
+      LC_ALL=C system_sync_step "查询 APT 自动安装包" apt-mark showauto | LC_ALL=C sort -u > "$TMP_DIR/dependencies-raw"
       LC_ALL=C comm -12 "$INSTALLED_FILE" "$TMP_DIR/explicit-raw" > "$EXPLICIT_FILE"
       LC_ALL=C comm -12 "$INSTALLED_FILE" "$TMP_DIR/dependencies-raw" > "$DEPENDENCY_FILE"
       ;;
     dnf)
-      LC_ALL=C rpm -qa --qf '%{NAME}\n' | LC_ALL=C sort -u > "$INSTALLED_FILE"
-      if ! LC_ALL=C "$DNF_COMMAND" -q repoquery --installed --userinstalled \
+      LC_ALL=C system_sync_step "查询 RPM 已安装包" rpm -qa --qf '%{NAME}\n' | LC_ALL=C sort -u > "$INSTALLED_FILE"
+      if ! LC_ALL=C system_sync_step "查询 DNF 手工安装包" "$DNF_COMMAND" -q repoquery --installed --userinstalled \
         --queryformat '%{name}' | LC_ALL=C sort -u > "$TMP_DIR/explicit-raw"; then
         die "无法查询 DNF 的 user-installed 包；请确认 repoquery 可用"
       fi
@@ -159,7 +159,7 @@ query_orphans() {
   case "$MANAGER" in
     apt)
       set +e
-      LC_ALL=C apt-get -s autoremove > "$raw_file" 2> "$error_file"
+      LC_ALL=C system_sync_capture "预演 APT autoremove" "$raw_file" "$error_file" apt-get -s autoremove
       rc=$?
       set -e
       if [[ "$rc" -ne 0 ]]; then
@@ -170,8 +170,8 @@ query_orphans() {
       ;;
     dnf)
       set +e
-      LC_ALL=C "$DNF_COMMAND" -q repoquery --installed --unneeded \
-        --queryformat '%{name}' > "$output_file" 2> "$error_file"
+      LC_ALL=C system_sync_capture "查询 DNF unneeded 包" "$output_file" "$error_file" "$DNF_COMMAND" -q repoquery --installed --unneeded \
+        --queryformat '%{name}'
       rc=$?
       set -e
       if [[ "$rc" -ne 0 ]]; then
@@ -363,8 +363,8 @@ RUN_LOG_DIR=""
 
 refresh_plan() {
   info "读取 $PROFILE_NAME profile 最终生效的 mise $MANAGER 配置"
-  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status --json) \
-    > "$STATUS_JSON" 2> "$STATUS_ERROR"; then
+  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C system_sync_capture "查询 $PROFILE_NAME 软件声明状态" \
+    "$STATUS_JSON" "$STATUS_ERROR" mise bootstrap packages status --json); then
     sed 's/^/  /' "$STATUS_ERROR" >&2
     die "mise 无法生成 packages status JSON；没有可靠声明集时绝不继续"
   fi

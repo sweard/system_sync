@@ -95,7 +95,7 @@ case "$(uname -s)" in
     printf '==> Linux 发行版 profile：%s\n' "$PROFILE"
     case "$MODE" in
       dry-run)
-        (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages apply --dry-run)
+        (cd -- "$PROFILE_DIR" && LC_ALL=C system_sync_step "预演 Linux 软件补装" mise bootstrap packages apply --dry-run)
         ;;
       *)
         die "无法识别运行模式"

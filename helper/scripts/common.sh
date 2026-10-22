@@ -1,6 +1,7 @@
 # Shared by explicit Go builds, offline installation and the checked binary launcher.
 HELPER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 REPO_ROOT="$(cd -- "$HELPER_DIR/.." && pwd -P)"
+source "$REPO_ROOT/scripts/task-output.sh"
 
 helper_error() {
   printf '错误：%s\n' "$*" >&2
@@ -50,7 +51,7 @@ helper_source_manifest() {
   (
     cd -- "$HELPER_DIR"
     {
-      printf '%s\n' go.mod VERSION licenses/Go-LICENSE.txt scripts/build.sh scripts/common.sh
+      printf '%s\n' go.mod VERSION licenses/Go-LICENSE.txt scripts/build.sh scripts/common.sh ../scripts/task-output.sh
       [[ ! -f go.sum ]] || printf '%s\n' go.sum
       find cmd internal -type f -name '*.go' ! -name '*_test.go'
       find vendor -type f

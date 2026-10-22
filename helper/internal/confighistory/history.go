@@ -2,7 +2,6 @@
 package confighistory
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -124,10 +123,7 @@ func Run(action, description, home string, runner Invoker, out io.Writer) error 
 		return err
 	})
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return err
-		}
-		return fmt.Errorf("mise 保存失败，请用 mise dot --local status 核对本机历史状态")
+		return fmt.Errorf("mise 保存失败：%w；请用 mise dot --local status 核对本机历史状态", taskexec.Redacted(err))
 	}
 	fmt.Fprintf(out, "[+] 已手动保存 %d 个配置到本机历史。\n", count)
 	for _, path := range command[6:] {

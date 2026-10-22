@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -21,12 +22,53 @@ type Failure struct {
 	Output  string
 	Cause   error
 	Timeout bool
+	Limit   time.Duration
 }
 
 func (e *Failure) Error() string {
-	return fmt.Sprintf("命令失败（%d）：%s\n%s", e.Code, Quote(e.Command), strings.TrimSpace(e.Output))
+	message := fmt.Sprintf("命令%s：%s", Redacted(e), Quote(e.Command))
+	if !e.Timeout && !errors.Is(e.Cause, context.Canceled) && strings.TrimSpace(e.Output) != "" {
+		message += "\n" + strings.TrimSpace(e.Output)
+	}
+	return message
 }
 func (e *Failure) Unwrap() error { return e.Cause }
+
+// Redacted retains the error identity and actionable failure category without
+// exposing command arguments, captured output or native error text.
+func Redacted(err error) error { return diagnostic{err} }
+
+type diagnostic struct{ error }
+
+func (e diagnostic) Unwrap() error { return e.error }
+func (e diagnostic) Error() string {
+	var failure *Failure
+	if errors.As(e.error, &failure) && failure.Timeout {
+		if failure.Limit <= 0 {
+			return "超时，已停止命令及其子进程"
+		}
+		return fmt.Sprintf("超时（上限 %s），已停止命令及其子进程", failure.Limit)
+	}
+	if errors.Is(e.error, context.Canceled) {
+		return "已取消"
+	}
+	if errors.Is(e.error, context.DeadlineExceeded) {
+		return "超时"
+	}
+	if errors.Is(e.error, exec.ErrNotFound) || errors.Is(e.error, os.ErrNotExist) {
+		return "无法启动：命令不存在或不在 PATH 中"
+	}
+	if errors.Is(e.error, os.ErrPermission) {
+		return "无法启动：没有执行权限"
+	}
+	if failure != nil && failure.Code > 0 {
+		return fmt.Sprintf("失败（退出码 %d）", failure.Code)
+	}
+	if failure != nil && failure.Code < 0 {
+		return "被信号终止"
+	}
+	return "失败，请检查对应命令的运行环境"
+}
 
 type Runner struct {
 	Context        context.Context
@@ -34,10 +76,30 @@ type Runner struct {
 	Env            []string
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
+	QueryTimeout   time.Duration
+	Progress       io.Writer
 }
 
 func (r Runner) Run(command []string, capture bool) (string, error) {
-	return r.Invoke(command, capture, 0)
+	limit := time.Duration(0)
+	if capture {
+		limit = r.QueryTimeout
+		if limit <= 0 {
+			limit = time.Minute
+		}
+	}
+	var output string
+	var err error
+	operation := func() error {
+		output, err = r.Invoke(command, capture, limit)
+		return err
+	}
+	if capture && len(command) > 0 {
+		err = Progress(r.Progress, "查询 "+filepath.Base(command[0])+" 状态", operation)
+	} else {
+		err = operation()
+	}
+	return output, err
 }
 func (r Runner) Invoke(command []string, capture bool, timeout time.Duration) (string, error) {
 	ctx := r.Context
@@ -80,7 +142,7 @@ func (r Runner) Invoke(command []string, capture bool, timeout time.Duration) (s
 		if ctx.Err() != nil {
 			cause = ctx.Err()
 		}
-		return "", &Failure{Command: command, Code: code, Output: stderr.String() + stdout.String(), Cause: cause, Timeout: errors.Is(ctx.Err(), context.DeadlineExceeded)}
+		return "", &Failure{Command: command, Code: code, Output: stderr.String() + stdout.String(), Cause: cause, Timeout: errors.Is(ctx.Err(), context.DeadlineExceeded), Limit: timeout}
 	}
 	return stdout.String(), nil
 }

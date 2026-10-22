@@ -1,5 +1,6 @@
 # Shared entry guard; source before consuming the caller's arguments.
 SYSTEM_SYNC_ORIGINAL_ARGS=("$@")
+source "$SCRIPT_DIR/task-output.sh"
 
 system_sync_enter() {
   local mode="$1"

@@ -17,18 +17,30 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sweard/system_sync/helper/internal/taskexec"
 	"github.com/sweard/system_sync/helper/internal/terminal"
 )
 
 const MinMise = "2026.10.11"
 
-func Preflight(root string) (string, error) {
+func Preflight(root string, progress ...io.Writer) (string, error) {
+	var out io.Writer = os.Stderr
+	if len(progress) > 0 {
+		out = progress[0]
+	}
+	runner := taskexec.Runner{Progress: out}
 	if _, err := exec.LookPath("mise"); err != nil {
 		return "", fmt.Errorf("找不到 mise；需要 mise >= %s", MinMise)
 	}
-	output, err := exec.Command("mise", "--version").Output()
+	output, err := runner.Run([]string{"mise", "--version"}, true)
+	if err != nil {
+		return "", fmt.Errorf("mise 版本预检失败：%w；请单独运行 mise --version 检查", taskexec.Redacted(err))
+	}
 	match := regexp.MustCompile(`^(?:mise\s+)?([0-9]+)\.([0-9]+)\.([0-9]+)\b`).FindStringSubmatch(string(output))
-	valid := err == nil && len(match) == 4
+	if len(match) != 4 {
+		return "", fmt.Errorf("mise 版本输出无法识别；请运行 mise --version 并核对 PATH 中的 mise CLI")
+	}
+	valid := true
 	if valid {
 		required := []int{2026, 10, 11}
 		for i, wanted := range required {
@@ -45,9 +57,9 @@ func Preflight(root string) (string, error) {
 	if !valid {
 		return "", fmt.Errorf("需要 mise >= %s；请先升级 mise", MinMise)
 	}
-	output, err = exec.Command("uname", "-s").Output()
+	output, err = runner.Run([]string{"uname", "-s"}, true)
 	if err != nil {
-		return "", fmt.Errorf("无法识别当前平台")
+		return "", fmt.Errorf("无法识别当前平台：%w", taskexec.Redacted(err))
 	}
 	profile := ""
 	commands := []string{}
@@ -56,9 +68,9 @@ func Preflight(root string) (string, error) {
 		profile = "macos"
 		commands = []string{"brew"}
 	case "Linux":
-		output, err = exec.Command("bash", filepath.Join(root, "scripts/detect-linux-profile.sh")).Output()
+		output, err = runner.Run([]string{"bash", filepath.Join(root, "scripts/detect-linux-profile.sh")}, true)
 		if err != nil {
-			return "", fmt.Errorf("无法识别 Linux profile")
+			return "", fmt.Errorf("无法识别 Linux profile：%w；请运行 scripts/detect-linux-profile.sh 核对", taskexec.Redacted(err))
 		}
 		profile = strings.TrimSpace(string(output))
 		switch profile {

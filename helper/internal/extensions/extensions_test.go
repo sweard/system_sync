@@ -16,10 +16,12 @@ type fakeCLI struct {
 	calls          [][]string
 	fail, noChange bool
 	output         string
+	limits         []time.Duration
 }
 
-func (f *fakeCLI) Invoke(command []string, _ bool, _ time.Duration) (string, error) {
+func (f *fakeCLI) Invoke(command []string, _ bool, limit time.Duration) (string, error) {
 	f.calls = append(f.calls, command)
+	f.limits = append(f.limits, limit)
 	for i, arg := range command {
 		if arg == "--install-extension" {
 			if f.fail {
@@ -95,6 +97,18 @@ func TestExtensionFailuresAreRedactedAndExtrasRetained(t *testing.T) {
 			}
 			if err != nil && strings.Contains(err.Error(), "private-token") {
 				t.Fatal("native diagnostic leaked")
+			}
+			if failure == "failed" && (!strings.Contains(err.Error(), "example.shared@1.2.3") || !strings.Contains(err.Error(), "已安装项保留")) {
+				t.Fatal("failed install did not identify the extension or retained work", err)
+			}
+			for index, command := range fake.calls {
+				limit := time.Minute
+				if strings.Contains(strings.Join(command, " "), "--install-extension") {
+					limit = time.Hour
+				}
+				if fake.limits[index] != limit {
+					t.Fatal("status query and installation used the wrong time limit", command, fake.limits[index])
+				}
 			}
 			if fake.current["example.local"] != "4.5.6" {
 				t.Fatal("extra extension removed")

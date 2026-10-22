@@ -39,7 +39,7 @@ func (e Engine) Plan(targets []string) (*Plan, error) {
 	p := &Plan{Targets: []string{}, Pending: []string{}, selectors: append([]string{}, targets...)}
 	output, err := e.Runner.Run([]string{"mise", "bootstrap", "dotfiles", "status", "--json"}, true)
 	if err != nil {
-		return nil, fmt.Errorf("配置状态查询失败，请先运行 config-status")
+		return nil, fmt.Errorf("配置状态查询失败：%w；请运行 mise run config-status 核对", taskexec.Redacted(err))
 	}
 	data, err := decodeState(output)
 	if err != nil {
@@ -146,7 +146,7 @@ func (e Engine) Plan(targets []string) (*Plan, error) {
 		command := append([]string{"mise", "bootstrap", "dotfiles", "diff"}, p.Targets...)
 		p.Diff, err = e.Runner.Run(command, true)
 		if err != nil {
-			return nil, fmt.Errorf("配置差异查询失败，请先运行 config-dry-run")
+			return nil, fmt.Errorf("配置差异查询失败：%w；请运行 mise bootstrap dotfiles diff 核对", taskexec.Redacted(err))
 		}
 	}
 	for _, selector := range targets {

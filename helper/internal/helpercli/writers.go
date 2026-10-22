@@ -96,6 +96,7 @@ func writer(command string, args []string, root string, stdin *os.File, stdout, 
 			env[key] = value
 		}
 		runner.Env = query.EnvList(env)
+		runner.Progress = stderr
 		var operation *packageedit.Command
 		operation, err = packageedit.New(root, profile, options, runner)
 		if err == nil {
@@ -104,7 +105,7 @@ func writer(command string, args []string, root string, stdin *os.File, stdout, 
 			}, stdout)
 		}
 	case "vscode":
-		options := extensions.Options{Manifest: filepath.Join(root, "dotfiles/common/vscode/extensions.toml")}
+		options := extensions.Options{Manifest: filepath.Join(root, "dotfiles/common/vscode/extensions.toml"), Progress: stderr}
 		fs.BoolVar(&options.DryRun, "dry-run", false, "只预览，不修改")
 		fs.StringVar(&options.Manifest, "manifest", options.Manifest, "扩展清单")
 		fs.StringVar(&options.Code, "code", "", "VS Code CLI 路径")
@@ -148,6 +149,10 @@ func writer(command string, args []string, root string, stdin *os.File, stdout, 
 			err = extensions.Run(options, runner, stdout)
 		}
 	case "config-history":
+		if len(args) > 0 && args[0] == "list" {
+			runner.Dir = root
+			return nativeQuery(runner, append([]string{"mise", "dot", "--local", "history", "ls"}, args[1:]...), "查询本机配置历史", "mise dot --local history ls", stdout, stderr)
+		}
 		description := "manual system-sync checkpoint"
 		fs.StringVar(&description, "description", description, "检查点描述")
 		fs.StringVar(&description, "d", description, "检查点描述")
@@ -179,8 +184,15 @@ func writer(command string, args []string, root string, stdin *os.File, stdout, 
 			prefix = "错误："
 		}
 		var pathError *os.PathError
-		if command != "package" && errors.As(err, &pathError) {
-			fmt.Fprintln(stderr, prefix+"配置或状态无法安全读取，已停止；请检查路径、格式和权限")
+		var nativeFailure *taskexec.Failure
+		if command != "package" && errors.As(err, &pathError) && !errors.As(err, &nativeFailure) {
+			reason := "路径访问失败"
+			if errors.Is(err, os.ErrNotExist) {
+				reason = "文件或目录不存在"
+			} else if errors.Is(err, os.ErrPermission) {
+				reason = "权限不足"
+			}
+			fmt.Fprintf(stderr, "%s配置或状态无法安全读取（%s），已停止；请检查路径、格式和权限\n", prefix, reason)
 		} else {
 			fmt.Fprintln(stderr, prefix+err.Error())
 		}
@@ -201,12 +213,17 @@ func detach(ctx context.Context, root string, dryRun, yes bool, runner taskexec.
 		return 1, err
 	}
 	runner.Dir = root
-	output, err := runner.Invoke([]string{"mise", "bootstrap", "dotfiles", "status", "--json"}, true, time.Minute)
+	var output string
+	err = taskexec.Progress(stderr, "读取配置迁出状态", func() error {
+		var err error
+		output, err = runner.Invoke([]string{"mise", "bootstrap", "dotfiles", "status", "--json"}, true, time.Minute)
+		return err
+	})
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return 130, err
+			return 130, taskexec.Redacted(err)
 		}
-		return 1, fmt.Errorf("mise 配置状态查询失败，未修改配置；请先运行 config-status 核对")
+		return 1, fmt.Errorf("mise 配置状态查询失败：%w；未修改配置，请先运行 mise run config-status 核对", taskexec.Redacted(err))
 	}
 	var data map[string]any
 	if err = packagestate.DecodeJSON(strings.NewReader(output), &data); err != nil {
@@ -216,7 +233,7 @@ func detach(ctx context.Context, root string, dryRun, yes bool, runner taskexec.
 	if err != nil {
 		return 1, err
 	}
-	if err = plan.Collect(data, enrollment); err != nil {
+	if err = taskexec.Progress(stderr, "核对待迁出文件与锁文件依赖", func() error { return plan.Collect(data, enrollment) }); err != nil {
 		return 1, err
 	}
 	for _, change := range plan.Changes {
@@ -250,8 +267,12 @@ func detach(ctx context.Context, root string, dryRun, yes bool, runner taskexec.
 		return 1, err
 	}
 	defer lock.Close()
-	fmt.Fprintln(out, "[~] 备份并迁出受管配置，保留本机独立文件")
-	backup, err := plan.Apply(ctx, backupRoot, stderr)
+	var backup string
+	err = taskexec.Progress(out, "备份并迁出受管配置，保留本机独立文件", func() error {
+		var err error
+		backup, err = plan.Apply(ctx, backupRoot, stderr)
+		return err
+	})
 	if err != nil {
 		return 1, err
 	}

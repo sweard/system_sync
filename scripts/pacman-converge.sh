@@ -184,8 +184,8 @@ CURRENT_PROTECTED_ORPHANS_FILE="$TMP_DIR/orphans-current-protected"
 
 refresh_plan() {
   info "读取 Arch profile 最终生效的 mise pacman/AUR 配置"
-  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status --json) \
-    > "$STATUS_JSON" 2> "$STATUS_ERROR"; then
+  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C system_sync_capture "查询 Arch 软件声明状态" \
+    "$STATUS_JSON" "$STATUS_ERROR" mise bootstrap packages status --json); then
     sed 's/^/  /' "$STATUS_ERROR" >&2
     die "mise 无法生成 packages status JSON；没有可靠声明集时绝不继续"
   fi
@@ -210,9 +210,9 @@ refresh_plan() {
   awk -F '\t' '$1 == "pacman" && $2 == "base" { found = 1 } END { exit !found }' \
     "$DECLARED_TSV" || die "最终生效配置未声明 pacman:base，拒绝继续"
 
-  LC_ALL=C pacman -Qqe | LC_ALL=C sort -u > "$EXPLICIT_FILE"
-  LC_ALL=C pacman -Qq | LC_ALL=C sort -u > "$INSTALLED_FILE"
-  LC_ALL=C pacman -Qqd | LC_ALL=C sort -u > "$DEPENDENCY_FILE"
+  LC_ALL=C system_sync_step "查询 pacman 显式包" pacman -Qqe | LC_ALL=C sort -u > "$EXPLICIT_FILE"
+  LC_ALL=C system_sync_step "查询 pacman 已安装包" pacman -Qq | LC_ALL=C sort -u > "$INSTALLED_FILE"
+  LC_ALL=C system_sync_step "查询 pacman 依赖包" pacman -Qqd | LC_ALL=C sort -u > "$DEPENDENCY_FILE"
   LC_ALL=C comm -23 "$DESIRED_FILE" "$INSTALLED_FILE" > "$MISSING_DESIRED_FILE"
 
   # 若 mise 报告某个请求已安装，但本地数据库中没有同名真实包，它很可能是 virtual

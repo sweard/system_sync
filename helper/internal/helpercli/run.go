@@ -1,6 +1,7 @@
 package helpercli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -9,11 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/sweard/system_sync/helper/internal/audit"
 	"github.com/sweard/system_sync/helper/internal/packagestate"
 	"github.com/sweard/system_sync/helper/internal/query"
 	"github.com/sweard/system_sync/helper/internal/syncstate"
+	"github.com/sweard/system_sync/helper/internal/taskexec"
 	"github.com/sweard/system_sync/helper/internal/terminal"
 )
 
@@ -66,6 +69,9 @@ func Run(args []string, stdin *os.File, stdout, stderr io.Writer, version, revis
 	code, err := dispatch(command, args, *root, stdin, stdout, stderr)
 	if err != nil {
 		fmt.Fprintln(stderr, "错误："+err.Error())
+		if errors.Is(err, context.Canceled) {
+			code = 130
+		}
 	}
 	return code
 }
@@ -177,7 +183,15 @@ func dispatch(command string, args []string, root string, stdin *os.File, stdout
 			}
 		}
 		env := query.Environment()
-		report := audit.New(root, env, nil).Execute(only)
+		var report audit.Report
+		var progressOut io.Writer = stderr
+		if *jsonOutput {
+			progressOut = nil
+		}
+		_ = taskexec.Progress(progressOut, "只读审计："+strings.Join(only, "、"), func() error {
+			report = audit.New(root, env, nil).Execute(only)
+			return nil
+		})
 		if *jsonOutput {
 			encoder := json.NewEncoder(stdout)
 			encoder.SetIndent("", "  ")

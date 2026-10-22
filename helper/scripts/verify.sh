@@ -8,10 +8,11 @@ VERSION="$(helper_version)"
 ARTIFACT_DIR="$HELPER_DIR/prebuilt/$VERSION"
 [[ -f "$ARTIFACT_DIR/SOURCE_SHA256SUMS" && -f "$ARTIFACT_DIR/SHA256SUMS" ]] \
   || helper_error "缺少随仓库分发的 helper 清单，请运行 mise run helper-bundle"
-[[ "$(helper_source_manifest)" == "$(cat "$ARTIFACT_DIR/SOURCE_SHA256SUMS")" ]] \
+[[ "$(system_sync_step '核对 helper 源码与构建输入' helper_source_manifest)" == "$(cat "$ARTIFACT_DIR/SOURCE_SHA256SUMS")" ]] \
   || helper_error "Go 源码或构建输入已变化，请运行 mise run helper-bundle 并一同提交 helper/prebuilt/$VERSION"
 VERIFIED=""
 for TARGET in darwin_arm64 darwin_amd64 linux_arm64 linux_amd64; do
+  printf '[~] 校验 helper 归档：%s\n' "$TARGET" >&2
   ARCHIVE="system-sync-helper_${VERSION}_${TARGET}.tar.gz"
   EXPECTED="$(awk -v name="$ARCHIVE" '$2 == name { print $1 }' "$ARTIFACT_DIR/SHA256SUMS")"
   [[ -f "$ARTIFACT_DIR/$ARCHIVE" && "$EXPECTED" =~ ^[0-9a-f]{64}$ ]] \

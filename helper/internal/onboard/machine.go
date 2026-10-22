@@ -216,7 +216,7 @@ func (e Engine) installPackages(ctx context.Context, c *Capture, directory strin
 		}
 		output, err := e.Runner.Run(command, true)
 		if err != nil {
-			return fmt.Errorf("APT 补装预演失败，未执行安装")
+			return fmt.Errorf("APT 补装预演失败：%w；未执行安装", taskexec.Redacted(err))
 		}
 		for _, line := range strings.Split(output, "\n") {
 			if strings.HasPrefix(line, "Remv ") || strings.HasPrefix(line, "Purg ") {

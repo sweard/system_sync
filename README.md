@@ -114,7 +114,7 @@ mise run config-dry-run
 
 旧任务名 `status`、`dry-run`、`vscode-dry-run` 分别作为 `package-status`、`package-dry-run`、`vscode-status` 的兼容别名，参数原样转交。`audit` 汇总状态；需要审阅软件事务时再运行 `package-dry-run`。完整 helper 开发验收使用 `helper-bundle → check`，无需提前重复执行 `helper-build`。
 
-安装及同步过程会显示当前阶段；系统包和开发工具安装透传原生命令输出。VS Code 安装、配置查询/备份及本机历史保存使用安全阶段提示，耗时操作每 10 秒报告仍在执行，保留原有私有内容过滤。详见[系统软件输出](docs/packages.md#执行过程的状态输出)和[配置同步](docs/dotfiles.md#应用配置的日常同步)。
+安装及同步过程会显示当前阶段；系统包和开发工具安装透传原生命令输出。审计、清单采集、配置预览、helper 构建和缓存清理也有阶段与每 10 秒的等待提示；只读报告、JSON 和 diff 的进度写入 stderr，stdout 保持原格式。Go helper 的状态查询默认最多 60 秒，失败提示区分超时、命令不可用及退出码，私有诊断继续过滤。详见[系统软件输出](docs/packages.md#执行过程的状态输出)和[配置同步](docs/dotfiles.md#应用配置的日常同步)。
 
 `mise install` 不写入工具声明；`mise use` 安装并写入声明。全局与项目配置、`--pin`、锁文件、升级和完整卸载示例见[工具常用命令](docs/development-environment.md#常用工具命令速查)。
 

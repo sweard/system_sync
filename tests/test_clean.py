@@ -45,6 +45,7 @@ class CleanTest(unittest.TestCase):
         (self.project / "scripts").mkdir(parents=True)
         self.script = self.project / "scripts/clean.sh"
         shutil.copy2(ROOT / "scripts/clean.sh", self.script)
+        shutil.copy2(ROOT / "scripts/task-output.sh", self.project / "scripts/task-output.sh")
         for relative in TARGETS:
             directory = self.project / relative
             directory.mkdir(parents=True)
@@ -226,7 +227,7 @@ exit 1
         result = self.run_clean("--apply", "--yes")
         self.assertEqual(counter.read_text(), "2\n")
         self.assertIn("重试清理（2/3）", result.stdout)
-        self.assertEqual(result.stderr, "")
+        self.assertNotIn("Directory not empty", result.stderr)
         for relative in TARGETS:
             self.assertFalse((self.project / relative).exists(), relative)
         self.assert_preserved()

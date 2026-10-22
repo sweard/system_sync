@@ -80,7 +80,7 @@ func (r ProcessRunner) Run(command []string, environment map[string]string) (str
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
 		if ctx.Err() != nil {
-			return "", Error("查询超过 60 秒；该项尚未核对")
+			return "", Error(fmt.Sprintf("查询超时（上限 %s）；该项尚未核对", timeout))
 		}
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {

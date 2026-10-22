@@ -10,6 +10,7 @@ import (
 
 	"github.com/sweard/system_sync/helper/internal/configops"
 	"github.com/sweard/system_sync/helper/internal/localconfig"
+	"github.com/sweard/system_sync/helper/internal/taskexec"
 )
 
 func (e Engine) configuration() configops.Engine {
@@ -83,7 +84,7 @@ func (e Engine) globalToolsReady() bool {
 func (e Engine) readTools() (string, map[string]bool, error) {
 	output, err := e.Runner.Run([]string{"mise", "ls", "--json"}, true)
 	if err != nil {
-		return "", nil, fmt.Errorf("开发工具状态查询失败")
+		return "", nil, fmt.Errorf("开发工具状态查询失败：%w；请运行 mise ls --json 核对", taskexec.Redacted(err))
 	}
 	data, err := decodeState(output)
 	if err != nil {

@@ -12,7 +12,12 @@ import (
 )
 
 func captureExtensions(ctx context.Context, root string, options extensions.CaptureOptions, apply, yes bool, runner extensions.Invoker, stdin *os.File, out io.Writer) (int, error) {
-	plan, err := extensions.NewCapture(options, runner)
+	var plan *extensions.CapturePlan
+	err := taskexec.Progress(options.Progress, "采集 VS Code 未纳管扩展与版本", func() error {
+		var err error
+		plan, err = extensions.NewCapture(options, runner)
+		return err
+	})
 	if err != nil {
 		return 1, err
 	}
@@ -40,7 +45,12 @@ func captureExtensions(ctx context.Context, root string, options extensions.Capt
 			return 2, nil
 		}
 	}
-	backup, err := plan.Apply(ctx, root, runner)
+	var backup string
+	err = taskexec.Progress(options.Progress, "复核扩展状态并备份、更新清单", func() error {
+		var err error
+		backup, err = plan.Apply(ctx, root, runner)
+		return err
+	})
 	if err != nil {
 		return 1, err
 	}

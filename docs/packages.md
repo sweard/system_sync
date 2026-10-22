@@ -427,7 +427,11 @@ mise run macos-upgrade
 
 Arch、Debian、Fedora、openSUSE 的安装入口显式使用 `mise bootstrap packages apply --raw`，连接包管理器的终端输出；查询用 JSON/XML 继续单独捕获和校验。单包安装/卸载保留原生实时输出，并显示清单核对、备份、执行、结果复查和清单更新阶段。
 
-`machine-init --apply` 显示阶段编号，开发工具通过 `mise install --locked --raw` 输出安装过程。默认预览和 `--json` 输出保持原职责，不混入执行过程的等待提示。所有成功提示仍在实际状态复查通过后输出；失败、取消和共享锁规则保持。
+`machine-init --apply` 显示阶段编号，开发工具通过 `mise install --locked --raw` 输出安装过程。`package-status`、`package-dry-run` 的主要查询和清理预演也会每 10 秒提示仍在执行；状态 JSON/XML 和原始诊断分别捕获，不把进度混入解析数据。
+
+`package-capture`、`machine-init` 默认预览的查询进度写入 stderr，stdout 保留原报告；这两个入口及 `audit` 的 `--json` 预览不输出等待提示。Go helper 的捕获查询（含版本预检）默认上限为 60 秒，超时终止该命令及其子进程；交互式安装不套用查询超时。错误提示保留失败阶段、退出码或不可启动原因，不打印被过滤的原始查询正文；版本命令执行失败与版本过低分别报告。所有成功提示仍在实际状态复查通过后输出；确认、取消和共享锁规则保持。
+
+`clean` 在统计占用、删除每个允许清理的目录前报告路径，长操作每 10 秒提示仍在执行；删除失败仍显示原错误及未恢复说明，固定清理范围与重试规则不变。
 
 ## 隔离测试
 

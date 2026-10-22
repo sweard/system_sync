@@ -17,6 +17,7 @@ def prepare_helper(project):
     shutil.copytree(source, target)
     shutil.copy2(current, target.parent.parent / "current")
     (project / "scripts").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / "scripts/task-output.sh", project / "scripts/task-output.sh")
     scripts = project / "helper/scripts"
     scripts.mkdir(parents=True)
     for name in ("common.sh", "install.sh", "run.sh"):

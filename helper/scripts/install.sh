@@ -13,6 +13,7 @@ ARTIFACT_DIR="${1:-$HELPER_DIR/prebuilt/$VERSION}"
 [[ -d "$ARTIFACT_DIR" ]] || helper_error "尚未准备 Go helper：缺少预编译目录 ${ARTIFACT_DIR}；请完整克隆仓库或指定本机产物目录，见 helper/README.md"
 ARTIFACT_DIR="$(cd -- "$ARTIFACT_DIR" && pwd -P)"
 TARGET="$(helper_target)"
+printf '[~] 校验本机 helper 预编译包：%s\n' "$TARGET" >&2
 ARCHIVE="system-sync-helper_${VERSION}_${TARGET}.tar.gz"
 [[ -f "$ARTIFACT_DIR/$ARCHIVE" && -f "$ARTIFACT_DIR/SHA256SUMS" ]] || helper_error "缺少当前平台的 $ARCHIVE 或 SHA256SUMS"
 EXPECTED="$(awk -v name="$ARCHIVE" '$2 == name { print $1 }' "$ARTIFACT_DIR/SHA256SUMS")"
@@ -30,6 +31,7 @@ LOCKED=false
 for ((ATTEMPT = 0; ATTEMPT < 100; ATTEMPT++)); do
   if mkdir -- "$INSTALL_LOCK" 2>/dev/null; then LOCKED=true; break; fi
   [[ ! -L "$INSTALL_LOCK" && -d "$INSTALL_LOCK" ]] || helper_error "helper 安装锁路径异常"
+  if [[ "$ATTEMPT" -eq 0 ]]; then printf '[~] 等待另一条 helper 安装释放锁（最多 10 秒）\n' >&2; fi
   sleep 0.1
 done
 [[ "$LOCKED" == true ]] || helper_error "另一个 helper 安装仍在进行；若进程已退出，请核对后移除 $INSTALL_LOCK 再重试"
@@ -44,6 +46,7 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 STAGING="$(mktemp -d "$REPO_ROOT/.system-sync/helper/.install-XXXXXX")"
+printf '[~] 解包并验证 helper 二进制\n' >&2
 tar -xzf "$ARTIFACT_DIR/$ARCHIVE" -C "$STAGING"
 [[ "$(cat "$STAGING/VERSION")" == "$VERSION" ]] || helper_error "归档版本与仓库不匹配"
 BINARY_CHECKSUM="$(awk '$2 == "system-sync-helper" { print $1 }' "$STAGING/SHA256SUMS")"

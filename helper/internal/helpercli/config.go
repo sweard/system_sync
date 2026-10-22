@@ -18,8 +18,8 @@ import (
 )
 
 func configuration(args []string, root string, stdin *os.File, out, stderr io.Writer) (int, error) {
-	if len(args) == 0 || (args[0] != "diff" && args[0] != "sync") {
-		return 2, fmt.Errorf("用法：config <diff|sync> [目标路径…] [--dry-run] [--yes]")
+	if len(args) == 0 || (args[0] != "status" && args[0] != "diff" && args[0] != "sync") {
+		return 2, fmt.Errorf("用法：config <status|diff|sync> [目标路径…] [--dry-run] [--yes]")
 	}
 	action, args := args[0], args[1:]
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -27,10 +27,12 @@ func configuration(args []string, root string, stdin *os.File, out, stderr io.Wr
 	env := query.Environment()
 	env["MISE_AUTO_INSTALL"], env["MISE_TASK_RUN_AUTO_INSTALL"] = "false", "false"
 	runner := taskexec.Runner{Context: ctx, Dir: root, Env: query.EnvList(env), Stdin: stdin, Stdout: out, Stderr: stderr}
+	if action == "status" {
+		return nativeQuery(runner, append([]string{"mise", "bootstrap", "dotfiles", "status"}, args...), "查询受管配置状态", "mise bootstrap dotfiles status", out, stderr)
+	}
 	// Keep the existing preview script's native help available.
 	if action == "diff" && len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
-		_, err := runner.Run([]string{"mise", "bootstrap", "dotfiles", "diff", "--help"}, false)
-		return 0, err
+		return nativeQuery(runner, []string{"mise", "bootstrap", "dotfiles", "diff", "--help"}, "读取配置差异命令帮助", "mise bootstrap dotfiles diff --help", out, stderr)
 	}
 	fs := flag.NewFlagSet("config "+action, flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -70,7 +72,7 @@ func configuration(args []string, root string, stdin *os.File, out, stderr io.Wr
 	var plan *configops.Plan
 	progressOut := out
 	if preview {
-		progressOut = nil
+		progressOut = stderr
 	}
 	err = taskexec.Progress(progressOut, "读取受管配置状态与差异", func() error {
 		var err error

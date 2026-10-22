@@ -104,10 +104,12 @@ run = "./scripts/homebrew-converge.sh --upgrade"
 # dotfiles 命令应用已启用的映射；ChatGPT / VS Code 的私有键保留在本机。
 [tasks.config-status]
 description = "查看已启用 dotfiles 映射的状态"
-run = "mise bootstrap dotfiles status"
+raw = true
+run = "./helper/scripts/run.sh config status"
 
 [tasks.config-dry-run]
 description = "比较受管配置的实际差异；无变化时明确提示无需同步"
+raw = true
 run = "./scripts/config-preview.sh"
 
 [tasks.config-sync]
@@ -143,7 +145,8 @@ run = "./helper/scripts/run.sh config-history save"
 
 [tasks.config-history]
 description = "列出仅本机保存的配置检查点；支持原生 history ls 参数"
-run = "mise dot --local history ls"
+raw = true
+run = "./helper/scripts/run.sh config-history list"
 
 # -----------------------------------------------------------------------------
 # 已启用的公共配置

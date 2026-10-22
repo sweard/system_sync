@@ -111,8 +111,8 @@ query_zypper_packages() {
   local output_file="$3"
   local error_file="$4"
 
-  if ! LC_ALL=C zypper --xmlout --no-refresh packages "$selector" \
-    > "$xml_file" 2> "$error_file"; then
+  if ! LC_ALL=C system_sync_capture "查询 zypper packages $selector" "$xml_file" "$error_file" \
+    zypper --xmlout --no-refresh packages "$selector"; then
     sed 's/^/  /' "$error_file" >&2
     die "zypper packages $selector 查询失败"
   fi
@@ -124,7 +124,7 @@ query_zypper_packages() {
 }
 
 query_state() {
-  LC_ALL=C rpm -qa --qf '%{NAME}\n' | LC_ALL=C sort -u > "$INSTALLED_FILE"
+  LC_ALL=C system_sync_step "查询 RPM 已安装包" rpm -qa --qf '%{NAME}\n' | LC_ALL=C sort -u > "$INSTALLED_FILE"
   validate_package_file "$INSTALLED_FILE" "RPM 已安装包列表"
   query_zypper_packages --userinstalled "$USER_XML_FILE" "$EXPLICIT_FILE" "$USER_ERROR_FILE"
   : > "$UNNEEDED_FILE"
@@ -171,9 +171,9 @@ preview_removal() {
   fi
 
   set +e
-  LC_ALL=C zypper --xmlout --non-interactive --no-refresh \
-    remove --dry-run --clean-deps "${REMOVE_PACKAGES[@]}" \
-    > "$REMOVE_XML_FILE" 2> "$REMOVE_ERROR_FILE"
+  LC_ALL=C system_sync_capture "预演 zypper 完整移除事务" "$REMOVE_XML_FILE" "$REMOVE_ERROR_FILE" \
+    zypper --xmlout --non-interactive --no-refresh \
+    remove --dry-run --clean-deps "${REMOVE_PACKAGES[@]}"
   rc=$?
   set -e
   if [[ "$rc" -ne 0 ]]; then
@@ -213,8 +213,8 @@ check_large_change() {
 }
 
 refresh_plan() {
-  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C mise bootstrap packages status --json) \
-    > "$STATUS_JSON" 2> "$STATUS_ERROR"; then
+  if ! (cd -- "$PROFILE_DIR" && LC_ALL=C system_sync_capture "查询 openSUSE 软件声明状态" \
+    "$STATUS_JSON" "$STATUS_ERROR" mise bootstrap packages status --json); then
     sed 's/^/  /' "$STATUS_ERROR" >&2
     die "mise 无法生成 zypper packages status JSON；拒绝继续"
   fi

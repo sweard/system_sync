@@ -113,7 +113,7 @@ func (e Engine) queryNames(command []string, emptyExitOne, allowEmpty bool) ([]s
 		}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("本机清单查询失败：%s", taskexec.Quote(command))
+		return nil, fmt.Errorf("本机清单查询失败：%s：%w；请单独运行该只读命令检查", taskexec.Quote(command), taskexec.Redacted(err))
 	}
 	return names(output, allowEmpty, e.Profile == "macos")
 }
@@ -143,7 +143,7 @@ func (e Engine) inventory() ([]string, error) {
 	case "debian":
 		output, err := e.Runner.Run([]string{"dpkg-query", "-W", "-f=${Package}:${Architecture}\t${db:Status-Status}\n"}, true)
 		if err != nil {
-			return nil, fmt.Errorf("dpkg 已安装状态查询失败")
+			return nil, fmt.Errorf("dpkg 已安装状态查询失败：%w", taskexec.Redacted(err))
 		}
 		result := []string{}
 		for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
@@ -162,7 +162,7 @@ func (e Engine) inventory() ([]string, error) {
 	case "fedora", "opensuse":
 		output, err := e.Runner.Run([]string{"rpm", "-qa", "--qf", "%{NAME}\t%{ARCH}\n"}, true)
 		if err != nil {
-			return nil, fmt.Errorf("RPM 已安装状态查询失败")
+			return nil, fmt.Errorf("RPM 已安装状态查询失败：%w", taskexec.Redacted(err))
 		}
 		result := []string{}
 		for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
@@ -245,7 +245,7 @@ func (e Engine) declarations() ([]Package, map[string]string, string, error) {
 	// instead of silently omitting a local override from the install plan.
 	output, err := e.Runner.Run([]string{"mise", "-C", directory, "bootstrap", "packages", "status", "--json"}, true)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("mise 包声明状态查询失败")
+		return nil, nil, "", fmt.Errorf("mise 包声明状态查询失败：%w；请运行 mise run package-status 核对", taskexec.Redacted(err))
 	}
 	var state any
 	if err = packagestate.DecodeJSON(strings.NewReader(output), &state); err != nil {
@@ -355,7 +355,7 @@ func (e Engine) Capture() (*Capture, error) {
 		snapshot := filepath.Join(dir, "Brewfile")
 		_, err = e.Runner.Run([]string{"brew", "bundle", "dump", "--file=" + snapshot, "--formula", "--cask", "--tap", "--no-describe", "--no-restart"}, true)
 		if err != nil {
-			return nil, fmt.Errorf("Homebrew 清单导出失败")
+			return nil, fmt.Errorf("Homebrew 清单导出失败：%w；请检查 brew bundle dump", taskexec.Redacted(err))
 		}
 		text, err := readManifest(snapshot)
 		if err != nil {

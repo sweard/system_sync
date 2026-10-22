@@ -63,27 +63,25 @@ type Options struct {
 	Action                                     string
 	DryRun                                     bool
 	Manifest, Code, UserDataDir, ExtensionsDir string
+	Progress                                   io.Writer
 }
 
-func invoke(r Invoker, command []string) (string, error) {
-	output, err := r.Invoke(command, true, time.Hour)
+func invoke(r Invoker, command []string, timeout time.Duration) (string, error) {
+	output, err := r.Invoke(command, true, timeout)
 	if err == nil {
 		return output, nil
 	}
 	if errors.Is(err, context.Canceled) {
-		return "", err
+		return "", taskexec.Redacted(err)
 	}
 	var failure *taskexec.Failure
 	if errors.As(err, &failure) {
-		if failure.Timeout {
-			return "", fmt.Errorf("VS Code 命令超时，已停止本次 CLI 及其子进程；已安装项保留")
-		}
-		return "", fmt.Errorf("VS Code 命令失败（退出码 %d），请检查 CLI、网络或扩展可用性", failure.Code)
+		return "", fmt.Errorf("VS Code 命令%w；请检查 CLI、网络或扩展可用性；已安装项保留", taskexec.Redacted(err))
 	}
 	return "", fmt.Errorf("VS Code 命令失败，请检查 CLI、网络或扩展可用性")
 }
 func Installed(r Invoker, command []string) (map[string]string, error) {
-	output, err := invoke(r, append(append([]string{}, command...), "--list-extensions", "--show-versions"))
+	output, err := invoke(r, append(append([]string{}, command...), "--list-extensions", "--show-versions"), time.Minute)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +148,7 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	var progressOut io.Writer
+	progressOut := options.Progress
 	if options.Action == "sync" && !options.DryRun {
 		progressOut = out
 	}
@@ -161,7 +159,7 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 		return err
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("查询 VS Code 已安装扩展失败：%w", err)
 	}
 	names, pending := []string{}, []string{}
 	for name := range wanted {
@@ -199,11 +197,11 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 		for i, name := range pending {
 			label := fmt.Sprintf("安装 VS Code 扩展 %d/%d：%s@%s", i+1, len(pending), name, wanted[name])
 			err := taskexec.Progress(out, label, func() error {
-				_, err := invoke(runner, append(append([]string{}, command...), "--install-extension", name+"@"+wanted[name], "--force"))
+				_, err := invoke(runner, append(append([]string{}, command...), "--install-extension", name+"@"+wanted[name], "--force"), time.Hour)
 				return err
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("安装扩展 %s@%s 失败：%w；此前已安装项保留，请运行 mise run vscode-status 核对", name, wanted[name], err)
 			}
 		}
 		var after map[string]string

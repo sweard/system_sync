@@ -25,7 +25,7 @@ func TestTimeoutStopsDescendants(t *testing.T) {
 	sentinel := filepath.Join(root, "late-write")
 	runner := ProcessRunner{Root: root, Environment: map[string]string{"PATH": "/usr/bin:/bin"}, Timeout: 50 * time.Millisecond}
 	_, err := runner.Run([]string{"/bin/sh", "-c", `(sleep 0.2; echo private > "$1") & wait`, "fixture", sentinel}, nil)
-	if err == nil || strings.Contains(err.Error(), "private") {
+	if err == nil || strings.Contains(err.Error(), "private") || !strings.Contains(err.Error(), "50ms") || strings.Contains(err.Error(), "60 秒") {
 		t.Fatalf("%v", err)
 	}
 	time.Sleep(250 * time.Millisecond)

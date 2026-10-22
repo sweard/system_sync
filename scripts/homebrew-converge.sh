@@ -74,7 +74,7 @@ print_list() {
 bundle_list() {
   local type="$1"
   local output_file="$2"
-  if ! HOMEBREW_NO_AUTO_UPDATE=1 brew bundle list \
+  if ! HOMEBREW_NO_AUTO_UPDATE=1 system_sync_step "读取 Brewfile $type 声明" brew bundle list \
     --file="$BREWFILE" "--$type" > "$output_file"; then
     die "无法读取 Brewfile 中的 ${type} 声明"
   fi
@@ -202,9 +202,9 @@ preview_cleanup() {
 
   set +e
   XDG_CONFIG_HOME="$PREVIEW_CONFIG_HOME" HOMEBREW_NO_AUTO_UPDATE=1 \
-    brew bundle cleanup \
+    system_sync_capture "计算 Homebrew cleanup 精确预演" "$CLEANUP_PREVIEW_FILE" "$CLEANUP_PREVIEW_FILE" brew bundle cleanup \
     --file="$BREWFILE" --formula --cask --tap \
-    < /dev/null > "$CLEANUP_PREVIEW_FILE" 2>&1
+    < /dev/null
   rc=$?
   set -e
 
@@ -353,13 +353,13 @@ read_trusted_packages cask "$TRUSTED_CASKS_FILE" \
 if [[ "$MODE" == "upgrade" || "$MODE" == "apply" ]]; then
   info "读取本机 Homebrew 安装状态"
 fi
-HOMEBREW_NO_AUTO_UPDATE=1 brew list --formula --full-name \
+HOMEBREW_NO_AUTO_UPDATE=1 system_sync_step "查询已安装 formula" brew list --formula --full-name \
   | LC_ALL=C sort -u > "$INSTALLED_FORMULAE_FILE"
-HOMEBREW_NO_AUTO_UPDATE=1 brew list --formula --full-name --installed-on-request \
+HOMEBREW_NO_AUTO_UPDATE=1 system_sync_step "查询手工安装的 formula" brew list --formula --full-name --installed-on-request \
   | LC_ALL=C sort -u > "$REQUESTED_FORMULAE_FILE"
-HOMEBREW_NO_AUTO_UPDATE=1 brew list --cask \
+HOMEBREW_NO_AUTO_UPDATE=1 system_sync_step "查询已安装 cask" brew list --cask \
   | LC_ALL=C sort -u > "$INSTALLED_CASKS_FILE"
-HOMEBREW_NO_AUTO_UPDATE=1 brew tap \
+HOMEBREW_NO_AUTO_UPDATE=1 system_sync_step "查询已添加 tap" brew tap \
   | LC_ALL=C sort -u > "$INSTALLED_TAPS_FILE"
 
 LC_ALL=C comm -23 "$DESIRED_FORMULAE_FILE" "$INSTALLED_FORMULAE_FILE" > "$MISSING_FORMULAE_FILE"
@@ -384,8 +384,8 @@ if [[ "$MODE" == "upgrade" || "$MODE" == "apply" ]]; then
   info "检查 Brewfile 声明是否已满足"
 fi
 set +e
-HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check \
-  --no-upgrade --verbose --file="$BREWFILE" > "$BUNDLE_CHECK_FILE" 2>&1
+HOMEBREW_NO_AUTO_UPDATE=1 system_sync_capture "检查 Brewfile 是否已满足" "$BUNDLE_CHECK_FILE" "$BUNDLE_CHECK_FILE" \
+  brew bundle check --no-upgrade --verbose --file="$BREWFILE"
 BUNDLE_CHECK_RC=$?
 set -e
 printf '\nHomebrew bundle check\n'
