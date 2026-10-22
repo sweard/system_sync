@@ -82,7 +82,7 @@ mise run check
 
 `check` 已包含本机构建和安装，不需要在完整验收前再运行一次 `helper-build`；开发中仅需快速构建并试用本机版本时，单独使用 `mise run helper-build`。
 
-如果当前环境未选择这一编译器，可显式运行 `mise exec go@1.27.3 -- mise run helper-bundle`。mise 可能先安装所指定的编译器；`helper-build` 本身使用 `GOTOOLCHAIN=local` 和关闭的 Go 模块网络，不自动升级工具链或拉取依赖。完整检查还需要 Python 3.11+ 和支持 Go race 检查的本机 C 工具链。
+如果当前环境未选择这一编译器，先运行 `mise install go@1.27.3`，再运行 `mise run --tool go@1.27.3 helper-bundle` 或 `mise run --tool go@1.27.3 check`。`--tool` 为这次 task 显式选择已安装的版本，不改写项目或全局工具声明。外层 `mise exec go@1.27.3 -- mise run ...` 的内层 task 会重新计算工具环境，不能代替内层的显式选择。直接调用脚本时可使用 `mise exec go@1.27.3 -- ./helper/scripts/build.sh`。`helper-build` 本身使用 `GOTOOLCHAIN=local` 和关闭的 Go 模块网络，不自动升级工具链或拉取依赖。完整检查还需要 Python 3.11+ 和支持 Go race 检查的本机 C 工具链。
 
 构建使用 `CGO_ENABLED=0`、`-trimpath` 和固定版本注入，关闭自动 VCS 信息捕获；`REVISION` 记录 Git 提交及是否有本地改动，不嵌入本机配置或绝对源码路径。`helper-build` 构建并启用本机版本；`helper-bundle` 更新随仓库保存的四平台归档。修改源码不会隐式重编译，源码与新的 `helper/prebuilt/<版本>/` 应一同提交。
 
@@ -115,15 +115,15 @@ mise run helper-install /绝对路径/产物目录
 
 成功安装位于 `.system-sync/helper/<版本>/<二进制 SHA256>/`，然后原子更新 `current` 指针；失败时保留之前激活的版本。启动入口每次校验固定版本和二进制 SHA256，并显式传入仓库路径，不依赖调用时所在目录。只有尚未初始化时自动安装；已有记录过期或校验失败时停止，避免覆盖异常现场。更新 `helper/VERSION` 后运行 `mise run helper-install` 启用仓库的新版本；同版本更新分发包后也需显式安装才能切换已有缓存。旧构建保留在本机，可在不使用时自行清理对应目录。
 
-CI 在准备编译器前校验并启动仓库内的预编译工具，再运行四组 macOS/Linux 与 Python 版本检查；通过后重新构建四平台包，上传 `system-sync-helper-<提交 SHA>` artifact，仅包含归档和校验清单。当前工作流见 [check.yml](../.github/workflows/check.yml)，不会自动创建 Release、推送代码或打包本机历史、私有配置和日志。普通 clone 已有运行所需的包，不依赖 GitHub artifact 或额外下载。
+CI 在准备编译器前校验并启动仓库内的预编译工具，然后显式安装 Go 1.27.3，以 `mise run --tool go@1.27.3 check` 运行四组 macOS/Linux 与 Python 版本检查。CI 的全局配置为空，不依赖手工把 mise 安装目录写入 `GITHUB_PATH`；回归测试在隔离 HOME 下执行 workflow 的实际调用，覆盖没有 Go 路径、已有 mise Go 路径及旧系统 Go 三种环境。通过后重新构建四平台包，上传 `system-sync-helper-<提交 SHA>` artifact，仅包含归档和校验清单。当前工作流见 [check.yml](../.github/workflows/check.yml)，不会自动创建 Release、推送代码或打包本机历史、私有配置和日志。普通 clone 已有运行所需的包，不依赖 GitHub artifact 或额外下载。
 
 ## 验证与后续迁移
 
 `mise run check` 先校验仓库分发包，再显式重建本机 helper、检查前置版本和 task 配置，运行 Go race 检查和原有 Python 测试。Go 覆盖安全解析、查询超时清理、并发和共享状态、锁冲突与继承、日志状态；CLI 对照测试使用临时 HOME、合成私有值和替身命令，比较两种实现的完整报告。预编译回归另覆盖空缓存首次调用、并发初始化、禁用 Go/Python/下载命令、JSON 输出、四平台归档校验、源码漂移及损坏拒绝执行。
 
-2026-10-22 本机 macOS ARM64 的 `v0.2.0` 已通过 88 项 Go 测试（含 race 检查）、220 项 Python 回归、24 项 task 校验及 `go vet`。扩展采集回归覆盖选择与排除、默认公共分组与显式平台范围、已有分组保持、保留原声明与注释、权限和备份、重复执行、并发修改及锁冲突；真实 mise 的合并入口在隔离 HOME 中通过。安装与同步输出回归覆盖五平台实时 stdout/stderr、机器初始化、扩展安装过程、失败退出码、阶段顺序及安全等待提示。输出回归覆盖清单外扩展的版本明细与保留、长列表完整展开与脱敏，以及历史登记/保存/跳过的路径。机器接入覆盖五平台采集与补装、保留清单外软件和 orphan、重复执行、固定版本阻止误装、失败与并发检查；另有 7 项接入 CLI 回归，包含真实 mise 在临时 HOME 中部署、私有键保留及备份核对。原有隔离部署、扩展安装和本机历史测试继续调用 Go，Python 参考测试保留；禁用 Go、Python CLI 和下载命令的接入验收通过。真实 Mac 只读预览已运行，未在宿主执行初始化或扩展采集 apply。
+2026-10-22 本机 macOS ARM64 的 `v0.2.0` 已通过 88 项 Go 测试（含 race 检查）、222 项 Python 回归、24 项 task 校验及 `go vet`。扩展采集回归覆盖选择与排除、默认公共分组与显式平台范围、已有分组保持、保留原声明与注释、权限和备份、重复执行、并发修改及锁冲突；真实 mise 的合并入口在隔离 HOME 中通过。安装与同步输出回归覆盖五平台实时 stdout/stderr、机器初始化、扩展安装过程、失败退出码、阶段顺序及安全等待提示。输出回归覆盖清单外扩展的版本明细与保留、长列表完整展开与脱敏，以及历史登记/保存/跳过的路径。机器接入覆盖五平台采集与补装、保留清单外软件和 orphan、重复执行、固定版本阻止误装、失败与并发检查；另有 7 项接入 CLI 回归，包含真实 mise 在临时 HOME 中部署、私有键保留及备份核对。原有隔离部署、扩展安装和本机历史测试继续调用 Go，Python 参考测试保留；禁用 Go、Python CLI 和下载命令的接入验收通过。真实 Mac 只读预览已运行，未在宿主执行初始化或扩展采集 apply。
 
-四个平台归档、内外两层 SHA256、目标格式及 Linux 静态链接均已核对，压缩包合计约 6.4 MiB；模块缓存为空且关闭网络时，仍可从 `helper/vendor/` 构建。此前真实只读审计与 Python 参考报告逐字段一致。上述验证均未修改本机真实软件包、扩展或用户配置；新 CI 流程尚未在远端执行。
+四个平台归档、内外两层 SHA256、目标格式及 Linux 静态链接均已核对，压缩包合计约 6.4 MiB；模块缓存为空且关闭网络时，仍可从 `helper/vendor/` 构建。此前真实只读审计与 Python 参考报告逐字段一致。上述验证均未修改本机真实软件包、扩展或用户配置；修复后的远端检查结果见 [dev CI](https://github.com/sweard/system_sync/actions/workflows/check.yml?query=branch%3Adev)。
 
 本轮另有 8 项只读及维护入口反馈回归：用阻塞替身验证审计、采集、状态/差异/历史和迁出规划在原生命令结束前就显示进度，JSON 预览保持可解析且安静；覆盖原生命令失败与不可识别版本的分类、帮助命令失败退出、构建目标和退出码、捕获数据隔离，以及 Bash 3.2 严格模式下快操作及时退出、不遗留计时器。Go 测试覆盖捕获查询超时及错误身份保留，原生安装不套用查询超时，扩展查询与安装分别使用独立时限。
 

@@ -64,7 +64,7 @@ system_sync/
 
 以下命令在仓库根目录执行。审计、整机包流程、单包清单编辑、配置迁出、VS Code 扩展和配置历史均已接入 Go helper；日常任务无需 Python 或 Go 编译器。首次运行自动从随仓库保存的 `helper/prebuilt/<版本>/` 校验并解压本机 helper，无需联网准备 helper。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器；扩展管理还需 VS Code CLI。
 
-开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 Go 1.27.3、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
+开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 Go 1.27.3、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。未全局选择 Go 时，先执行 `mise install go@1.27.3`，再用 `mise run --tool go@1.27.3 check`；CI 也使用这一入口。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
 
 Go helper 资源集中在 [helper/](helper/)，项目级隔离回归统一放在 `tests/`，Python 参考实现位于 [tests/reference/](tests/reference/)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
 

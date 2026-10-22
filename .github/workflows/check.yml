@@ -66,10 +66,11 @@ jobs:
         run: |
           mise trust --all
           mise install go@1.27.3
-          printf '%s/bin\n' "$(mise where go@1.27.3)" >> "$GITHUB_PATH"
+          mise exec go@1.27.3 -- go version
       - name: Run isolated tests
+        shell: bash
         run: |
-          mise run check
+          mise run --tool go@1.27.3 check
 
   helper-artifacts:
     name: Precompiled helpers
