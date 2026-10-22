@@ -1,0 +1,90 @@
+mise.toml
+  s_00332b4a331471::t_2ca9f72c60b094 132,141
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_00332b4a331471::t_1e5865ab31076c 10,12-13,15-17,20,23-24,26,36
+scripts/linux-reason-converge.sh
+  s_00332b4a331471::t_37395bae322566 472,474
+  s_00332b4a331471::t_2ca9f72c60b094 471
+helper/internal/configops/sync.go
+  s_00332b4a331471::t_2ca9f72c60b094 12,45-46
+helper/internal/onboard/machine.go
+  s_00332b4a331471::t_2ca9f72c60b094 176,209,236,288-291,298,305
+helper/internal/helpercli/onboarding.go
+  s_00332b4a331471::t_2ca9f72c60b094 100-109
+helper/internal/taskexec/progress.go
+  s_00332b4a331471::t_4de345a758bcb5 24,32
+  s_00332b4a331471::t_2ca9f72c60b094 1-23,25-31,33-39
+helper/internal/extensions/extensions.go
+  s_00332b4a331471::t_2ca9f72c60b094 153-162,199-205,209-214
+helper/internal/taskexec/progress_test.go
+  s_00332b4a331471::t_d3ae4d4d1685bb 1-72
+helper/internal/onboard/onboard_test.go
+  s_00332b4a331471::t_37395bae322566 100-102,429-430
+  s_00332b4a331471::t_b3fcf1df20e985 340-342
+  s_00332b4a331471::t_00abf1889f92ee 431
+scripts/pacman-converge.sh
+  s_00332b4a331471::t_2ca9f72c60b094 349-350,352
+helper/internal/onboard/configtools.go
+  s_00332b4a331471::t_2ca9f72c60b094 198-199,204
+helper/internal/helpercli/config.go
+  s_00332b4a331471::t_2ca9f72c60b094 70-79
+tests/test_onboarding.py
+  s_00332b4a331471::t_d3ae4d4d1685bb 15,46-51,187-197
+  s_00332b4a331471::t_43fe6411a7b815 198
+docs/packages.md
+  s_00332b4a331471::t_ea0604f6b722fc 424-431
+helper/README.md
+  s_00332b4a331471::t_ea0604f6b722fc 68
+  s_00332b4a331471::t_850a9b644cadef 122
+scripts/homebrew-converge.sh
+  s_00332b4a331471::t_2ca9f72c60b094 182,353,383,438,463
+helper/internal/packageedit/command.go
+  s_00332b4a331471::t_2ca9f72c60b094 577-579,629,647,652,698
+tests/test_converge.py
+  s_00332b4a331471::t_19aa88ef8bc944 425
+  s_00332b4a331471::t_d3ae4d4d1685bb 110-115,235-244
+  s_00332b4a331471::t_f92546f8551c7d 245
+tests/test_config_preview.py
+  s_00332b4a331471::t_d3ae4d4d1685bb 157-160
+docs/dotfiles.md
+  s_00332b4a331471::t_ea0604f6b722fc 121
+  s_00332b4a331471::t_182c20020d285f 120,176
+  s_00332b4a331471::t_d9dc63000195e6 177
+scripts/zypper-converge.sh
+  s_00332b4a331471::t_2ca9f72c60b094 365
+helper/internal/confighistory/history.go
+  s_00332b4a331471::t_2ca9f72c60b094 16,122-126
+README.md
+  s_00332b4a331471::t_ea0604f6b722fc 101,117
+  s_00332b4a331471::t_7b28b2d06615ff 118
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_00332b4a331471::t_1e5865ab31076c 1-4
+helper/internal/configops/config.go
+  s_00332b4a331471::t_2ca9f72c60b094 17,240,255,259-264
+docs/roadmap.md
+  s_00332b4a331471::t_850a9b644cadef 7,24
+  s_00332b4a331471::t_ea0604f6b722fc 21
+tests/test_homebrew_preview.py
+  s_00332b4a331471::t_d3ae4d4d1685bb 44-53,56,286-296,308,310-312
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_d30e491170420a 8,43-49,285-317
+  s_00332b4a331471::t_ac876524659d2b 318
+helper/internal/helpercli/writers.go
+  s_00332b4a331471::t_2ca9f72c60b094 253
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f48d1749e1761ad38bf67fc36bb95f206cce21f5",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
