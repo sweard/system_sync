@@ -1,0 +1,142 @@
+scripts/zypper-converge.sh
+  s_00332b4a331471::t_a36c993926f077 114-115,127,216-217
+  s_00332b4a331471::t_07c8905cca0306 174-175
+  s_00332b4a331471::t_79c91ebe5233b6 176
+helper/README.md
+  s_00332b4a331471::t_cecafe04a6703f 128-129
+  s_00332b4a331471::t_df932f40336dea 110-112
+  s_00332b4a331471::t_cc9b8fb66b8f48 124
+helper/internal/onboard/machine.go
+  s_00332b4a331471::t_9f2726f764fe03 219
+helper/internal/helpercli/vscode_capture.go
+  s_00332b4a331471::t_8f134f2fc6500c 16-20,48-53
+  s_00332b4a331471::t_9f2726f764fe03 15
+tests/test_clean.py
+  s_00332b4a331471::t_b9f00bb4739928 48,230
+docs/dotfiles.md
+  s_00332b4a331471::t_79c91ebe5233b6 120,176-178
+helper/internal/helpercli/run.go
+  s_00332b4a331471::t_092f8ca6009da8 4,72-74
+  s_00332b4a331471::t_cd2099fc93827e 13,191
+  s_00332b4a331471::t_8f134f2fc6500c 19,186-190,192-194
+scripts/system-sync.sh
+  s_00332b4a331471::t_07c8905cca0306 98
+helper/scripts/common.sh
+  s_00332b4a331471::t_b9f00bb4739928 4,54
+scripts/linux-reason-converge.sh
+  s_00332b4a331471::t_a36c993926f077 126,129-130,135-136,162,173-174,366-367
+README.md
+  s_00332b4a331471::t_79c91ebe5233b6 117
+docs/roadmap.md
+  s_00332b4a331471::t_cc9b8fb66b8f48 25
+  s_00332b4a331471::t_df932f40336dea 22
+helper/scripts/install.sh
+  s_00332b4a331471::t_b9f00bb4739928 16,34,49
+helper/internal/taskexec/process.go
+  s_00332b4a331471::t_9f2726f764fe03 47-49
+  s_00332b4a331471::t_a36c993926f077 13,80,91-102
+  s_00332b4a331471::t_4867f2d75c2723 25,29-33,37-46,50-72,79,84-90,145
+scripts/homebrew-converge.sh
+  s_00332b4a331471::t_a36c993926f077 77,356,358,360,362
+  s_00332b4a331471::t_07c8905cca0306 205,207,387-388
+helper/internal/taskexec/process_test.go
+  s_00332b4a331471::t_cd8cd1e2e17b3a 4,15-67
+  s_00332b4a331471::t_9b856484ad8d2d 68
+helper/internal/helpercli/onboarding.go
+  s_00332b4a331471::t_092f8ca6009da8 52-56
+  s_00332b4a331471::t_8f134f2fc6500c 84-93,116-118
+helper/internal/helpercli/config.go
+  s_00332b4a331471::t_8f134f2fc6500c 21-22,30-32,75
+  s_00332b4a331471::t_cd2099fc93827e 35
+helper/internal/extensions/extensions.go
+  s_00332b4a331471::t_092f8ca6009da8 69-70,84,200
+  s_00332b4a331471::t_df932f40336dea 79
+  s_00332b4a331471::t_4867f2d75c2723 66,75,151,162,204
+helper/internal/query/query_test.go
+  s_00332b4a331471::t_cd8cd1e2e17b3a 28
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_00332b4a331471::t_0eb21799c81cf4 1-4
+scripts/pacman-converge.sh
+  s_00332b4a331471::t_a36c993926f077 187-188,213-215
+tests/helper_fixture.py
+  s_00332b4a331471::t_b9f00bb4739928 20
+helper/internal/helpercli/queries.go
+  s_00332b4a331471::t_8f134f2fc6500c 1-26
+docs/packages.md
+  s_00332b4a331471::t_79c91ebe5233b6 430-434
+helper/internal/confighistory/history.go
+  s_00332b4a331471::t_4867f2d75c2723 126
+helper/internal/extensions/extensions_test.go
+  s_00332b4a331471::t_79c91ebe5233b6 19,22,24,101-112
+scripts/task-output.sh
+  s_00332b4a331471::t_b9f00bb4739928 1-3,9-29,35-41
+  s_00332b4a331471::t_b8ab58e0632d3c 4-8
+  s_00332b4a331471::t_07c8905cca0306 30-34
+scripts/sync-runtime.sh
+  s_00332b4a331471::t_b9f00bb4739928 3
+tests/test_task_feedback.py
+  s_00332b4a331471::t_b8ab58e0632d3c 209
+  s_00332b4a331471::t_df932f40336dea 219-228
+  s_00332b4a331471::t_2090f4ac254a62 30-32,175-183
+  s_00332b4a331471::t_cd8cd1e2e17b3a 1-26,33-138,140-146,148-172,194-208,210-218
+  s_00332b4a331471::t_cd2099fc93827e 139,184-192
+  s_00332b4a331471::t_092f8ca6009da8 27-29,173-174,193
+  s_00332b4a331471::t_4e7b7f464dab8c 147
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_00332b4a331471::t_0eb21799c81cf4 35
+  s_6b8270b6e632f5::t_06c25651160618 1,11,13,16-22,24-26,34,37,42-43
+helper/scripts/build.sh
+  s_00332b4a331471::t_b9f00bb4739928 13,33,36-42
+helper/internal/query/query.go
+  s_00332b4a331471::t_4867f2d75c2723 83
+mise.toml
+  s_00332b4a331471::t_8f134f2fc6500c 107-108,112,148-149
+docs/audit.md
+  s_00332b4a331471::t_79c91ebe5233b6 70-71
+scripts/clean.sh
+  s_00332b4a331471::t_b9f00bb4739928 7,126,161
+helper/internal/syncstate/runtime.go
+  s_00332b4a331471::t_092f8ca6009da8 20,26-31,35-37,60,62,71,73
+  s_00332b4a331471::t_2090f4ac254a62 38,40-43
+helper/internal/configops/config.go
+  s_00332b4a331471::t_4867f2d75c2723 42,149
+helper/internal/onboard/capture.go
+  s_00332b4a331471::t_9f2726f764fe03 116,146,165,248,358
+helper/internal/onboard/configtools.go
+  s_00332b4a331471::t_a36c993926f077 13
+  s_00332b4a331471::t_9f2726f764fe03 87
+helper/scripts/verify.sh
+  s_00332b4a331471::t_b9f00bb4739928 11,15
+helper/internal/helpercli/writers.go
+  s_00332b4a331471::t_9f2726f764fe03 224
+  s_00332b4a331471::t_79c91ebe5233b6 189-195
+  s_00332b4a331471::t_8f134f2fc6500c 108,152-155,216-221,226,236,270-275
+  s_00332b4a331471::t_df932f40336dea 187-188
+  s_00332b4a331471::t_a36c993926f077 99
+helper/scripts/test.sh
+  s_00332b4a331471::t_b9f00bb4739928 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "de80ca3f685e45baf91d2481fc70f7fe996f2f04",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
