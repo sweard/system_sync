@@ -6,6 +6,7 @@ from pathlib import Path
 import select
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -226,3 +227,60 @@ class TaskFeedbackTest(unittest.TestCase):
         self.assertEqual(result.stdout, "native-data")
         self.assertIn("[~] fast", result.stderr)
         self.assertNotIn("unbound variable", result.stderr)
+
+    def test_ticker_stops_sleep_when_interrupted_immediately_after_launch(self):
+        child = self.base / "sleep-process.json"
+        paused = self.base / "ticker-paused"
+        resume = self.base / "ticker-resume"
+        sleeper = self.bin / "sleep"
+        sleeper.write_text(f'#!{sys.executable}\nimport json, os, time\n'
+                           f'with open({str(child)!r}, "w") as stream:\n'
+                           ' json.dump({"pid": os.getpid(), "parent": os.getppid()}, stream)\n'
+                           'time.sleep(30)\n')
+        sleeper.chmod(0o755)
+        # DEBUG stops the ticker at its first command after launching sleep,
+        # before it can record $! or enter wait. No scheduler timing is assumed.
+        script = r'''set -Eeuo pipefail
+set -T
+trap 'if [[ "$BASH_SUBSHELL" == 2 && ! -e "$FEEDBACK_TICKER_PAUSED" ]] && [[ -n "$(jobs -pr)" ]]; then
+  : > "$FEEDBACK_TICKER_PAUSED"
+  while [[ ! -e "$FEEDBACK_TICKER_RESUME" ]]; do /bin/sleep 0.01; done
+fi' DEBUG
+source "$1"
+system_sync_step fixture /bin/sh -c 'touch "$FEEDBACK_ENTERED"; while [ ! -e "$FEEDBACK_RELEASE" ]; do /bin/sleep 0.01; done; printf native-data'
+'''
+        environment = dict(self.env, FEEDBACK_TICKER_PAUSED=str(paused), FEEDBACK_TICKER_RESUME=str(resume))
+        process = subprocess.Popen(["/bin/bash", "-c", script, "fixture", str(self.root / "scripts/task-output.sh")],
+                                   cwd=self.root, env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   start_new_session=True)
+        try:
+            deadline = time.monotonic() + 6
+            while not (child.exists() and paused.exists() and self.entered.exists()):
+                if process.poll() is not None or time.monotonic() >= deadline:
+                    self.fail("ticker did not reach the interruption boundary")
+                time.sleep(0.01)
+            # The file can be visible before its JSON write completes.
+            while True:
+                try:
+                    ticker = json.loads(child.read_text())["parent"]
+                    break
+                except json.JSONDecodeError:
+                    if time.monotonic() >= deadline:
+                        raise
+                    time.sleep(0.01)
+            os.kill(ticker, signal.SIGTERM)
+            self.release.touch()
+            stdout, stderr = process.communicate(timeout=3)
+            self.assertEqual(process.returncode, 0, stderr.decode())
+            self.assertEqual(stdout, b"native-data")
+            self.assertIn(b"[~] fixture", stderr)
+        finally:
+            resume.touch()
+            self.release.touch()
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait()
+            process.stdout.close()
+            process.stderr.close()

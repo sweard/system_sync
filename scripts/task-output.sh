@@ -9,12 +9,12 @@ system_sync_step() (
   shift
   printf '[~] %s\n' "$label" >&2
   (
-    sleeper=""
-    trap '[[ -z "$sleeper" ]] || kill "$sleeper" 2>/dev/null || true; [[ -z "$sleeper" ]] || wait "$sleeper" 2>/dev/null || true; exit 0' INT TERM
+    # A signal can arrive between starting sleep and recording $!. Read the
+    # shell's job table during cleanup so that child cannot keep pipes open.
+    trap 'trap "" INT TERM; for sleeper in $(jobs -pr); do kill "$sleeper" 2>/dev/null || true; done; wait 2>/dev/null || true; exit 0' INT TERM
     while :; do
       sleep 10 &
-      sleeper=$!
-      wait "$sleeper" || exit 0
+      wait "$!" || exit 0
       printf '[~] %s（仍在执行，已等待 %s 秒）\n' "$label" "$((SECONDS - started))" >&2
     done
   ) &
