@@ -1,0 +1,50 @@
+helper/scripts/build.sh
+  s_00332b4a331471::t_5b8100d8fc474b 12-18,23-24
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_00332b4a331471::t_3b55194aedd99d 1-4
+tests/test_ci_environment.py
+  s_00332b4a331471::t_3e1f6765f72145 94-95,97,107-109
+  s_00332b4a331471::t_5b8100d8fc474b 1-18,20-34,36-93,96,98-106,110
+  s_00332b4a331471::t_8b5c2149a3b154 19,35
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_00332b4a331471::t_3b55194aedd99d 42
+.github/workflows/check.yml
+  s_00332b4a331471::t_5b8100d8fc474b 69,71,73
+docs/roadmap.md
+  s_00332b4a331471::t_3e1f6765f72145 23
+  s_6b8270b6e632f5::t_3d1166e8aa9c58 26
+README.md
+  s_00332b4a331471::t_8b5c2149a3b154 67
+helper/README.md
+  s_6b8270b6e632f5::t_3d1166e8aa9c58 124,126
+  s_00332b4a331471::t_8b5c2149a3b154 85,118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83d163fe6173b92648090bd5b81340d402745d4a",
+  "prompts": {},
+  "humans": {
+    "h_74ac6e576b13a5": {
+      "author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  },
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
