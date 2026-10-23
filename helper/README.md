@@ -84,15 +84,35 @@ mise run --tool "go@$toolchain_version" helper-bundle
 mise run --tool "go@$toolchain_version" check
 ```
 
-`check` 已包含本机构建和安装，不需要在完整验收前再运行一次 `helper-build`；开发中仅需快速构建并试用本机版本时，单独使用 `mise run helper-build`。
+`check` 已包含本机构建和安装、Go 静态检查、Git 差异检查及待提交改动列表，不需要在完整验收前再运行一次 `helper-build`；开发中仅需快速构建并试用本机版本时，单独使用 `mise run helper-build`。
 
-`check` 的默认范围随执行机器自动识别，包含公共逻辑及当前 OS、CPU 架构和 Linux profile；集成测试默认最多 2 项并发，显示阶段和逐用例耗时摘要。`check --jobs 1` 用于串行诊断，发布前或 CI 使用 `check --all-platforms` 保留完整跨平台覆盖；报告和详细日志位于 `.system-sync/check/`，见[测试说明](../tests/README.md#运行检查)。
+`check` 的默认范围随执行机器自动识别，包含公共逻辑及当前 OS、CPU 架构和 Linux profile；集成测试默认最多 2 项并发，显示阶段和逐用例耗时摘要。`mise run check --jobs N` 调整集成测试并发数，`--jobs 1` 用于串行诊断；阶段顺序和时序敏感用例的串行规则保持。发布前或 CI 使用 `check --all-platforms` 保留完整跨平台覆盖；报告和详细日志位于 `.system-sync/check/`，见[测试说明](../tests/README.md#运行检查)。
 
 `--tool` 为这次 task 显式选择已安装的版本，不改写项目或全局工具声明。外层 `mise exec "go@$toolchain_version" -- mise run ...` 的内层 task 会重新计算工具环境，不能代替内层的显式选择。直接调用脚本时可使用 `mise exec "go@$toolchain_version" -- ./helper/scripts/build.sh`。构建与 Go 测试脚本均严格检查当前编译器是否与 `tools.go` 一致；`GOTOOLCHAIN=local` 禁止自动切换工具链，Go 模块网络保持关闭。完整检查还需要 zsh 和支持 Go race 检查的本机 C 工具链，无需 Python。
 
-通过 `mise upgrade --global --bump --no-prune go` 更新受管 `tools.go` 后，workflow、脚本、测试替身和错误提示会自动读取新值，无需另改版本文件。升级不会自动重建预编译包；需按上述流程重建四平台包、运行检查并刷新相应 mise 锁文件，将配置、锁文件、归档及校验清单一同审阅提交。直接编辑版本时同样适用。`go.mod` 的 `go` 声明用于模块兼容性要求，不承担精确构建版本选择。
+通过 `mise upgrade --global --bump --no-prune go` 更新受管 `tools.go` 后，workflow、脚本、测试替身和错误提示会自动读取新值，无需另改版本文件。升级后运行 `check`，可按下节的提示同步下载锁和预编译包；将配置、锁文件、归档及校验清单一同审阅提交。直接编辑版本时同样适用。`go.mod` 的 `go` 声明用于模块兼容性要求，不承担精确构建版本选择。
 
 构建使用 `CGO_ENABLED=0`、`-trimpath` 和固定版本注入，关闭自动 VCS 信息捕获；`REVISION` 记录 Git 提交及是否有本地改动，不嵌入本机配置或绝对源码路径。`helper-build` 构建并启用本机版本；`helper-bundle` 更新随仓库保存的四平台归档。修改生产源码不会隐式重编译，生产源码与新的 `helper/prebuilt/<版本>/` 应一同提交。`dev/` 的检查运行器和集成测试不进入生产分发包；仅修改开发检查时无需重建预编译包。
+
+## Go 升级后的准备
+
+升级已经安装成功，或编辑 `tools.go` 并显式安装该版本后，在仓库根目录执行：
+
+```bash
+mise run check
+# 根据提示审阅范围，输入完整小写 yes
+# 发布前完整范围则用 mise run check --all-platforms
+```
+
+入口在 PATH 中的 Go 缺失或错版时，用 `mise where go@<固定版本>` 查找并选择已安装的版本；不会安装缺失工具。准备检查对比 `tools.go`、仓库 `mise.lock` 中的 Go 版本/请求绑定及四平台 URL/SHA256、预编译构建输入中的 Go 摘要。只改变 PATH 不触发重建；全部一致时明确提示无需准备。
+
+发现版本或下载锁差异后，显示将更新的路径。只有标准输入、标准输出都是终端且不在 CI 中，才接受完整小写 `yes`；回车、`y`、`YES` 或带空格的输入取消并以失败状态结束检查。管道中的 `yes`、mise 的自动确认选项均不能替代这次确认。CI 和非交互执行发现差异直接失败，需先在开发机完成准备并提交结果。
+
+确认后，准备流程取得项目共享操作锁，复查确认期间没有文件变化，并将原始锁文件、四个平台归档及两个校验清单备份到 `.system-sync/check/go-prepare-*/before/`。在独立 mise 配置目录中只声明同一个 Go 固定版本，执行 `mise lock --platform macos-arm64,macos-x64,linux-x64,linux-arm64 go`，核对 Go 以外的锁内容未改变，再原子写回 `dotfiles/common/mise/mise.lock`。不调用 `--global`，因此不要求本机配置已经链接到仓库，也不触及其他全局或系统锁；不会加载私有配置或安装工具。[mise lock 官方说明](https://mise.jdx.dev/cli/lock.html)
+
+随后执行 `build.sh --bundle` 并重新校验四平台归档、下载锁与构建输入。每个外部准备步骤上限 10 分钟，执行期间保留阶段和等待提示。锁解析、构建、复核失败或收到可处理的中断信号时，停止并恢复准备前的锁和归档；备份、`commands.log` 和 `transaction.json` 保留供诊断。回滚不跟随新出现的符号链接，也不覆盖其他进程在准备期间改写的锁文件；受阻时明确列出备份位置，须人工恢复或合并。强制终止进程或断电不能保证自动回滚。准备成功后释放共享锁并继续原范围检查；后续测试失败时保留新产物供修复，不自动提交或推送。
+
+普通检查仍只校验当前平台归档并运行公共及本平台测试，`--all-platforms` 才执行完整范围；只有本次准备写入四个平台时会先复核全部新产物。源码/构建脚本变化、清单格式错误和归档损坏不作为 Go 升级自动修复，须先核对并按提示显式运行 `helper-bundle`。其他工具、环境变量或注释的合法变化不触发重建。
 
 ## 生成和安装预编译产物
 
@@ -118,7 +138,7 @@ mise run helper-install /绝对路径/产物目录
 
 每批产物同时生成外层 `SHA256SUMS` 和 `SOURCE_SHA256SUMS`。后者以 `helper/` 为基准，记录非测试 Go 源码、Go 模块文件、vendored 依赖、helper 版本、Go 读取入口、构建脚本、共享的 `../scripts/task-output.sh` 和许可等公共构建输入。配置只记录 `tools.go` 的语义值：`../dotfiles/common/mise/config.toml#tools.go` 条目是“版本字符串 + 换行”的 SHA256，不是整个 TOML 文件的摘要。其他合法配置、注释及排版变化不会触发重建，也不收集私有环境、本机历史或日志。
 
-`./helper/scripts/verify.sh` 需要 mise 解析版本，无需 Go/Python 即可校验四平台归档及源码输入。`check` 的第一步通过 `verify.sh --current-platform` 只核对执行机器对应的归档，`check --all-platforms` 和 CI 的独立归档校验保留四平台检查。Go 版本、源码或其他构建输入改变但未更新分发包时会停止并提示运行 `helper-bundle`。它用于防止遗漏更新，不是可重现构建的证明。
+`./helper/scripts/verify.sh` 需要 mise 解析版本，无需 Go/Python 即可校验四平台归档及源码输入。`check` 先核对 Go 准备状态，再通过 `verify.sh --current-platform` 核对执行机器对应的归档，`check --all-platforms` 和 CI 的独立归档校验保留四平台检查。独立 `verify.sh` 发现版本、源码或其他构建输入漂移仍直接失败，不提供准备交互。它用于防止遗漏更新，不是可重现构建的证明。
 
 `helper-build` / `helper-dist` / `helper-bundle` 在开始编译每个平台前报告目标，静默编译超过 10 秒时继续显示等待提示；失败指出目标及原退出码，结束临时构建且不发布本批产物。`check` 的 Go 测试启用详细结果，并在编译测试准备阶段持续反馈。`helper-install` 显示归档校验、解包及安装锁等待，默认不联网、不编译。上述进度写入 stderr。
 

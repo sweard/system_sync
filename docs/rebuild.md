@@ -79,6 +79,8 @@ git diff -- dotfiles/common/mise dotfiles/macos/mise
 
 此命令不会升级固定的版本声明。逐个升级仍使用 `mise upgrade --global --bump --no-prune <工具>`；之后一起审阅配置、锁文件及依赖图的变化。`.local` 配置对应的锁文件和依赖图不提交。规则见 [mise 全局锁文件](https://mise.jdx.dev/dev-tools/mise-lock.html#global-lockfiles)与[锁文件格式](https://mise.jdx.dev/dev-tools/mise-lock-reference.html)。
 
+Go 升级后可运行 `mise run check`，按提示输入完整小写 `yes`，由检查入口在隔离配置中只更新仓库的四平台 Go 下载锁并重建归档，再继续本机范围检查。无需另外运行全局锁命令；CI 或非交互执行只检查、不自动准备。该流程不处理源码变化或损坏归档，备份和失败恢复规则见[Go 升级后的准备](../helper/README.md#go-升级后的准备)。
+
 锁定的版本与下载 URL 是两层保证：Node、Python、Bun、uv、Java 和支持的平台 Ruby / Flutter 记录后端提供的 URL 与校验值；Rust 由 rustup 安装，锁中记录精确版本和组件参数，下载校验由 rustup 完成。`--locked` 不表示离线，也不会为后端补造校验值。Flutter 官方清单当前没有 Linux ARM64 归档，该平台须先选择受支持的 SDK 来源。
 
 ## Java 与 Flutter

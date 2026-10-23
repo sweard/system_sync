@@ -150,6 +150,7 @@ func runnerCase(f *fixture, name string) {
 		code := checkrun.Run(context.Background(), checkrun.Config{Root: f.root, ReportPath: p, Jobs: 1, Out: io.Discard, Err: io.Discard, Stages: []checkrun.Command{{Name: "stop", Args: []string{"/bin/sh", "-c", "exit 7"}}}})
 		equal(t, code, 7)
 		equal(t, jsonData(f, p)["target"], runtime.GOOS+"_"+runtime.GOARCH)
+		checkGoPreparationCLI(f)
 	case "test_previous_durations_balance_groups_without_dropping_or_duplicating_cases":
 		cases := []checkrun.Case{{ID: "a"}, {ID: "b"}, {ID: "c"}, {ID: "d"}}
 		previous := []checkrun.Timing{{ID: "a", Seconds: 8}, {ID: "b", Seconds: 4}, {ID: "c", Seconds: 3}, {ID: "d", Seconds: 1}}

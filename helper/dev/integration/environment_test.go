@@ -3,11 +3,18 @@
 package integration
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
+	"syscall"
+	"time"
+	"unsafe"
 )
 
 func init() {
@@ -235,6 +242,13 @@ printf '%s|%s|%s\n' "$CASE_SUBMITTER" "$ANDROID_HOME" "$PATH"`
 }
 func zshCase(f *fixture, name string) {
 	t := f.t
+	if os.Getenv("SYSTEM_SYNC_ZSH_CTTY_PROBE") == "1" {
+		var foreground int32
+		_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, os.Stdin.Fd(), syscall.TIOCGPGRP, uintptr(unsafe.Pointer(&foreground)))
+		if errno != 0 || int(foreground) != syscall.Getpgrp() {
+			t.Fatal("regression probe does not own its foreground terminal", foreground, errno)
+		}
+	}
 	calls := filepath.Join(f.base, "calls")
 	f.env = map[string]string{"HOME": f.home, "ZDOTDIR": f.home, "PATH": f.bin + ":/usr/bin:/bin:" + f.bin, "TERM": "dumb", "ZSH_TEST_CALLS": calls}
 	for _, n := range []string{"zshenv", "zshrc"} {
@@ -275,6 +289,9 @@ printf '%s\n' 'export ZSH_TEST_MISE=active'`)
 		lines := shell("-i -c", `print -r -- "$ZSH_TEST_PLATFORM|$ZSH_TEST_THEME|$ZSH_TEST_PRIVATE|$ZSH_TEST_COMPLETION|$ZSH_TEST_MISE|$(command -v git)|${+functions[nvm]}|${+functions[pyenv]}"`)
 		equal(t, lines, []string{"loaded|loaded|local value|loaded|active|" + userGit + "|0|0"})
 		equal(t, read(t, calls), "activate zsh\n")
+		if os.Getenv("SYSTEM_SYNC_ZSH_CTTY_PROBE") != "1" {
+			zshWithCallerTerminal(f)
+		}
 	case "test_login_noninteractive_loads_environment_without_prompt_hooks":
 		executable(t, filepath.Join(f.home, ".local/bin/mise"), "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$ZSH_TEST_CALLS\"\ntest \"$*\" = 'env -s zsh' || exit 99\nprintf '%s\\n' 'export ZSH_TEST_MISE=environment'\n")
 		platforms := []string{"macos", "linux"}
@@ -296,6 +313,37 @@ printf '%s\n' 'export ZSH_TEST_MISE=active'`)
 		}
 	default:
 		t.Fatal("unported", name)
+	}
+}
+
+// A PTY on stdin alone does not reproduce a caller's controlling terminal.
+// Re-run this case as a foreground session leader with a real controlling PTY;
+// fixture subprocesses must not wait for foreground job-control ownership.
+func zshWithCallerTerminal(f *fixture) {
+	t := f.t
+	master, slave, e := openPTY()
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer master.Close()
+	defer slave.Close()
+	pattern := []string{}
+	for _, part := range strings.Split(t.Name(), "/") {
+		pattern = append(pattern, "^"+regexp.QuoteMeta(part)+"$")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 55*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run="+strings.Join(pattern, "/"), "-test.parallel=1", "-test.timeout=50s")
+	cmd.Dir = f.root
+	cmd.Env = append(f.environment(), "SYSTEM_SYNC_ZSH_CTTY_PROBE=1")
+	cmd.Stdin = slave
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
+	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) }
+	cmd.WaitDelay = 3 * time.Second
+	var output bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &output, &output
+	if e := runTracked(cmd); e != nil {
+		t.Fatalf("interactive zsh under caller terminal failed: %v\n%s", e, output.String())
 	}
 }
 func aliasCase(f *fixture, name string) {

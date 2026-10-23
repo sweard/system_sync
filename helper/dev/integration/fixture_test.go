@@ -302,7 +302,10 @@ func (f *fixture) input(input string, args ...string) result {
 	c.Dir = f.root
 	c.Env = f.environment()
 	c.Stdin = strings.NewReader(input)
-	c.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// Pipe-based commands must not inherit the caller's controlling terminal:
+	// interactive zsh can otherwise stop waiting for foreground ownership.
+	// Setsid also makes the child PID its process-group ID for cancellation.
+	c.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	c.Cancel = func() error { return syscall.Kill(-c.Process.Pid, syscall.SIGKILL) }
 	var a, b bytes.Buffer
 	c.Stdout = &a
@@ -541,7 +544,7 @@ func (w *liveWriter) Write(p []byte) (int, error) {
 }
 
 // ttyOutput is used only when stdout's terminal status is the behavior under test.
-func (f *fixture) ttyOutput(args []string) result {
+func (f *fixture) ttyOutput(args []string, answers ...[2]string) result {
 	t := f.t
 	master, slave, e := openPTY()
 	if e != nil {
@@ -564,7 +567,8 @@ func (f *fixture) ttyOutput(args []string) result {
 	}
 	slave.Close()
 	done := make(chan string, 1)
-	go func() { b, _ := io.ReadAll(master); done <- string(b) }()
+	w := &terminalWriter{input: master, answers: answers}
+	go func() { _, _ = io.Copy(w, master); done <- w.buf.String() }()
 	e = waitTracked(c)
 	var output string
 	select {
@@ -575,6 +579,9 @@ func (f *fixture) ttyOutput(args []string) result {
 	}
 	if ctx.Err() != nil {
 		t.Fatal("terminal output timed out", output)
+	}
+	if w.next != len(answers) {
+		t.Fatalf("missing terminal answers %d/%d:\n%s", w.next, len(answers), output)
 	}
 	code := 0
 	if e != nil {

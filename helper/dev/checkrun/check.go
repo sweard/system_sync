@@ -56,6 +56,7 @@ type Config struct {
 	All              bool
 	Jobs             int
 	Out, Err         io.Writer
+	In               *os.File
 	Stages           []Command
 }
 type Command struct {
@@ -373,7 +374,7 @@ func Run(ctx context.Context, c Config) int {
 	}
 	stages := c.Stages
 	if stages == nil {
-		stages = []Command{{"预编译包与构建输入", verify, false}, {"本机 helper 构建与启用", []string{filepath.Join(root, "helper/scripts/build.sh")}, false}, {"开发环境预检", []string{filepath.Join(root, "helper/scripts/run.sh"), "runtime", "--check"}, false}, {"mise task 定义", []string{"mise", "tasks", "validate"}, false}, {"Go 测试与 race", []string{filepath.Join(root, "helper/scripts/test.sh")}, false}, {"Go 集成测试", []string{"go", "test", "-mod=vendor", "-json", "-count=1", "-tags=integration", fmt.Sprintf("-parallel=%d", c.Jobs), "-timeout=10m", "./dev/integration"}, true}}
+		stages = []Command{{"Go 版本与下载锁", nil, false}, {"预编译包与构建输入", verify, false}, {"本机 helper 构建与启用", []string{filepath.Join(root, "helper/scripts/build.sh")}, false}, {"开发环境预检", []string{filepath.Join(root, "helper/scripts/run.sh"), "runtime", "--check"}, false}, {"mise task 定义", []string{"mise", "tasks", "validate"}, false}, {"Go 测试与 race", []string{filepath.Join(root, "helper/scripts/test.sh")}, false}, {"Go 集成测试", []string{"go", "test", "-mod=vendor", "-json", "-count=1", "-tags=integration", fmt.Sprintf("-parallel=%d", c.Jobs), "-timeout=10m", "./dev/integration"}, true}, {"Go 静态检查", []string{"go", "-C", "helper", "vet", "-mod=vendor", "-tags=integration", "./..."}, false}, {"Git 差异检查", []string{"git", "diff", "--check"}, false}, {"Git 待提交改动", []string{"git", "status", "--short"}, false}}
 	}
 	started := time.Now()
 	code := 0
@@ -409,7 +410,21 @@ func Run(ctx context.Context, c Config) int {
 			code = 1
 			break
 		}
-		if stage.Integration {
+		if c.Stages == nil && i == 0 {
+			input := c.In
+			if input == nil {
+				input = os.Stdin
+			}
+			e := PrepareGo(ctx, root, c.All, input, io.MultiWriter(out, log), io.MultiWriter(errout, log))
+			code = 0
+			if e != nil {
+				fmt.Fprintln(errout, "[x]", e)
+				code = 1
+				if ctx.Err() != nil {
+					code = 130
+				}
+			}
+		} else if stage.Integration {
 			fmt.Fprintf(out, "[~] 集成测试：选择 %d 项，其他平台 %d 项；最多 %d 并发，时序测试随后串行\n", len(expected), len(report.TestsExcluded), c.Jobs)
 			pr, pw := io.Pipe()
 			done := make(chan int, 1)

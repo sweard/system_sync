@@ -43,7 +43,8 @@ env.SYSTEM_SYNC_AUDIT_CALLER_PATH = '{{ get_env(name="PATH", default="") }}'
 run = "./helper/scripts/run.sh audit"
 
 [tasks.check]
-description = "检查当前平台并统计阶段与集成测试耗时；--all-platforms 完整验收，不修改系统软件"
+description = "检查当前平台；集成测试默认最多 2 并发，--jobs N 调整（1 串行）；--all-platforms 完整验收；Go 版本变化后输入 yes 准备"
+raw = true
 run = "./tests/check.sh"
 
 [tasks.clean]

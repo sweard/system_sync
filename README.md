@@ -73,7 +73,9 @@ mise install "go@$toolchain_version"
 mise run --tool "go@$toolchain_version" check
 ```
 
-`check` 根据执行命令的机器自动选择系统、CPU 架构和 Linux profile，运行公共与当前平台的验收；集成测试默认最多 2 项并发，并显示阶段耗时、完成数量及最慢用例。使用 `check --jobs 1` 串行诊断，`check --all-platforms` 执行 CI 使用的完整跨平台范围。逐项数据和详细日志保存在 Git 忽略的 `.system-sync/check/`，见[检查范围与计时](tests/README.md#运行检查)。
+`check` 根据执行命令的机器自动选择系统、CPU 架构和 Linux profile，运行公共与当前平台的验收；集成测试默认最多 2 项并发，并显示阶段耗时、完成数量及最慢用例。使用 `mise run check --jobs N` 调整集成测试并发数，`--jobs 1` 串行诊断；各检查阶段仍顺序执行，时序敏感用例固定串行。`check --all-platforms` 执行 CI 使用的完整跨平台范围。逐项数据和详细日志保存在 Git 忽略的 `.system-sync/check/`，见[检查范围与计时](tests/README.md#运行检查)。
+
+Go 升级后可直接运行 `mise run check`：入口会选择已安装的 `tools.go` 固定版本。发现 Go 下载锁或预编译包的构建版本未同步时，列出写入范围，完整输入小写 `yes` 后更新四平台 Go 锁、重建归档，再继续原平台范围的检查。CI 或管道中不询问、不自动更新，发现差异即失败；源码变化或归档损坏须先人工核对。准备包含共享锁、备份和失败回滚；正常检查还会运行 Go 静态检查、`git diff --check` 并列出待提交改动，见[Go 升级后的准备](helper/README.md#go-升级后的准备)。
 
 Go helper 源码、检查运行器和隔离回归集中在 [helper/](helper/)；`tests/` 保留检查入口、覆盖对照及独立报告基线。旧 Python 参考实现和测试脚本已移除，详见[测试与覆盖迁移](tests/README.md)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
 

@@ -8,8 +8,8 @@ import (
 	"unsafe"
 )
 
-// Match openpty semantics: stdin is a PTY, output remains a pipe, and the PTY
-// is not the controlling terminal of the child or its native subprocesses.
+// Allocate a PTY without claiming a controlling terminal. Most callers use it
+// only for stdin; the job-control regression explicitly claims it with Setctty.
 func openPTY() (*os.File, *os.File, error) {
 	fd, e := syscall.Open("/dev/ptmx", syscall.O_RDWR|syscall.O_NOCTTY, 0)
 	if e != nil {
