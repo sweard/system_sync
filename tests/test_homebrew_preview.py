@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 import unittest
 
+from check_scope import for_platforms
+
 from test_converge import run_terminal
 from helper_fixture import prepare_helper
 
@@ -99,6 +101,7 @@ esac
 '''
 
 
+@for_platforms("macos")
 class HomebrewPreviewTrustTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="system-sync-preview-")

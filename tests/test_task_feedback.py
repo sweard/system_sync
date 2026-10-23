@@ -14,6 +14,7 @@ import time
 import unittest
 
 from helper_fixture import GO_VERSION, prepare_go_config, prepare_helper
+from check_scope import serial
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -72,6 +73,7 @@ else: sys.exit(93)
 '''
 
 
+@serial
 class TaskFeedbackTest(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="system-sync-feedback-")

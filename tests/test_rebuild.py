@@ -9,6 +9,8 @@ import tempfile
 import tomllib
 import unittest
 
+from check_scope import current_target, scope, selected_platforms
+
 ROOT = Path(__file__).resolve().parents[1]
 MISE = shutil.which("mise")
 
@@ -77,8 +79,10 @@ class PublicRebuildTest(unittest.TestCase):
 
 class ToolLocksTest(unittest.TestCase):
     def test_locks_cover_declared_versions_and_keep_dependency_graphs_in_repository(self):
-        for config_name, lock_name in (("common/mise/config.toml", "common/mise/mise.lock"),
-                                       ("macos/mise/config.toml", "macos/mise/mise.macos.lock")):
+        configurations = (("common/mise/config.toml", "common/mise/mise.lock"),
+                          ("macos/mise/config.toml", "macos/mise/mise.macos.lock"))
+        for config_name, lock_name in selected_platforms(configurations,
+                key=lambda item: "common" if item[0].startswith("common/") else "macos"):
             config = tomllib.loads((ROOT / "dotfiles" / config_name).read_text())
             lock_path = ROOT / "dotfiles" / lock_name
             lock = tomllib.loads(lock_path.read_text())
@@ -87,7 +91,10 @@ class ToolLocksTest(unittest.TestCase):
                 version = spec if isinstance(spec, str) else spec["version"]
                 self.assertEqual([entry["version"] for entry in lock["tools"][name]], [version])
                 for entry in lock["tools"][name]:
-                    for value in entry.values():
+                    target = current_target().replace("darwin_", "macos-").replace("linux_", "linux-").replace("amd64", "x64")
+                    for key, value in entry.items():
+                        if scope() != "all" and key.startswith("platforms.") and key != "platforms." + target:
+                            continue
                         if isinstance(value, dict) and "url" in value:
                             self.assertTrue(value["url"].startswith("https://"))
                             self.assertTrue(value.get("checksum"))

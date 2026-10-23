@@ -9,6 +9,8 @@ import tempfile
 import tomllib
 import unittest
 
+from check_scope import selected_platforms
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MISE = shutil.which("mise")
@@ -46,10 +48,10 @@ class SharedPathTest(unittest.TestCase):
         self.assertEqual(path, "/usr/bin:/bin")
 
     def test_platform_paths_spaces_and_shim_priority(self):
-        for platform, sdk, toolbox in (
+        for platform, sdk, toolbox in selected_platforms((
             ("darwin25.0", "Library/Android/sdk", "Library/Application Support/JetBrains/Toolbox/scripts"),
             ("linux-gnu", "Android/Sdk", ".local/share/JetBrains/Toolbox/scripts"),
-        ):
+        ), key=lambda item: "macos" if item[0].startswith("darwin") else "linux"):
             with self.subTest(platform=platform):
                 relative_paths = [".local/share/mise/shims", ".local/bin", ".git-ai/bin",
                                   ".cargo/bin", toolbox,

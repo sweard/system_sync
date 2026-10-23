@@ -43,15 +43,8 @@ env.SYSTEM_SYNC_AUDIT_CALLER_PATH = '{{ get_env(name="PATH", default="") }}'
 run = "./helper/scripts/run.sh audit"
 
 [tasks.check]
-description = "校验仓库预编译包，显式构建 Go helper 并运行 Go/Python 隔离测试；不修改系统软件"
-run = [
-  "./helper/scripts/verify.sh",
-  "./helper/scripts/build.sh",
-  "python3 ./tests/check_environment.py",
-  "mise tasks validate",
-  "./helper/scripts/test.sh",
-  "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v",
-]
+description = "检查当前平台并统计阶段与集成测试耗时；--all-platforms 完整验收，不修改系统软件"
+run = "python3 -B ./tests/run_checks.py"
 
 [tasks.clean]
 description = "预览本机验证环境与缓存清理；--apply 输入 yes 执行，--apply --yes 跳过确认"

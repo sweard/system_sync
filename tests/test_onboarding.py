@@ -12,6 +12,7 @@ import tempfile
 import unittest
 
 from helper_fixture import prepare_helper
+from check_scope import for_platforms, selected_platforms
 from test_converge import run_terminal
 
 
@@ -78,6 +79,7 @@ else:
 '''
 
 
+@for_platforms("macos")
 class OnboardingCLITest(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="system-sync-onboard-")
@@ -160,8 +162,9 @@ class OnboardingCLITest(unittest.TestCase):
         self.assertEqual(self.manifest.read_bytes(), before)
         self.assertEqual(self.data()["mutations"], [])
 
+    @for_platforms("macos", "arch")
     def test_install_only_on_macos_and_arch_preserves_extras_and_is_repeatable(self):
-        for profile in ("macos", "arch"):
+        for profile in selected_platforms(("macos", "arch")):
             with self.subTest(profile=profile):
                 self.write_manifest(profile)
                 data = self.data()
@@ -196,6 +199,7 @@ class OnboardingCLITest(unittest.TestCase):
         self.assertLess(result.stdout.index("Fixture: onboard install"), result.stdout.index("复核补装结果"))
         self.assertIn("缺失软件已补装", result.stdout)
 
+    @for_platforms("arch")
     def test_query_failure_does_not_publish_partial_capture(self):
         self.write_manifest("arch")
         data = self.data()
@@ -214,6 +218,7 @@ class OnboardingCLITest(unittest.TestCase):
         self.assertEqual(self.data()["mutations"], [])
 
     @unittest.skipUnless(shutil.which("mise"), "real mise CLI unavailable")
+    @for_platforms("common")
     def test_real_mise_config_deployment_preserves_private_keys_and_backs_up(self):
         real_mise = shutil.which("mise")
         mise = self.bin / "mise"

@@ -72,7 +72,7 @@ jobs:
         shell: bash
         run: |
           toolchain_version="$(./helper/scripts/go-version.sh)"
-          mise run --tool "go@$toolchain_version" check
+          mise run --tool "go@$toolchain_version" check --all-platforms
 
   helper-artifacts:
     name: Precompiled helpers

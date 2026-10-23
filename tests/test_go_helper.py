@@ -14,6 +14,7 @@ import tempfile
 import unittest
 
 from helper_fixture import GO_VERSION, prepare_go_config, prepare_helper
+from check_scope import for_platforms, scope, selected_targets
 import audit_fixture as fixtures
 
 
@@ -98,6 +99,7 @@ class GoAuditGoldenTest(unittest.TestCase):
         fixture.environment["SYSTEM_SYNC_AUDIT_CALLER_PATH"] = f"{fixture.home}::relative:{fixture.home / 'absent'}:{fixture.home}"
         self.compare(fixture)
 
+    @for_platforms("all")
     def test_all_platform_reports_version_drift_and_cleanup_review_match(self):
         for required in fixtures.PACKAGE_REQUIRED:
             fixture = self.fixture()
@@ -196,6 +198,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
         self.assertIn("尚未准备", self.run_helper("--version", success=False).stderr)
         self.assertFalse(marker.exists())
 
+    @for_platforms("macos")
     def test_go_runtime_preflight_and_readonly_audit_need_no_interpreter(self):
         commands = self.root / "bin"
         commands.mkdir()
@@ -220,6 +223,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)["summary"]["error"], 0)
         self.assertFalse(marker.exists())
 
+    @for_platforms("macos")
     def test_write_workflows_and_shared_lock_need_no_python_or_go(self):
         import fcntl
         commands, marker = self.deny_build_and_download()
@@ -364,7 +368,11 @@ class GoHelperIntegrationTest(unittest.TestCase):
     def clone_bundle(self):
         version = (self.root / "helper/VERSION").read_text().strip()
         target = self.root / "helper/prebuilt" / version
-        shutil.copytree(ROOT / "helper/prebuilt" / version, target)
+        target.mkdir(parents=True)
+        selected = {f"system-sync-helper_{version}_{name}.tar.gz" for name in selected_targets()}
+        for source in (ROOT / "helper/prebuilt" / version).iterdir():
+            if source.name in selected or source.name in ("SHA256SUMS", "SOURCE_SHA256SUMS"):
+                shutil.copy2(source, target / source.name)
         shutil.rmtree(self.root / ".system-sync")
         return target
 
@@ -458,7 +466,8 @@ class GoHelperIntegrationTest(unittest.TestCase):
         (commands / "mise").symlink_to(shutil.which("mise"))
 
         def verify(success=True):
-            result = subprocess.run([str(self.root / "helper/scripts/verify.sh")], cwd=self.root.parent,
+            arguments = [] if scope() == "all" else ["--current-platform"]
+            result = subprocess.run([str(self.root / "helper/scripts/verify.sh"), *arguments], cwd=self.root.parent,
                                     env=self.environment, capture_output=True, text=True, timeout=15)
             self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
             return result
@@ -507,7 +516,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
         bundle = ROOT / "helper/prebuilt" / version
         checksums = dict(line.split()[::-1] for line in (bundle / "SHA256SUMS").read_text().splitlines())
         self.assertEqual(len(checksums), 4)
-        for target in ("darwin_arm64", "darwin_amd64", "linux_arm64", "linux_amd64"):
+        for target in selected_targets():
             archive = bundle / f"system-sync-helper_{version}_{target}.tar.gz"
             self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(), checksums[archive.name])
             with tarfile.open(archive) as contents:

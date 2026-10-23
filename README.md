@@ -73,6 +73,8 @@ mise install "go@$toolchain_version"
 mise run --tool "go@$toolchain_version" check
 ```
 
+`check` 根据执行命令的机器自动选择系统、CPU 架构和 Linux profile，运行公共与当前平台的验收；集成测试默认最多 2 个进程并行，并显示阶段耗时、完成数量及最慢用例。使用 `check --jobs 1` 串行诊断，`check --all-platforms` 执行 CI 使用的完整跨平台范围。逐项数据和详细日志保存在 Git 忽略的 `.system-sync/check/`，见[检查范围与计时](tests/README.md#运行检查)。
+
 Go helper 资源集中在 [helper/](helper/)，项目级隔离回归统一放在 `tests/`。旧 Python 参考实现已移除，保留直接验收 Go 的 Python 集成测试及独立报告基线，详见[测试与覆盖迁移](tests/README.md)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
 
 本仓库已关闭任务运行前的自动工具补装，避免审计时先改变本机状态。缺失的开发工具通过 `mise install` 显式安装。
@@ -101,7 +103,7 @@ mise run config-dry-run
 | 更新随仓库保存的四平台包及源码输入清单 | `mise run helper-bundle`，与源码一同提交 |
 | 导出四平台包到被 Git 忽略的本机目录 | `mise run helper-dist` |
 | 提前初始化或更新仓库版本的 helper | `mise run helper-install`；指定其他本机产物用 `mise run helper-install /绝对路径/产物目录` |
-| 开发验收：校验预编译包、构建并运行完整测试 | `mise run check` |
+| 开发验收：检查执行机器的平台并显示耗时 | `mise run check`；完整跨平台验收用 `mise run check --all-platforms` |
 | 预览 / 清理本机验证环境与缓存 | `mise run clean` / `mise run clean --apply`，详见[清理范围](docs/recovery.md#清理本机验证环境与缓存) |
 | 安装 / 卸载一个系统软件并记录清单 | `mise run package-install <包名>` / `mise run package-uninstall <包名>` |
 | 预览单包操作 | 在上述任务参数中加 `--dry-run` |
@@ -119,7 +121,7 @@ mise run config-dry-run
 | 预览工具升级 | `mise upgrade --global --bump --no-prune --dry-run uv`，工具名可替换 |
 | 取消全局工具声明并清理无其他配置使用的版本 | `mise unuse --global go` |
 
-旧任务名 `status`、`dry-run`、`vscode-dry-run` 分别作为 `package-status`、`package-dry-run`、`vscode-status` 的兼容别名，参数原样转交。`audit` 汇总状态；需要审阅软件事务时再运行 `package-dry-run`。完整 helper 开发验收使用 `helper-bundle → check`，无需提前重复执行 `helper-build`。
+旧任务名 `status`、`dry-run`、`vscode-dry-run` 分别作为 `package-status`、`package-dry-run`、`vscode-status` 的兼容别名，参数原样转交。`audit` 汇总状态；需要审阅软件事务时再运行 `package-dry-run`。helper 开发验收使用 `helper-bundle → check`，发布前或 CI 的完整范围使用 `check --all-platforms`，无需提前重复执行 `helper-build`。
 
 安装及同步过程会显示当前阶段；系统包和开发工具安装透传原生命令输出。审计、清单采集、配置预览、helper 构建和缓存清理也有阶段与每 10 秒的等待提示；只读报告、JSON 和 diff 的进度写入 stderr，stdout 保持原格式。Go helper 的状态查询默认最多 60 秒，失败提示区分超时、命令不可用及退出码，私有诊断继续过滤。详见[系统软件输出](docs/packages.md#执行过程的状态输出)和[配置同步](docs/dotfiles.md#应用配置的日常同步)。
 

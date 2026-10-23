@@ -14,11 +14,39 @@ mise install "go@$toolchain_version"
 mise run --tool "go@$toolchain_version" check
 ```
 
-`check` 依次校验四平台预编译包及源码输入、构建本机 helper、运行前置检查、验证 task、执行 Go race 测试及 Python 集成测试。`--tool` 显式选择本次 task 使用的 Go，不改写工具声明。只修改测试和文档不影响分发包输入，无需重新生成预编译包。
+`check` 自动识别执行命令的机器：macOS/Linux、ARM64/x86_64，以及 Linux 的 Arch/Debian/Fedora/openSUSE profile。默认校验当前系统和架构的预编译包及公共构建输入、构建本机 helper、运行前置检查、验证 task、执行本机 Go race 测试，以及公共和当前平台的 Python 集成测试。其他平台的专属包事务不在本地默认范围；公共解析器、安全规则等可移植单元测试继续执行。`--tool` 显式选择本次 task 使用的 Go，不改写工具声明。
+
+```bash
+# 与 CI 相同的完整范围：四平台归档和全部跨平台模拟场景
+mise run --tool "go@$toolchain_version" check --all-platforms
+
+# 串行诊断；默认只并行集成测试，进程数为 CPU 数与 2 的较小值
+mise run --tool "go@$toolchain_version" check --jobs 1
+
+# 保存一次测量，便于比较同一范围的串行/并行结果
+mise run --tool "go@$toolchain_version" check --report .system-sync/check/measurement.json
+```
+
+构建和环境准备依次执行，集成测试以完整测试方法为单位分配到隔离进程，保留各方法的 setup、cleanup 和所有子场景；已有耗时报告用于均衡分组。执行反馈、阻塞确认等 10 项时序敏感测试在其他工作进程结束后单独串行，保留原超时与断言。每 10 秒显示完成数量，各阶段结束报告耗时，最终列出最慢的 10 项集成测试。失败会保留非零退出码，进程结果缺失也视为失败，中断会回收工作进程。
+
+默认报告位于 `.system-sync/check/latest.json`，包含执行平台、范围、阶段耗时、每项测试的耗时与结果、排除清单及原始日志目录。每次运行的详细 unittest 输出按进程保存在同目录下的独立子目录，Git 忽略这些本机数据。`--all-platforms` 保留完整覆盖，CI 显式使用该选项；不是把其他平台的测试删除。只修改测试和文档不影响分发包输入，无需重新生成预编译包。
 
 `helper_fixture.py` 通过 Python 标准库 `tomllib` 读取同一 `tools.go` 作为独立预期值，CI 环境及构建反馈替身复用该值；实际 workflow 和构建/测试脚本共用 Bash 入口，以 `mise config get --file ... tools.go` 解析仓库指定文件。回归在临时副本中更改版本，验证所有入口随之选择、提示正确工具链，拒绝缺失字段、错误类型、版本范围、模板及非法 TOML，且不查询 Go 或安装工具。另覆盖 mise 缺失提示、全局/本地覆盖与环境变量不影响读取、不加载私有环境；构建输入校验验证 Go 字段及读取脚本漂移，其他工具、注释和环境设置变化不触发重建。
 
-2026-10-23 在本机 macOS ARM64 的隔离 HOME 和空 mise 全局配置下，完整检查通过：97 个 Go 顶层测试（含 race）、187 项 Python 3.15 回归、24 项 task 校验、四平台归档校验及 `go vet`。固定版本来源、命令反馈及 Bash 3.2 在 `C` locale 下的回归包含在内，Python 3.11.17 另通过 16 项相关回归。真实 Linux 包事务仍待验收。
+2026-10-23 在本机 macOS ARM64 的隔离 HOME 和空 mise 全局配置下，`check --all-platforms` 通过：97 个 Go 顶层测试（含 race）、201 项 Python 3.15 回归、24 项 task 校验及四平台归档校验，另通过 `go vet`。默认范围通过 175 项集成测试。Python 3.11.17 另通过计时/并行、平台选择、固定版本、执行反馈及 zsh 的 33 项重点回归；四个 Linux profile 各通过 3 项隔离的补装、失败及锁流程。Linux 原生主机上的真实包事务仍待验收。
+
+### 耗时采样
+
+以下是同一台 macOS ARM64 机器上的测量；期间增加了运行器回归并细化平台标记，用例数随范围变化。首次运行没有历史耗时，后续同一路径的报告会用于均衡分组。
+
+| 范围 | 集成测试数 | 总耗时 |
+|---|---:|---:|
+| 调整前，完整串行基线 | 187 | 225.54s |
+| 只选择本机范围，串行基线 | 174 | 146.38s |
+| 默认本机范围，2 进程并行并单独串行时序测试 | 175 | 120.98s |
+| 完整跨平台范围，相同调度方式 | 201 | 176.20s |
+
+原始完整基线中，Python 集成测试占 216.72s；Linux 包事务模块合计约 74.74s，最慢单项为四 profile 的取消确认（17.40s）。先按平台选择，再并行独立方法；执行反馈与阻塞确认的 10 项保持独占串行，避免 CPU 竞争影响原有时间断言。没有通过增大超时或删除原用例缩短检查。
 
 已有本机 helper 时，可单独执行一组 CLI 回归，例如：
 
@@ -35,6 +63,7 @@ python3 -B -m unittest discover -s tests -p test_parsers.py -v
 | `helper_fixture.py` | 将本机已构建的 helper 放入隔离仓库；提供不跟随链接的测试快照，以及制造锁竞争的最小 POSIX `flock` 上下文 |
 | `audit_fixture.py` | 提供合成的原生查询响应及隔离 HOME/PATH；不实现审计规则或计算预期报告 |
 | `check_environment.py` | 先拒绝 Python 3.11 以下版本，再把系统前置检查交给 Go `runtime --check`，透传退出码 |
+| `run_checks.py` / `check_scope.py` | 阶段与逐用例计时、执行机器的平台筛选、隔离进程并行调度及报告；仅开发检查使用 |
 | `fixtures/audit/reports.json` | 审计的独立完整报告基线，供真实 Go CLI 回归使用 |
 
 ## 已迁移的覆盖
@@ -48,7 +77,7 @@ python3 -B -m unittest discover -s tests -p test_parsers.py -v
 | 审计 | 23 项行为测试及 7 组两种实现对照 | 18 项直接调用 Go 的行为/入口测试；查询超时、stdin、脱敏、并发去重及失败批次由 Go 测试覆盖；7 组完整报告回归使用下述冻结基线 |
 | 共享运行时 | 1 项 Python 版本前置测试及参考实现锁辅助 | 3 项最小前置检查测试；集成测试使用标准 POSIX 锁制造竞争，锁继承校验和事务逻辑由 Go `internal/syncstate` 等测试验证 |
 
-测试迁移时 Python 用例数由 225 减为 182；Go 顶层测试由 94 增为 97，子场景另计。减少的是参考实现测试及与 Go 重复的测试入口；保留真实 CLI/部署覆盖，安全边界在移除前逐项映射到 Go 测试。固定 Go 版本来源统一及接入受管配置后新增 5 项回归，当前共有 187 项 Python 测试。
+测试迁移时 Python 用例数由 225 减为 182；Go 顶层测试由 94 增为 97，子场景另计。减少的是参考实现测试及与 Go 重复的测试入口；保留真实 CLI/部署覆盖，安全边界在移除前逐项映射到 Go 测试。固定 Go 版本来源统一后新增 5 项回归，计时、平台筛选和并行运行器新增 14 项，完整范围共有 201 项 Python 测试。全量运行的测试标识与原 187 项逐项核对，无缺失；默认范围的用例数随执行平台而变。
 
 ## 审计完整报告基线
 

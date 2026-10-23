@@ -12,6 +12,8 @@ import time
 import tomllib
 import unittest
 
+from check_scope import serial
+
 from helper_fixture import prepare_helper
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -328,6 +330,7 @@ else:
                 self.assertNotIn("[+] 已同步", result.stdout)
                 path.unlink()
 
+    @serial
     def test_sync_reports_installation_before_completion_without_private_output(self):
         (self.base / "wait-install").touch()
         process = subprocess.Popen([str(ROOT / "helper/scripts/run.sh"), "vscode", "sync",

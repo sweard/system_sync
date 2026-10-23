@@ -4,6 +4,8 @@ import subprocess
 import tempfile
 import unittest
 
+from check_scope import selected_platforms
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ZSH = shutil.which("zsh")
@@ -88,17 +90,22 @@ class ZshStartupTest(unittest.TestCase):
         self.assertEqual(self.calls.read_text().splitlines(), ["activate zsh"])
 
     def test_login_noninteractive_loads_environment_without_prompt_hooks(self):
-        (self.home / ".zprofile").symlink_to(ROOT / "dotfiles/linux/zsh/zprofile")
         self.write(
-            "bin/mise",
+            ".local/bin/mise",
             '#!/bin/sh\nprintf "%s\\n" "$*" >> "$ZSH_TEST_CALLS"\n'
             'test "$*" = "env -s zsh" || exit 99\n'
             'printf "%s\\n" "export ZSH_TEST_MISE=environment"\n',
             executable=True,
         )
-        lines = self.shell(["-l", "-c"], 'print -r -- "$ZSH_TEST_MISE|${+functions[mise]}"')
-        self.assertEqual(lines, ["environment|0"])
-        self.assertEqual(self.calls.read_text().splitlines(), ["env -s zsh"])
+        for platform in selected_platforms(("macos", "linux")):
+            with self.subTest(platform=platform):
+                profile = self.home / ".zprofile"
+                profile.unlink(missing_ok=True)
+                profile.symlink_to(ROOT / "dotfiles" / platform / "zsh/zprofile")
+                self.calls.unlink(missing_ok=True)
+                lines = self.shell(["-l", "-c"], 'print -r -- "$ZSH_TEST_MISE|${+functions[mise]}"')
+                self.assertEqual(lines, ["environment|0"])
+                self.assertEqual(self.calls.read_text().splitlines(), ["env -s zsh"])
 
 
 if __name__ == "__main__":

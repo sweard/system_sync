@@ -58,7 +58,7 @@ class CleanCIEnvironmentTest(unittest.TestCase):
                 # only the expensive check body with the build's Go preflight.
                 source = (ROOT / "mise.toml").read_text()
                 source, count = re.subn(r"(?ms)^\[tasks\.check\]\n.*?(?=^\[)",
-                                       f'[tasks.check]\nrun = "command -v go; test $(go env GOVERSION) = go{GO_VERSION}; go env GOVERSION"\n\n',
+                                       f'[tasks.check]\nrun = "command -v go; test $(go env GOVERSION) = go{GO_VERSION}; go env GOVERSION; :"\n\n',
                                        source, count=1)
                 self.assertEqual(count, 1)
                 (project / "mise.toml").write_text(source)
@@ -244,7 +244,7 @@ class ConfigGoVersionTest(unittest.TestCase):
         self.mock_tool_operations('printf "%s\\n" "$*" >> ' + shlex.quote(str(log)) + '\n')
         for step, expected in (
             ("Prepare pinned Go compiler for explicit builds", ["trust --all", "install go@9.8.7", "exec go@9.8.7 -- go version"]),
-            ("Run isolated tests", ["run --tool go@9.8.7 check"]),
+            ("Run isolated tests", ["run --tool go@9.8.7 check --all-platforms"]),
             ("Build four platform archives from public source only", ["trust --all", "install go@9.8.7",
                                                                     "exec go@9.8.7 -- ./helper/scripts/build.sh --dist"]),
         ):

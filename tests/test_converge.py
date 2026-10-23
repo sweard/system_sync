@@ -13,6 +13,7 @@ import time
 import unittest
 
 from helper_fixture import operation_lock, prepare_helper
+from check_scope import LINUX_PROFILES, for_platforms, matches, scope, selected_platforms
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -169,6 +170,7 @@ else: sys.exit("unexpected executable: " + name)
 '''
 
 
+@for_platforms("linux")
 class ConvergeTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="system-sync-converge-")
@@ -194,7 +196,11 @@ class ConvergeTest(unittest.TestCase):
         self.environment.pop("SYSTEM_SYNC_LOCK_FD", None)
         self.environment.pop("SYSTEM_SYNC_RUN_LOG_DIR", None)
 
-    def configure(self, profile="debian", **options):
+    def configure(self, profile=None, **options):
+        if profile is None:
+            profile = scope() if scope() in LINUX_PROFILES else "debian"
+        if not matches((profile,)):
+            self.skipTest("其他 Linux profile 保留在 --all-platforms 验收中")
         mandatory = {"arch":"base", "debian":"base-files", "fedora":"filesystem", "opensuse":"filesystem"}[profile]
         state = dict(profile=profile, installed=[mandatory, "git"], explicit=[mandatory, "git"],
                      declared=[mandatory, "git", "new-tool"])
@@ -220,7 +226,7 @@ class ConvergeTest(unittest.TestCase):
         return json.loads(max(journals, key=lambda p:p.stat().st_mtime_ns).read_text())
 
     def test_noninteractive_apply_never_reaches_installer(self):
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             with self.subTest(profile=profile):
                 self.configure(profile)
                 result = self.run_sync(terminal=False)
@@ -229,7 +235,7 @@ class ConvergeTest(unittest.TestCase):
                 self.assertEqual(self.calls(), [])
 
     def test_linux_install_output_is_live_through_system_sync_for_all_profiles(self):
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             with self.subTest(profile=profile):
                 self.configure(profile, live_progress=True)
                 result = self.run_sync(answers=[("输入 yes 继续", "yes"),
@@ -242,7 +248,7 @@ class ConvergeTest(unittest.TestCase):
     def test_wrapper_status_uses_one_preflight_and_one_package_snapshot(self):
         queries = self.root / "query-calls.jsonl"
         self.environment["FIXTURE_QUERY_LOG"] = str(queries)
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             with self.subTest(profile=profile):
                 self.configure(profile)
                 queries.unlink(missing_ok=True)
@@ -269,7 +275,7 @@ class ConvergeTest(unittest.TestCase):
                 self.assertEqual(self.calls(), [])
 
     def test_cancel_before_install_is_audited(self):
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             old_phrase = "APPLY ZYPPER" if profile == "opensuse" else "APPLY 0"
             for response in ("", "no", "y", old_phrase):
                 with self.subTest(profile=profile, response=response):
@@ -280,7 +286,7 @@ class ConvergeTest(unittest.TestCase):
                     self.assertEqual(self.journal()["phase"], "cancelled")
 
     def test_missing_packages_install_inside_audited_transaction(self):
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             with self.subTest(profile=profile):
                 self.configure(profile)
                 result = self.run_sync(answers=[("输入 yes 继续", "yes")])
@@ -304,8 +310,9 @@ class ConvergeTest(unittest.TestCase):
         self.assertIn("安装后仍有声明包", result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install"])
 
+    @for_platforms("arch", "debian", "fedora")
     def test_large_baseline_change_is_rejected_before_install(self):
-        for profile in ("arch", "debian", "fedora"):
+        for profile in selected_platforms(("arch", "debian", "fedora")):
             with self.subTest(profile=profile):
                 mandatory = {"arch":"base", "debian":"base-files", "fedora":"filesystem"}[profile]
                 names = [mandatory, "git"] + [f"extra-{i}" for i in range(6)]
@@ -316,7 +323,7 @@ class ConvergeTest(unittest.TestCase):
                 self.assertEqual(self.calls(), [])
 
     def test_schema_and_manager_failures_stop_before_install(self):
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             for error in ("json_error", "unavailable", "query_failure"):
                 with self.subTest(profile=profile, error=error):
                     self.configure(profile, **{error:True})
@@ -332,8 +339,9 @@ class ConvergeTest(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0, result.stdout)
                 self.assertEqual(self.calls(), [])
 
+    @for_platforms("arch", "debian", "fedora")
     def test_protected_final_transaction_stops_removal(self):
-        for profile in ("arch", "debian", "fedora"):
+        for profile in selected_platforms(("arch", "debian", "fedora")):
             with self.subTest(profile=profile):
                 mandatory = {"arch":"base", "debian":"base-files", "fedora":"filesystem"}[profile]
                 self.configure(profile, installed=[mandatory,"git","extra"], explicit=[mandatory,"git","extra"],
@@ -343,6 +351,7 @@ class ConvergeTest(unittest.TestCase):
                 self.assertNotIn("remove", [call["kind"] for call in self.calls()])
                 self.assertIn("保护", result.stdout)
 
+    @for_platforms("debian")
     def test_cancel_after_marking_preserves_packages_and_restoration_list(self):
         self.configure(installed=["base-files","git","extra"], explicit=["base-files","git","extra"], final_orphans=["extra"])
         result = self.run_sync(answers=[("输入 yes 继续", "yes"), ("即将移除 1 个包，输入 yes", "no")])
@@ -353,8 +362,9 @@ class ConvergeTest(unittest.TestCase):
         demoted = list((self.root / ".system-sync/history").glob("*/demoted.txt"))
         self.assertIn("extra", demoted[-1].read_text())
 
+    @for_platforms("arch", "debian", "fedora")
     def test_full_reason_convergence_and_dnf4(self):
-        for profile, dnf4 in (("arch",False), ("debian",False), ("fedora",False), ("fedora",True)):
+        for profile, dnf4 in selected_platforms((("arch",False), ("debian",False), ("fedora",False), ("fedora",True)), key=lambda item: item[0]):
             with self.subTest(profile=profile, dnf4=dnf4):
                 mandatory = {"arch":"base", "debian":"base-files", "fedora":"filesystem"}[profile]
                 self.configure(profile, installed=[mandatory,"git","extra"], explicit=[mandatory,"git","extra"],
@@ -365,7 +375,7 @@ class ConvergeTest(unittest.TestCase):
                 self.assertNotIn("extra", json.loads(self.state_file.read_text())["installed"])
 
     def test_dry_run_never_mutates(self):
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             with self.subTest(profile=profile):
                 self.configure(profile)
                 result = self.run_sync("--dry-run", terminal=False)
@@ -376,7 +386,7 @@ class ConvergeTest(unittest.TestCase):
     def test_status_skips_install_and_cleanup_solvers_while_dry_run_includes_them(self):
         query_log = self.root / "all-queries.jsonl"
         self.environment["FIXTURE_ALL_QUERIES"] = str(query_log)
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             with self.subTest(profile=profile):
                 self.configure(profile, initial_orphans=["extra"])
                 query_log.unlink(missing_ok=True)
@@ -396,7 +406,7 @@ class ConvergeTest(unittest.TestCase):
                 self.assertEqual(self.calls(), [])
 
     def test_missing_mandatory_root_stops_before_install(self):
-        for profile in ("arch", "debian", "fedora", "opensuse"):
+        for profile in selected_platforms(("arch", "debian", "fedora", "opensuse")):
             with self.subTest(profile=profile):
                 self.configure(profile, declared=["git", "new-tool"])
                 result = self.run_sync()
@@ -404,8 +414,8 @@ class ConvergeTest(unittest.TestCase):
                 self.assertEqual(self.calls(), [])
 
     def test_direct_platform_scripts_enforce_noninteractive_guard(self):
-        for profile, script in (("arch","pacman-converge.sh"), ("debian","apt-converge.sh"),
-                                ("fedora","dnf-converge.sh"), ("opensuse","zypper-converge.sh")):
+        for profile, script in selected_platforms((("arch","pacman-converge.sh"), ("debian","apt-converge.sh"),
+                                ("fedora","dnf-converge.sh"), ("opensuse","zypper-converge.sh")), key=lambda item: item[0]):
             with self.subTest(profile=profile):
                 self.configure(profile)
                 result = self.run_sync(script=script, terminal=False)
@@ -413,6 +423,7 @@ class ConvergeTest(unittest.TestCase):
                 self.assertIn("交互式终端", result.stdout)
                 self.assertEqual(self.calls(), [])
 
+    @for_platforms("opensuse")
     def test_zypper_native_install_then_protected_cleanup(self):
         self.configure("opensuse", installed=["filesystem","git","extra"], explicit=["filesystem","git","extra"])
         result = self.run_sync(answers=[("输入 yes 继续", "yes"), ("即将移除 1 个包，输入 yes", "yes")])
@@ -423,6 +434,7 @@ class ConvergeTest(unittest.TestCase):
         self.assertNotIn("extra", json.loads(self.state_file.read_text())["installed"])
         self.assertEqual(self.journal()["phase"], "complete")
 
+    @for_platforms("opensuse")
     def test_zypper_revalidates_protected_transaction_after_install(self):
         self.configure("opensuse", installed=["filesystem","git","extra"], explicit=["filesystem","git","extra"],
                        final_transaction=["extra","git"])
@@ -431,6 +443,7 @@ class ConvergeTest(unittest.TestCase):
         self.assertIn("保护包", result.stdout)
         self.assertEqual([call["kind"] for call in self.calls()], ["install"])
 
+    @for_platforms("opensuse")
     def test_zypper_large_or_malformed_plan_stops_before_install(self):
         extra = [f"extra-{i}" for i in range(26)]
         self.configure("opensuse", installed=["filesystem","git",*extra], explicit=["filesystem","git",*extra])
@@ -467,6 +480,8 @@ class ConvergeTest(unittest.TestCase):
             [str(self.root / "helper/scripts/run.sh"), "package", "install", "new-tool"],
             ["/bin/bash", str(self.root / "scripts/homebrew-converge.sh"), "--upgrade"],
         )
+        if scope() != "all":
+            commands = commands[:2]
         with operation_lock(self.root):
             for command in commands:
                 with self.subTest(command=command):

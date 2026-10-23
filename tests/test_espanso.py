@@ -10,6 +10,7 @@ import tomllib
 import unittest
 
 from helper_fixture import prepare_helper
+from check_scope import selected_platforms
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,10 +20,10 @@ MISE = shutil.which("mise")
 @unittest.skipUnless(MISE and sys.platform in ("darwin", "linux"), "mise or supported OS unavailable")
 class EspansoMappingTest(unittest.TestCase):
     def test_metadata_is_ignored_at_any_depth_and_local_content_is_preserved(self):
-        for platform, relative in (
+        for platform, relative in selected_platforms((
             ("macos", "Library/Application Support/espanso"),
             ("linux", ".config/espanso"),
-        ):
+        ), key=lambda item: item[0]):
             with self.subTest(platform=platform), tempfile.TemporaryDirectory(prefix="system-sync-espanso-") as temporary:
                 base = Path(temporary).resolve()
                 home, project = base / "home", base / "project"
