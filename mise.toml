@@ -124,13 +124,13 @@ run = "./helper/scripts/run.sh config-detach"
 
 [tasks.vscode-status]
 alias = "vscode-dry-run"
-description = "核对 VS Code 扩展；--capture 预览追加，支持 --only、--exclude、--group，--apply 输入 yes 写入"
+description = "核对 VS Code 扩展；--capture 采集新增项及本机版本变化，支持 --only、--exclude、--group，--apply 输入 yes 写入"
 raw = true
 run = "./helper/scripts/run.sh vscode status"
 
 [tasks.vscode-sync]
 description = "按清单安装公共 VS Code 扩展；不删除其他扩展"
-confirm = { message = "这会安装或调整清单中扩展的版本。是否继续？", default = "no" }
+confirm = { message = "这会按清单固定版本安装扩展，可能降级本机较新版本。若需保留本机版本，请先运行 mise run vscode-status --capture 并审阅、写入清单。是否继续？", default = "no" }
 raw = true
 run = "./helper/scripts/run.sh vscode sync"
 

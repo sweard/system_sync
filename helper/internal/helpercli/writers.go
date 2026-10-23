@@ -111,12 +111,12 @@ func writer(command string, args []string, root string, stdin *os.File, stdout, 
 		fs.StringVar(&options.Code, "code", "", "VS Code CLI 路径")
 		fs.StringVar(&options.UserDataDir, "user-data-dir", "", "隔离用户目录")
 		fs.StringVar(&options.ExtensionsDir, "extensions-dir", "", "隔离扩展目录")
-		capture := fs.Bool("capture", false, "status：预览未纳管扩展的清单追加差异；--apply 确认后写入")
-		apply := fs.Bool("apply", false, "capture：备份并追加清单；默认只预览")
+		capture := fs.Bool("capture", false, "status：预览新增扩展及已纳管扩展的本机版本差异；--apply 确认后写入")
+		apply := fs.Bool("apply", false, "capture：备份并更新清单；默认只预览")
 		yes := fs.Bool("yes", false, "capture：已审阅候选，跳过 yes 确认；须同时使用 --apply")
-		group := fs.String("group", "common", "capture：common 或当前平台；默认 common")
+		group := fs.String("group", "common", "capture：新增项分组，common 或当前平台；默认 common，已有项保持原分组")
 		var only, exclude stringsFlag
-		fs.Var(&only, "only", "capture：仅纳管指定 publisher.name；可重复或逗号分隔")
+		fs.Var(&only, "only", "capture：仅采集指定 publisher.name；可重复或逗号分隔")
 		fs.Var(&exclude, "exclude", "capture：排除指定 publisher.name；可重复或逗号分隔，优先于 --only")
 		if code, e := parse(fs, interspersed(args, map[string]bool{"--manifest": true, "--code": true, "--user-data-dir": true, "--extensions-dir": true, "--group": true, "--only": true, "--exclude": true})); e != nil {
 			return code, nil

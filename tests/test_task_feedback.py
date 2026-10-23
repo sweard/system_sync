@@ -134,7 +134,7 @@ class TaskFeedbackTest(unittest.TestCase):
             (("config", "diff"), "读取受管配置状态与差异"),
             (("config-detach", "--dry-run"), "读取配置迁出状态"),
             (("vscode", "status", "--code", code), "查询 VS Code 已安装扩展"),
-            (("vscode", "status", "--capture", "--code", code), "采集 VS Code 未纳管扩展与版本"),
+            (("vscode", "status", "--capture", "--code", code), "采集 VS Code 扩展与本机版本"),
             (("package-capture",), "采集本机软件清单与来源"),
             (("machine-init", "--only", "packages"), "读取机器接入计划"),
             (("audit", "--only", "tools"), "只读审计：tools"),

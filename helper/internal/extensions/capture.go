@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pelletier/go-toml/v2/unstable"
 	"github.com/sweard/system_sync/helper/internal/localconfig"
 	"github.com/sweard/system_sync/helper/internal/packageedit"
 	"github.com/sweard/system_sync/helper/internal/syncstate"
@@ -24,9 +25,16 @@ type CaptureOptions struct {
 
 type extension struct{ name, version string }
 
+type versionChange struct {
+	extension
+	before string
+	groups []string
+}
+
 type CapturePlan struct {
 	Manifest, Group, Before, After string
 	added, excluded                []extension
+	updated                        []versionChange
 	command                        []string
 	info                           os.FileInfo
 }
@@ -114,7 +122,7 @@ func NewCapture(options CaptureOptions, runner Invoker) (*CapturePlan, error) {
 	plan := &CapturePlan{Manifest: path, Group: group, Before: before, After: before, command: cli, info: info}
 	names := []string{}
 	for name := range installed {
-		if _, managed := wanted[name]; !managed {
+		if installed[name] != wanted[name] {
 			names = append(names, name)
 		}
 	}
@@ -123,11 +131,19 @@ func NewCapture(options CaptureOptions, runner Invoker) (*CapturePlan, error) {
 		entry := extension{name, installed[name]}
 		if exclude[name] || len(only) > 0 && !only[name] {
 			plan.excluded = append(plan.excluded, entry)
+		} else if old, managed := wanted[name]; managed {
+			change := versionChange{extension: entry, before: old}
+			for _, group := range []string{"common", platform} {
+				if _, exists := localconfig.Table(data[group])[name]; exists {
+					change.groups = append(change.groups, group)
+				}
+			}
+			plan.updated = append(plan.updated, change)
 		} else {
 			plan.added = append(plan.added, entry)
 		}
 	}
-	if len(plan.added) > 0 {
+	if plan.HasChanges() {
 		plan.After, err = plan.candidate()
 		if err != nil {
 			return nil, err
@@ -136,65 +152,146 @@ func NewCapture(options CaptureOptions, runner Invoker) (*CapturePlan, error) {
 	return plan, nil
 }
 
-// Insert into the selected table without serializing away comments or touching
-// existing versions. Unusual layouts are rejected if the candidate is invalid.
-func (p *CapturePlan) candidate() (string, error) {
-	header := regexp.MustCompile(`^\[\s*` + p.Group + `\s*\]\s*(?:#.*)?$`)
-	parts := strings.SplitAfter(p.Before, "\n")
-	found, insertion := false, len(parts)
-	for i, part := range parts {
-		line := strings.TrimSpace(part)
-		if header.MatchString(line) {
-			found = true
-			insertion = i + 1
-		} else if found && strings.HasPrefix(line, "[") {
-			break
-		} else if found && line != "" && !strings.HasPrefix(line, "#") {
-			insertion = i + 1
+// Replace only selected version tokens, keeping comments and table scope.
+// Layouts without separate tables fail closed instead of rewriting the file.
+func (p *CapturePlan) updateVersions() (string, error) {
+	if len(p.updated) == 0 {
+		return p.Before, nil
+	}
+	wanted := map[string]map[string]versionChange{}
+	for _, change := range p.updated {
+		for _, group := range change.groups {
+			if wanted[group] == nil {
+				wanted[group] = map[string]versionChange{}
+			}
+			wanted[group][change.name] = change
 		}
 	}
-	prefix := strings.Join(parts[:insertion], "")
-	if prefix != "" && !strings.HasSuffix(prefix, "\n") {
-		prefix += "\n"
+	var parser unstable.Parser
+	parser.Reset([]byte(p.Before))
+	var result strings.Builder
+	group, offset := "", 0
+	for parser.NextExpression() {
+		node := parser.Expression()
+		switch node.Kind {
+		case unstable.Table:
+			group = ""
+			key := node.Key()
+			if key.Next() {
+				name := string(key.Node().Data)
+				if !key.Next() {
+					group = name
+				}
+			}
+		case unstable.KeyValue:
+			key := node.Key()
+			if !key.Next() {
+				continue
+			}
+			name := string(key.Node().Data)
+			change, selected := wanted[group][name]
+			if !selected || key.Next() {
+				continue
+			}
+			value := node.Value()
+			if value.Kind != unstable.String || string(value.Data) != change.before {
+				return "", fmt.Errorf("无法安全更新扩展 %s 的版本，请先人工核对清单", name)
+			}
+			start, end := int(value.Raw.Offset), int(value.Raw.Offset+value.Raw.Length)
+			quote := p.Before[start : start+1]
+			if strings.HasPrefix(p.Before[start:end], strings.Repeat(quote, 3)) {
+				quote = strings.Repeat(quote, 3)
+			}
+			result.WriteString(p.Before[offset:start])
+			result.WriteString(quote + change.version + quote)
+			offset = end
+			delete(wanted[group], name)
+		}
 	}
-	if !found {
-		if prefix != "" && !strings.HasSuffix(prefix, "\n\n") {
+	if parser.Error() != nil {
+		return "", fmt.Errorf("无法安全定位扩展版本，请先人工核对清单")
+	}
+	for _, entries := range wanted {
+		if len(entries) > 0 {
+			return "", fmt.Errorf("无法在保留原布局的前提下更新扩展；请使用独立的 [common]、[macos]、[linux] 分组")
+		}
+	}
+	result.WriteString(p.Before[offset:])
+	return result.String(), nil
+}
+
+// Add new declarations to the selected table and validate both platforms.
+func (p *CapturePlan) candidate() (string, error) {
+	after, err := p.updateVersions()
+	if err != nil {
+		return "", err
+	}
+	if len(p.added) > 0 {
+		header := regexp.MustCompile(`^\[\s*` + p.Group + `\s*\]\s*(?:#.*)?$`)
+		parts := strings.SplitAfter(after, "\n")
+		found, insertion := false, len(parts)
+		for i, part := range parts {
+			line := strings.TrimSpace(part)
+			if header.MatchString(line) {
+				found = true
+				insertion = i + 1
+			} else if found && strings.HasPrefix(line, "[") {
+				break
+			} else if found && line != "" && !strings.HasPrefix(line, "#") {
+				insertion = i + 1
+			}
+		}
+		prefix := strings.Join(parts[:insertion], "")
+		if prefix != "" && !strings.HasSuffix(prefix, "\n") {
 			prefix += "\n"
 		}
-		prefix += "[" + p.Group + "]\n"
+		if !found {
+			if prefix != "" && !strings.HasSuffix(prefix, "\n\n") {
+				prefix += "\n"
+			}
+			prefix += "[" + p.Group + "]\n"
+		}
+		for _, entry := range p.added {
+			prefix += fmt.Sprintf("%q = %q\n", entry.name, entry.version)
+		}
+		after = prefix + strings.Join(parts[insertion:], "")
 	}
-	for _, entry := range p.added {
-		prefix += fmt.Sprintf("%q = %q\n", entry.name, entry.version)
-	}
-	after := prefix + strings.Join(parts[insertion:], "")
 	data, err := localconfig.Decode([]byte(after))
 	if err != nil {
-		return "", fmt.Errorf("无法在保留原布局的前提下追加扩展；请使用独立的 [common]、[macos]、[linux] 分组")
+		return "", fmt.Errorf("无法在保留原布局的前提下采集扩展；请使用独立的 [common]、[macos]、[linux] 分组")
 	}
 	for _, platform := range []string{"macos", "linux"} {
 		if _, err := declarations(data, platform, true); err != nil {
-			return "", fmt.Errorf("追加后 %s 清单校验失败：%w；请先人工处理版本冲突", platform, err)
+			return "", fmt.Errorf("采集后 %s 清单校验失败：%w；请先人工处理版本冲突", platform, err)
 		}
 	}
 	return after, nil
 }
 
-func (p *CapturePlan) HasChanges() bool { return len(p.added) > 0 }
+func (p *CapturePlan) HasChanges() bool { return len(p.added)+len(p.updated) > 0 }
 
 func (p *CapturePlan) Render(out io.Writer) {
 	if len(p.excluded) > 0 {
-		fmt.Fprintf(out, "[~] 不纳管 %d 个清单外扩展（排除或未选中，保留本机安装）：\n", len(p.excluded))
+		fmt.Fprintf(out, "[~] 跳过 %d 个采集候选（排除或未选中，保留清单与本机安装）：\n", len(p.excluded))
 		for _, entry := range p.excluded {
 			fmt.Fprintf(out, "  - %s@%s\n", entry.name, entry.version)
 		}
 	}
 	if !p.HasChanges() {
-		fmt.Fprintln(out, "[+] 没有需要补充的扩展，无需修改清单。")
+		fmt.Fprintln(out, "[+] 没有需要新增或更新的扩展，无需修改清单。")
 		return
 	}
-	fmt.Fprintf(out, "[!] 待追加 %d 个扩展到 [%s]：%s\n", len(p.added), p.Group, p.Manifest)
-	for _, entry := range p.added {
-		fmt.Fprintf(out, "  - %s@%s\n", entry.name, entry.version)
+	if len(p.added) > 0 {
+		fmt.Fprintf(out, "[!] 待追加 %d 个扩展到 [%s]：%s\n", len(p.added), p.Group, p.Manifest)
+		for _, entry := range p.added {
+			fmt.Fprintf(out, "  - %s@%s\n", entry.name, entry.version)
+		}
+	}
+	if len(p.updated) > 0 {
+		fmt.Fprintf(out, "[!] 待更新 %d 个已纳管扩展版本（清单 -> 本机；保留原分组）：%s\n", len(p.updated), p.Manifest)
+		for _, change := range p.updated {
+			fmt.Fprintf(out, "  - %s: %s -> %s [%s]\n", change.name, change.before, change.version, strings.Join(change.groups, ", "))
+		}
 	}
 	fmt.Fprint(out, packageedit.UnifiedDiff(p.Before, p.After, p.Manifest))
 }
@@ -220,7 +317,11 @@ func (p *CapturePlan) Apply(ctx context.Context, root string, runner Invoker) (s
 	if err != nil {
 		return "", err
 	}
-	for _, entry := range p.added {
+	checked := append([]extension{}, p.added...)
+	for _, change := range p.updated {
+		checked = append(checked, change.extension)
+	}
+	for _, entry := range checked {
 		if current[entry.name] != entry.version {
 			return "", fmt.Errorf("预览后扩展 %s 的安装或版本发生变化，请重新运行；未改写清单", entry.name)
 		}

@@ -108,7 +108,7 @@ espanso service restart
 
 ### 公共扩展清单
 
-`dotfiles/common/vscode/extensions.toml` 当前固定 19 个公共扩展及核对或采集时的版本，包含本次确认纳管的 `anthropic.claude-code@2.1.304`。当前均位于 `[common]`，macOS 和 Linux 共用；平台专属扩展放入 `[macos]` 或 `[linux]`，脚本合并当前平台分组，冲突或格式不明时停止。认证状态和扩展存储不进入清单；新增纳管需显式确认，清单外扩展继续保留。
+`dotfiles/common/vscode/extensions.toml` 当前固定 19 个公共扩展及核对或采集时的版本，包含 `anthropic.claude-code`，具体版本以清单为准。当前均位于 `[common]`，macOS 和 Linux 共用；平台专属扩展放入 `[macos]` 或 `[linux]`，脚本合并当前平台分组，冲突或格式不明时停止。认证状态和扩展存储不进入清单；采集写入需显式确认，清单外扩展继续保留。
 
 ```bash
 mise run vscode-status
@@ -127,7 +127,11 @@ mise run vscode-sync
 [+] 19 个公共扩展均符合清单，无需同步。
 ```
 
-同步只安装缺失项或调整清单内版本，不删除其他扩展；明确同步会按固定版本安装，可能将更新的版本调回清单版本。需要升级时先修改并审阅清单。扩展依赖由 VS Code 安装，若依赖也是清单项，会在最后核对其版本。Settings Sync 的扩展同步若已启用，仍可能与本地固定版本相互覆盖，出现版本漂移时先选择保留的版本再同步。
+同步只安装缺失项或调整清单内版本，不删除其他扩展。若本机版本高于清单，`vscode-status`、同步预览和实际同步均标明 `降级/回滚至清单固定版本`，列出本机版本到清单版本的方向，并提示可先采集本机版本；`vscode-sync` 的执行前确认也说明可能降级。确认同步后仍按清单版本安装。版本先比较主、次、补丁数字，再按 [SemVer 预发布顺序](https://semver.org/#spec-item-11) 判断，避免把 `1.10.0` 当作低于 `1.9.0`。
+
+例如本机已安装 `anthropic.claude-code@2.1.309`，清单仍是 `2.1.304`，状态会显示 `2.1.309 -> 2.1.304（降级/回滚至清单固定版本）`。若要保留本机版本，先运行 `mise run vscode-status --capture --only anthropic.claude-code` 审阅反向的清单更新，再用相同参数加 `--apply` 写入。
+
+扩展依赖由 VS Code 安装，若依赖也是清单项，会在最后核对其版本。Settings Sync 的扩展同步若已启用，仍可能与本地固定版本相互覆盖，出现版本漂移时先选择保留的版本再同步。
 
 大型语言扩展可能超过 100 MB，单次 CLI 允许一小时；超时会停止本次 CLI 和子进程，保留已经安装的扩展，重试时先核对已完成项。可复用 VS Code 自身保存的同版本官方 VSIX 缓存。
 
@@ -143,16 +147,26 @@ macOS 可自动找到标准应用目录中的 CLI；其他位置用 `--code <CLI
 
 当前 `settings.json` 是标准 JSON，符合 mise 合并器要求。VS Code 允许的 JSONC 注释不受当前 mise 合并器支持；文件包含注释、尾逗号或无效内容时，mise 会报错并保留原文件，不会自动剥离注释再覆盖。
 
-### 采集本机未纳管扩展
+### 采集本机扩展与版本
 
-扩展采集合并在 `vscode-status` task，通过 `--capture` 开启，不另设 `vscode-capture` task。它比较 VS Code 的实际安装列表与当前平台清单，按本机已安装版本生成追加候选，列出待纳管及被筛除扩展的标识、版本和清单 diff。默认只读预览；已有声明、固定版本和注释保持，缺失的旧声明也不会被删除。
+扩展采集合并在 `vscode-status` task，通过 `--capture` 开启，不另设 `vscode-capture` task。版本来源是 VS Code CLI 的当前安装列表，同时生成两类候选：追加当前平台未纳管的扩展，以及把已纳管扩展的清单版本更新为本机版本。预览分开列出新增项、版本变化、被筛除的候选和完整清单 diff。版本变化显示 `清单 -> 本机`；本机版本比清单低时也按实际安装版本生成候选。默认只读预览；`--apply` 确认后才改写，未安装的旧声明和注释保留。
+
+| 入口 | 版本来源及修改方向 |
+| --- | --- |
+| `vscode-status` | 对比本机与清单，显示按清单同步的计划，只读 |
+| `vscode-status --capture` | 本机安装版本生成清单候选，只读 |
+| `vscode-status --capture --apply` | 确认后更新清单，保留本机安装状态 |
+| `vscode-sync` | 按清单调整本机安装版本，保留清单 |
 
 ```bash
 mise run vscode-status --capture
 mise run vscode-status --capture --exclude example.local
 mise run vscode-status --capture --only example.shared,example.formatter --exclude example.local
 
-# 预览通过后，用相同筛选参数追加；交互输入 yes 确认
+# 已纳管扩展升级后，采集本机实际版本
+mise run vscode-status --capture --only anthropic.claude-code
+
+# 预览通过后，用相同筛选参数追加或更新版本；交互输入 yes 确认
 mise run vscode-status --capture --only example.formatter --apply
 
 # 自动化显式跳过确认，仍会显示候选并复查后写入
@@ -163,13 +177,13 @@ mise run vscode-status --capture --only example.platform --group macos
 # Linux 使用 --group linux
 ```
 
-默认写入 `[common]`，macOS 和 Linux 共用；显式指定 `--group common` 效果相同。平台专属扩展在 macOS 上用 `--group macos`、Linux 上用 `--group linux`。不允许从本机写入另一平台分组；公共声明与任一平台版本冲突时停止，交由人工处理。采集只追加未纳管项，不自动移动已有声明的分组，调整范围需编辑清单。
+新增项默认写入 `[common]`，macOS 和 Linux 共用；显式指定 `--group common` 效果相同。新增平台专属扩展在 macOS 上用 `--group macos`、Linux 上用 `--group linux`。已有项在原来的公共或当前平台分组中更新版本，`--group` 不移动其分组；公共与当前平台重复声明同一版本时一并更新。另一平台专属声明保留，公共声明与任一平台版本冲突时停止，交由人工处理。版本编辑只替换版本字符串，原分组、键名和注释保持；无法安全定位的布局会停止，建议使用独立分组。
 
-`--only` 和 `--exclude` 可重复或用逗号分隔，使用准确的 `publisher.name`，不接受通配符或版本号；排除优先于选中，不移除已有声明。`--only` 中未安装的扩展会报错，排除未安装扩展则允许。筛选只影响本次采集，不保存为永久排除规则，后续采集仍需传入相同参数。
+`--only` 和 `--exclude` 同时筛选新增项与已纳管项的版本变化，可重复或用逗号分隔，使用准确的 `publisher.name`，不接受通配符或版本号；排除优先于选中，不移除已有声明。若要继续固定旧版本，可用 `--exclude publisher.name` 跳过该扩展，或用 `--only` 只采集指定项。`--only` 中未安装的扩展会报错，排除未安装扩展则允许。筛选只影响本次采集，不保存为永久排除规则，后续采集仍需传入相同参数。
 
-与 `package-capture --apply` 只保存本机候选不同，`vscode-status --capture --apply` 会在确认后直接追加受管的 `dotfiles/common/vscode/extensions.toml`。原清单与候选保存在 Git 忽略的 `.system-sync/capture/<时间>-vscode-<平台>-*/extensions.toml.before` 和 `extensions.toml.candidate`，目录 `0700`、备份文件 `0600`；清单原权限保持。写入取得共享操作锁，复查文件身份、内容、权限及待追加扩展的实际版本，再原子替换清单；检查失败保留原文件。重复执行没有新候选时明确提示无需修改，不创建备份。
+与 `package-capture --apply` 只保存本机候选不同，`vscode-status --capture --apply` 会在确认后直接追加或更新受管的 `dotfiles/common/vscode/extensions.toml`。原清单与候选保存在 Git 忽略的 `.system-sync/capture/<时间>-vscode-<平台>-*/extensions.toml.before` 和 `extensions.toml.candidate`，目录 `0700`、备份文件 `0600`；清单原权限保持。写入取得共享操作锁，复查文件身份、内容、权限及新增、变更扩展的实际安装版本，再原子替换清单；检查失败保留原文件。重复执行没有新增或版本变化时明确提示无需修改，不创建备份。
 
-不加 `--capture` 时仍按原方式只读检查状态，不能使用采集筛选或写入参数。采集不安装、卸载或更新扩展，不读取认证或扩展存储。排除的扩展继续留在本机，`vscode-status` 仍列为清单外扩展；采集成功后，其他机器可通过 `vscode-sync` 按新增声明安装。采集中的 `--dry-run` 等同默认预览，不能与 `--apply` 同用；`--yes` 必须与 `--apply` 同用。`--manifest`、`--code` 及成对的隔离目录参数与其他扩展命令共用，便于验收。
+不加 `--capture` 时仍按原方式只读检查状态，不能使用采集筛选或写入参数。采集不安装、卸载或更新扩展，不读取认证或扩展存储。排除的扩展继续留在本机：未纳管项在 `vscode-status` 中仍列为清单外扩展，已纳管项保持原版本声明。采集成功后，其他机器可通过 `vscode-sync` 按新清单安装。采集中的 `--dry-run` 等同默认预览，不能与 `--apply` 同用；`--yes` 必须与 `--apply` 同用。`--manifest`、`--code` 及成对的隔离目录参数与其他扩展命令共用，便于验收。
 
 ## 应用配置的日常同步
 

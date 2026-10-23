@@ -162,6 +162,7 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 		return fmt.Errorf("查询 VS Code 已安装扩展失败：%w", err)
 	}
 	names, pending := []string{}, []string{}
+	downgrades := 0
 	for name := range wanted {
 		names = append(names, name)
 	}
@@ -172,9 +173,17 @@ func Run(options Options, runner Invoker, out io.Writer) error {
 			if old == "" {
 				old = "未安装"
 			}
-			fmt.Fprintf(out, "[!] %s: %s -> %s\n", name, old, wanted[name])
+			change := ""
+			if current[name] != "" && compareVersions(current[name], wanted[name]) > 0 {
+				change = "（降级/回滚至清单固定版本）"
+				downgrades++
+			}
+			fmt.Fprintf(out, "[!] %s: %s -> %s%s\n", name, old, wanted[name], change)
 			pending = append(pending, name)
 		}
+	}
+	if downgrades > 0 {
+		fmt.Fprintf(out, "[!] 按清单同步将降级/回滚 %d 个扩展；若需保留本机版本，请先运行 mise run vscode-status --capture，审阅后加 --apply 写入清单。\n", downgrades)
 	}
 	extras := []string{}
 	for name := range current {

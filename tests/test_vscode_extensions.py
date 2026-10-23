@@ -86,12 +86,16 @@ else:
                 self.assertIn("以上仅为预览", result.stdout)
                 self.assertIn("alpha.local@1.0.0-beta.2", result.stdout)
                 self.assertIn('+"alpha.local" = "1.0.0-beta.2"', result.stdout)
-                self.assertNotIn('+"example.shared"', result.stdout)
+                if "--only" in args:
+                    self.assertNotIn('+"example.shared"', result.stdout)
+                else:
+                    self.assertIn('example.shared: 1.2.3 -> 9.0.0 [common]', result.stdout)
+                    self.assertIn('+"example.shared" = "9.0.0"', result.stdout)
                 self.assertIn("到 [common]", result.stdout)
                 self.assertNotIn("[macos]", result.stdout)
                 self.assertNotIn("[linux]", result.stdout)
                 if "--exclude" in args:
-                    self.assertIn("[~] 不纳管 1", result.stdout)
+                    self.assertIn("[~] 跳过 2", result.stdout)
                     self.assertNotIn('+"zeta.local"', result.stdout)
                 self.assertEqual((self.manifest.read_bytes(), self.state.read_bytes()), before)
                 self.assertFalse((self.base / "project/.system-sync/capture").exists())
@@ -106,7 +110,7 @@ else:
         before_state = self.state.read_bytes()
         args = ("--apply", "--yes", "--only", "example.local,excluded.local",
                 "--exclude", "excluded.local", "--exclude", "absent.local")
-        self.assertIn("[+] 已追加扩展", self.run_capture(*args).stdout)
+        self.assertIn("[+] 已更新扩展清单", self.run_capture(*args).stdout)
         data = tomllib.loads(self.manifest.read_text())["common"]
         self.assertEqual(data, {"example.shared": "1.2.3", "example.missing": "2.0.0", "example.local": "4.5.6"})
         self.assertIn(source, self.manifest.read_text())
@@ -145,9 +149,9 @@ else:
         before = self.manifest.read_bytes()
         result = self.run_capture("--only", "example.local", "--exclude", "EXAMPLE.LOCAL",
                                   "--apply", "--yes")
-        self.assertIn("[~] 不纳管 1", result.stdout)
+        self.assertIn("[~] 跳过 1", result.stdout)
         self.assertIn("无需修改清单", result.stdout)
-        self.assertNotIn("[+] 已追加扩展", result.stdout)
+        self.assertNotIn("[+] 已更新扩展清单", result.stdout)
         self.assertEqual(self.manifest.read_bytes(), before)
         self.assertFalse((self.base / "project/.system-sync/capture").exists())
 
@@ -166,6 +170,44 @@ else:
         self.run_cli("sync", "--capture", success=False)
         self.assertFalse((self.base / "project/.system-sync/capture").exists())
         self.assertNotIn("--install-extension", self.log.read_text())
+
+    def test_capture_refreshes_managed_versions_without_installing(self):
+        source = '# keep\n[common]\n"anthropic.claude-code" = "2.1.304" # pinned\n"example.missing" = "1.0.0"\n'
+        self.manifest.write_text(source)
+        self.state.write_text('{"anthropic.claude-code":"2.1.309"}')
+        installed = self.state.read_bytes()
+        result = self.run_capture()
+        self.assertIn("待更新 1 个已纳管扩展版本", result.stdout)
+        self.assertIn("anthropic.claude-code: 2.1.304 -> 2.1.309 [common]", result.stdout)
+        self.assertIn('+"anthropic.claude-code" = "2.1.309" # pinned', result.stdout)
+        self.assertNotIn("待追加", result.stdout)
+        self.assertEqual(self.manifest.read_text(), source)
+        self.assertIn("无需修改清单", self.run_capture("--exclude", "anthropic.claude-code", "--apply", "--yes").stdout)
+        backup_root = self.base / "project/.system-sync/capture"
+        self.assertFalse(backup_root.exists())
+        result = self.run_capture("--only", "anthropic.claude-code", "--apply", "--yes")
+        self.assertIn("已更新扩展清单", result.stdout)
+        self.assertEqual(self.manifest.read_text(), source.replace("2.1.304", "2.1.309"))
+        backups = list(backup_root.iterdir())
+        self.assertEqual(len(backups), 1)
+        self.assertEqual((backups[0] / "extensions.toml.before").read_text(), source)
+        self.assertIn("无需修改清单", self.run_capture("--apply", "--yes").stdout)
+        self.assertEqual(list(backup_root.iterdir()), backups)
+        self.assertEqual(self.state.read_bytes(), installed)
+        self.assertTrue(all("--list-extensions" in json.loads(line) for line in self.log.read_text().splitlines()))
+
+    def test_sync_warns_before_rolling_newer_extensions_back(self):
+        self.manifest.write_text('[common]\n"anthropic.claude-code" = "2.1.304"\n')
+        self.state.write_text('{"anthropic.claude-code":"2.1.309","example.local":"4.5.6"}')
+        installed = self.state.read_bytes()
+        for arguments in (("status",), ("sync", "--dry-run")):
+            result = self.run_cli(*arguments)
+            self.assertIn("2.1.309 -> 2.1.304（降级/回滚至清单固定版本）", result.stdout)
+            self.assertIn("mise run vscode-status --capture", result.stdout)
+            self.assertEqual(self.state.read_bytes(), installed)
+        result = self.run_cli("sync")
+        self.assertLess(result.stdout.index("降级/回滚"), result.stdout.index("安装 VS Code 扩展"))
+        self.assertEqual(json.loads(self.state.read_text()), {"anthropic.claude-code": "2.1.304", "example.local": "4.5.6"})
 
     def test_capture_noninteractive_apply_requires_explicit_yes_flag(self):
         before = self.manifest.read_bytes()
@@ -209,6 +251,15 @@ else:
                                     cwd=project, env=environment, capture_output=True, text=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual("example.local" in tomllib.loads(manifest.read_text())["common"], writes)
+        self.assertNotIn("--install-extension", self.log.read_text())
+
+        self.state.write_text('{"example.shared":"9.0.0","example.local":"4.5.6"}')
+        result = subprocess.run([mise, "run", "vscode-status", "--capture", "--code", str(self.code),
+                                 "--only", "example.shared", "--apply", "--yes"], cwd=project,
+                                env=environment, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("example.shared: 1.2.3 -> 9.0.0", result.stdout)
+        self.assertEqual(tomllib.loads(manifest.read_text())["common"]["example.shared"], "9.0.0")
         self.assertNotIn("--install-extension", self.log.read_text())
 
     def test_platform_selection_and_conflict_fail_before_cli(self):

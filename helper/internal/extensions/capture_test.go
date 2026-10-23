@@ -3,6 +3,7 @@ package extensions
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,7 +35,7 @@ func assertCaptureQueriesOnly(t *testing.T, fake *fakeCLI) {
 	}
 }
 
-func TestCapturePreviewSelectsExtrasAndPreservesExistingVersions(t *testing.T) {
+func TestCapturePreviewSelectsExtrasAndPreservesUnselectedVersions(t *testing.T) {
 	source := "# public preferences\n[common]\n\"example.shared\" = \"1.2.3\" # keep pinned\n\"example.missing\" = \"2.0.0\"\n"
 	root, options, fake := captureFixture(t, source)
 	options.Only = []string{"ALPHA.LOCAL,zeta.local", "alpha.local"}
@@ -43,7 +44,7 @@ func TestCapturePreviewSelectsExtrasAndPreservesExistingVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Group != "common" || len(plan.added) != 1 || plan.added[0].name != "alpha.local" || len(plan.excluded) != 1 {
+	if plan.Group != "common" || len(plan.added) != 1 || plan.added[0].name != "alpha.local" || len(plan.excluded) != 2 || len(plan.updated) != 0 {
 		t.Fatalf("incorrect selection: %+v", plan)
 	}
 	if !strings.HasPrefix(plan.After, source) || !strings.HasSuffix(plan.After, "\"alpha.local\" = \"1.0.0-beta.2\"\n") {
@@ -51,7 +52,7 @@ func TestCapturePreviewSelectsExtrasAndPreservesExistingVersions(t *testing.T) {
 	}
 	var output bytes.Buffer
 	plan.Render(&output)
-	for _, detail := range []string{"[!] 待追加 1", "alpha.local@1.0.0-beta.2", "[~] 不纳管 1", "zeta.local@4.5.6", "+\"alpha.local\" = \"1.0.0-beta.2\""} {
+	for _, detail := range []string{"[!] 待追加 1", "alpha.local@1.0.0-beta.2", "[~] 跳过 2", "zeta.local@4.5.6", "example.shared@9.0.0", "+\"alpha.local\" = \"1.0.0-beta.2\""} {
 		if !strings.Contains(output.String(), detail) {
 			t.Fatal(output.String())
 		}
@@ -70,6 +71,7 @@ func TestCaptureDefaultCommonAndExplicitPlatformHaveCorrectScope(t *testing.T) {
 	for _, group := range []string{"", "common", localconfig.Platform()} {
 		t.Run("group="+group, func(t *testing.T) {
 			_, options, fake := captureFixture(t, "[common]\n\"example.shared\" = \"1.2.3\"\n")
+			fake.current["example.shared"] = "1.2.3"
 			options.Group = group
 			plan, err := NewCapture(options, fake)
 			if err != nil {
@@ -190,6 +192,9 @@ func TestCaptureApplyBacksUpAtomicallyAndIsIdempotent(t *testing.T) {
 	after, info, err := snapshot(options.Manifest)
 	if err != nil || after != plan.After || info.Mode().Perm() != 0640 {
 		t.Fatalf("incorrect write or permissions: %q %v", after, err)
+	}
+	if !strings.Contains(after, "\"example.shared\" = \"9.0.0\" # fixed") || len(plan.updated) != 1 {
+		t.Fatal("managed version or comment not captured", after)
 	}
 	for name, expected := range map[string]string{"extensions.toml.before": source, "extensions.toml.candidate": after} {
 		content, info, err := snapshot(filepath.Join(backup, name))
@@ -335,5 +340,128 @@ func TestCaptureRejectsLinkedManifestBeforeInvokingCLI(t *testing.T) {
 	_ = os.Symlink(options.Manifest+".real", options.Manifest)
 	if _, err := NewCapture(options, fake); err == nil || len(fake.calls) != 0 {
 		t.Fatal("linked manifest was read or CLI was invoked", err)
+	}
+}
+
+func TestCaptureUpdatesManagedVersionsInOriginalGroupsAndPreservesOtherContent(t *testing.T) {
+	platform, other := localconfig.Platform(), "linux"
+	if platform == "linux" {
+		other = "macos"
+	}
+	for _, group := range []string{"common", platform} {
+		t.Run(group, func(t *testing.T) {
+			source := "# public\r\n[\"common\"] # keep header\r\n'example.shared'  = '1.2.3' # pinned\r\n\"example.missing\" = \"2.0.0\"\r\n[" + platform + "]\r\n\"example.shared\" = \"1.2.3\" # same scope\r\n\"example.platform\" = \"2.1.304\"\r\n[" + other + "]\r\n\"example.other\" = \"3.0.0\" # leave alone\r\n"
+			_, options, fake := captureFixture(t, source)
+			options.Group = group
+			fake.current = map[string]string{"example.shared": "9.0.0", "example.platform": "2.1.309"}
+			plan, err := NewCapture(options, fake)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expected := strings.ReplaceAll(strings.ReplaceAll(source, "1.2.3", "9.0.0"), "2.1.304", "2.1.309")
+			if len(plan.added) != 0 || len(plan.updated) != 2 || plan.After != expected {
+				t.Fatalf("version capture changed scope or layout: %+v\n%s", plan, plan.After)
+			}
+			var out bytes.Buffer
+			plan.Render(&out)
+			for _, detail := range []string{"待更新 2 个已纳管扩展版本", "清单 -> 本机", "example.platform: 2.1.304 -> 2.1.309 [" + platform + "]", "-\"example.platform\" = \"2.1.304\"", "+\"example.platform\" = \"2.1.309\""} {
+				if !strings.Contains(out.String(), detail) {
+					t.Fatal(out.String())
+				}
+			}
+			assertCaptureQueriesOnly(t, fake)
+		})
+	}
+}
+
+func TestCaptureManagedSelectionAcceptsInstalledVersionsInEitherDirection(t *testing.T) {
+	platform, other := localconfig.Platform(), "linux"
+	if platform == "linux" {
+		other = "macos"
+	}
+	for _, installed := range []string{"2.1.309", "2.1.300"} {
+		for _, excluded := range []bool{false, true} {
+			t.Run(installed+"/excluded="+fmt.Sprint(excluded), func(t *testing.T) {
+				source := "[" + platform + "]\n\"anthropic.claude-code\" = \"2.1.304\" # pinned\n[" + other + "]\n\"anthropic.claude-code\" = \"5.0.0\" # other platform\n"
+				root, options, fake := captureFixture(t, source)
+				options.Only = []string{"ANTHROPIC.CLAUDE-CODE"}
+				fake.current = map[string]string{"anthropic.claude-code": installed}
+				if excluded {
+					options.Exclude = []string{"anthropic.claude-code"}
+				}
+				plan, err := NewCapture(options, fake)
+				if err != nil || plan.HasChanges() == excluded {
+					t.Fatal("incorrect managed selection", plan, err)
+				}
+				if _, err := plan.Apply(context.Background(), root, fake); err != nil {
+					t.Fatal(err)
+				}
+				expected := source
+				if !excluded {
+					expected = strings.Replace(source, "2.1.304", installed, 1)
+				}
+				after, _ := os.ReadFile(options.Manifest)
+				if string(after) != expected || fake.current["anthropic.claude-code"] != installed {
+					t.Fatal("capture changed scope or installed extension", string(after), fake.current)
+				}
+				second, err := NewCapture(options, fake)
+				if err != nil || second.HasChanges() {
+					t.Fatal("managed capture is not idempotent", err)
+				}
+				assertCaptureQueriesOnly(t, fake)
+			})
+		}
+	}
+}
+
+func TestCaptureManagedVersionRecheckRejectsChangedOrRemovedInstallation(t *testing.T) {
+	for _, change := range []string{"changed", "removed"} {
+		t.Run(change, func(t *testing.T) {
+			root, options, fake := captureFixture(t, "[common]\n\"example.shared\" = \"1.2.3\"\n")
+			options.Only = []string{"example.shared"}
+			plan, err := NewCapture(options, fake)
+			if err != nil || len(plan.added) != 0 || len(plan.updated) != 1 {
+				t.Fatal("missing update-only plan", plan, err)
+			}
+			fake.current["example.shared"] = "8.0.0"
+			if change == "removed" {
+				delete(fake.current, "example.shared")
+			}
+			if _, err := plan.Apply(context.Background(), root, fake); err == nil || !strings.Contains(err.Error(), "安装或版本发生变化") {
+				t.Fatal("managed version was not rechecked", err)
+			}
+			current, _ := os.ReadFile(options.Manifest)
+			if string(current) != plan.Before {
+				t.Fatal("version recheck failure modified manifest")
+			}
+			if _, err := os.Stat(filepath.Join(root, ".system-sync/capture")); !os.IsNotExist(err) {
+				t.Fatal("version recheck failure created a backup")
+			}
+		})
+	}
+}
+
+func TestCaptureManagedVersionsRejectOtherPlatformConflictsAndUnsupportedLayout(t *testing.T) {
+	other := "linux"
+	if localconfig.Platform() == "linux" {
+		other = "macos"
+	}
+	for _, source := range []string{
+		"[common]\n\"example.shared\" = \"1.2.3\"\n[" + other + "]\n\"example.shared\" = \"1.2.3\" # other platform\n",
+		"common = { \"example.shared\" = \"1.2.3\" }\n",
+	} {
+		root, options, fake := captureFixture(t, source)
+		options.Only = []string{"example.shared"}
+		if _, err := NewCapture(options, fake); err == nil {
+			t.Fatal("unsafe managed version capture accepted", source)
+		}
+		after, _ := os.ReadFile(options.Manifest)
+		if string(after) != source {
+			t.Fatal("failed preview modified manifest")
+		}
+		if _, err := os.Stat(filepath.Join(root, ".system-sync")); !os.IsNotExist(err) {
+			t.Fatal("failed preview created state")
+		}
+		assertCaptureQueriesOnly(t, fake)
 	}
 }

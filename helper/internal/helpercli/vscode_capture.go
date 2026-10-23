@@ -13,7 +13,7 @@ import (
 
 func captureExtensions(ctx context.Context, root string, options extensions.CaptureOptions, apply, yes bool, runner extensions.Invoker, stdin *os.File, out io.Writer) (int, error) {
 	var plan *extensions.CapturePlan
-	err := taskexec.Progress(options.Progress, "采集 VS Code 未纳管扩展与版本", func() error {
+	err := taskexec.Progress(options.Progress, "采集 VS Code 扩展与本机版本", func() error {
 		var err error
 		plan, err = extensions.NewCapture(options, runner)
 		return err
@@ -25,7 +25,7 @@ func captureExtensions(ctx context.Context, root string, options extensions.Capt
 	if !apply {
 		fmt.Fprintln(out, "[+] 以上仅为预览，未修改清单或建立备份。")
 		if plan.HasChanges() {
-			fmt.Fprintln(out, "[!] 如需纳管，在相同筛选命令后加 --apply 写入。")
+			fmt.Fprintln(out, "[!] 如需更新清单，在相同筛选命令后加 --apply 写入。")
 		}
 		return 0, nil
 	}
@@ -36,7 +36,7 @@ func captureExtensions(ctx context.Context, root string, options extensions.Capt
 		if !terminal.IsTerminal(stdin) {
 			return 1, fmt.Errorf("请在交互终端运行并输入 yes；自动化请先审阅预览，再使用 --apply --yes")
 		}
-		confirmed, err := taskexec.Confirm(ctx, stdin, out, "将上述扩展及本机版本追加到清单。输入 yes 确认（其他输入取消）：")
+		confirmed, err := taskexec.Confirm(ctx, stdin, out, "将上述新增扩展及版本变化写入清单。输入 yes 确认（其他输入取消）：")
 		if err != nil {
 			return 1, err
 		}
@@ -54,6 +54,6 @@ func captureExtensions(ctx context.Context, root string, options extensions.Capt
 	if err != nil {
 		return 1, err
 	}
-	fmt.Fprintf(out, "[+] 已追加扩展到清单；原清单与候选备份：%s\n", backup)
+	fmt.Fprintf(out, "[+] 已更新扩展清单；原清单与候选备份：%s\n", backup)
 	return 0, nil
 }
