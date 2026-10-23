@@ -64,13 +64,15 @@ jobs:
       - name: Prepare pinned Go compiler for explicit builds
         shell: bash
         run: |
+          toolchain_version="$(./helper/scripts/go-version.sh)"
           mise trust --all
-          mise install go@1.27.3
-          mise exec go@1.27.3 -- go version
+          mise install "go@$toolchain_version"
+          mise exec "go@$toolchain_version" -- go version
       - name: Run isolated tests
         shell: bash
         run: |
-          mise run --tool go@1.27.3 check
+          toolchain_version="$(./helper/scripts/go-version.sh)"
+          mise run --tool "go@$toolchain_version" check
 
   helper-artifacts:
     name: Precompiled helpers
@@ -96,9 +98,10 @@ jobs:
       - name: Build four platform archives from public source only
         shell: bash
         run: |
+          toolchain_version="$(./helper/scripts/go-version.sh)"
           mise trust --all
-          mise install go@1.27.3
-          mise exec go@1.27.3 -- ./helper/scripts/build.sh --dist
+          mise install "go@$toolchain_version"
+          mise exec "go@$toolchain_version" -- ./helper/scripts/build.sh --dist
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: system-sync-helper-${{ github.sha }}

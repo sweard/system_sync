@@ -6,16 +6,19 @@
 
 ## 运行检查
 
-在仓库根目录执行，需要固定 Go 1.27.3、Python 3.11+、mise 及支持 Go race 检查的本机 C 工具链：
+在仓库根目录执行，需要 `helper/GO_VERSION` 固定的 Go、Python 3.11+、mise 及支持 Go race 检查的本机 C 工具链：
 
 ```bash
-mise install go@1.27.3
-mise run --tool go@1.27.3 check
+toolchain_version="$(./helper/scripts/go-version.sh)"
+mise install "go@$toolchain_version"
+mise run --tool "go@$toolchain_version" check
 ```
 
 `check` 依次校验四平台预编译包及源码输入、构建本机 helper、运行前置检查、验证 task、执行 Go race 测试及 Python 集成测试。`--tool` 显式选择本次 task 使用的 Go，不改写工具声明。只修改测试和文档不影响分发包输入，无需重新生成预编译包。
 
-2026-10-23 在本机 macOS ARM64 的隔离 HOME 和空 mise 全局配置下，完整检查通过：97 个 Go 顶层测试（含 race）、182 项 Python 3.15 回归、24 项 task 校验、四平台归档校验及 `go vet`。最终补充的单包断言另经该 Go 包的 race 回归通过。Python 3.11.17 下的 53 项解析、审计、冻结报告、扩展及前置检查回归也已通过；本次未运行远端 CI 或真实 Linux 包事务。
+`helper_fixture.py`、CI 环境及构建反馈替身从版本文件读取预期 Go，实际 workflow 和构建/测试脚本通过共用的 Bash 入口读取。回归在临时副本中更改版本，验证所有入口随之选择、提示正确工具链，拒绝非法或缺失版本且不查询/安装工具；构建输入校验另覆盖版本文件及读取脚本漂移。
+
+2026-10-23 在本机 macOS ARM64 的隔离 HOME 和空 mise 全局配置下，完整检查通过：97 个 Go 顶层测试（含 race）、186 项 Python 3.15 回归、24 项 task 校验、四平台归档校验及 `go vet`。固定版本来源、命令反馈及 Bash 3.2 在 `C` locale 下的回归包含在内，Python 3.11.17 另通过 15 项相关回归。真实 Linux 包事务仍待验收。
 
 已有本机 helper 时，可单独执行一组 CLI 回归，例如：
 
@@ -45,7 +48,7 @@ python3 -B -m unittest discover -s tests -p test_parsers.py -v
 | 审计 | 23 项行为测试及 7 组两种实现对照 | 18 项直接调用 Go 的行为/入口测试；查询超时、stdin、脱敏、并发去重及失败批次由 Go 测试覆盖；7 组完整报告回归使用下述冻结基线 |
 | 共享运行时 | 1 项 Python 版本前置测试及参考实现锁辅助 | 3 项最小前置检查测试；集成测试使用标准 POSIX 锁制造竞争，锁继承校验和事务逻辑由 Go `internal/syncstate` 等测试验证 |
 
-迁移后 Python 用例数由 225 减为 182；Go 顶层测试由 94 增为 97，子场景另计。减少的是参考实现测试及与 Go 重复的测试入口；保留真实 CLI/部署覆盖，安全边界在移除前逐项映射到 Go 测试。
+测试迁移时 Python 用例数由 225 减为 182；Go 顶层测试由 94 增为 97，子场景另计。减少的是参考实现测试及与 Go 重复的测试入口；保留真实 CLI/部署覆盖，安全边界在移除前逐项映射到 Go 测试。固定 Go 版本来源统一后新增 4 项回归，当前共有 186 项 Python 测试。
 
 ## 审计完整报告基线
 

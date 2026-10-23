@@ -15,6 +15,15 @@ helper_version() {
   printf '%s\n' "$version"
 }
 
+helper_go_version() {
+  local version
+  [[ -f "$HELPER_DIR/GO_VERSION" ]] || helper_error "缺少固定工具链声明 helper/GO_VERSION"
+  version="$(cat "$HELPER_DIR/GO_VERSION")" || helper_error "无法读取 helper/GO_VERSION"
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+    || helper_error "helper/GO_VERSION 必须是完整 Go 版本号（major.minor.patch）"
+  printf '%s\n' "$version"
+}
+
 helper_checksum() {
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum -- "$1" | awk '{ print $1 }'
@@ -51,7 +60,7 @@ helper_source_manifest() {
   (
     cd -- "$HELPER_DIR"
     {
-      printf '%s\n' go.mod VERSION licenses/Go-LICENSE.txt scripts/build.sh scripts/common.sh ../scripts/task-output.sh
+      printf '%s\n' go.mod VERSION GO_VERSION licenses/Go-LICENSE.txt scripts/build.sh scripts/common.sh scripts/go-version.sh ../scripts/task-output.sh
       [[ ! -f go.sum ]] || printf '%s\n' go.sum
       find cmd internal -type f -name '*.go' ! -name '*_test.go'
       find vendor -type f

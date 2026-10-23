@@ -59,7 +59,7 @@ raw = true
 run = "./scripts/clean.sh"
 
 [tasks.helper-build]
-description = "从仓库 Go 源码构建并安装本机 helper；固定 Go 1.27.3"
+description = "从仓库 Go 源码构建并安装本机 helper；使用 helper/GO_VERSION 固定的工具链"
 run = "./helper/scripts/build.sh"
 
 [tasks.helper-dist]

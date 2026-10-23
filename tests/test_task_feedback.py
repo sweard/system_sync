@@ -13,7 +13,7 @@ import tempfile
 import time
 import unittest
 
-from helper_fixture import prepare_helper
+from helper_fixture import GO_VERSION, prepare_helper
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +34,7 @@ if program == "mise" and args == ["--version"]:
     print("2026.10.15")
     sys.exit(0)
 if program == "go" and args[:1] == ["env"]:
-    print({"GOVERSION":"go1.27.3", "GOHOSTOS":"darwin", "GOHOSTARCH":"arm64"}[args[1]])
+    print({"GOVERSION":os.environ["FEEDBACK_GO_VERSION"], "GOHOSTOS":"darwin", "GOHOSTARCH":"arm64"}[args[1]])
     sys.exit(0)
 if program == "git":
     if args[-2:] == ["--short=12", "HEAD"]: print("0123456789ab")
@@ -95,7 +95,8 @@ class TaskFeedbackTest(unittest.TestCase):
         self.env = dict(os.environ, HOME=str(self.home), PATH=str(self.bin) + ":/usr/bin:/bin:/usr/sbin:/sbin",
                         MISE_CONFIG_DIR=str(self.home / ".config/mise"),
                         MISE_STATE_DIR=str(self.home / "state"), XDG_STATE_HOME=str(self.home / "state"),
-                        FEEDBACK_RELEASE=str(self.release), FEEDBACK_ENTERED=str(self.entered))
+                        FEEDBACK_RELEASE=str(self.release), FEEDBACK_ENTERED=str(self.entered),
+                        FEEDBACK_GO_VERSION="go" + GO_VERSION)
 
     def blocked(self, command, label):
         self.release.unlink(missing_ok=True)

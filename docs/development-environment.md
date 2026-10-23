@@ -70,8 +70,9 @@ mise exec -- python3 --version
 # 安装最新可用版本，并把解析出的完整版本号写入全局配置
 mise use --global --pin go@latest
 
-# 或指定完整版本；已安装时复用现有安装
-mise use --global --pin go@1.27.3
+# 或在本仓库选用 helper 固定的完整版本；已安装时复用现有安装
+toolchain_version="$(./helper/scripts/go-version.sh)"
+mise use --global --pin "go@$toolchain_version"
 ```
 
 `mise use` 会安装缺失版本并写入配置。不带 `--global` 时，它默认写入最近的项目配置；没有项目配置时在当前目录创建配置。在本仓库运行时可能改到根 `mise.toml`。需要项目独立版本时，到该项目执行 `mise use --pin go@latest`，或用 `--path /path/to/project/mise.toml` 显式指定目标。
@@ -93,11 +94,13 @@ mise ls --current
 `mise install` 按已有声明补齐工具，不新增或修改版本声明。临时安装指定版本但不加入配置时，可以执行：
 
 ```bash
-mise install go@1.27.3
-mise exec go@1.27.3 -- go version
+# 在本仓库读取 helper 构建版本
+toolchain_version="$(./helper/scripts/go-version.sh)"
+mise install "go@$toolchain_version"
+mise exec "go@$toolchain_version" -- go version
 ```
 
-仅安装的版本不会自动成为全局默认。使用 `mise upgrade` 更新固定完整版本号的声明时，需加 `--bump`，例如逐个升级 uv：
+仅安装的版本不会自动成为全局默认。helper 的固定构建版本统一位于 `helper/GO_VERSION`，本机默认 Go 可独立升级；构建和 CI 显式选择版本文件中的工具链。修改构建版本后，需要重建预编译包并检查，见[helper 构建说明](../helper/README.md#生成和安装预编译产物)。使用 `mise upgrade` 更新固定完整版本号的声明时，需加 `--bump`，例如逐个升级 uv：
 
 ```bash
 mise upgrade --global --bump --no-prune --dry-run uv

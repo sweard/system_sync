@@ -2,11 +2,12 @@
 # The only compilation entry. --bundle refreshes Git-managed offline bundles.
 set -Eeuo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
+REQUIRED_GO_VERSION="$(helper_go_version)"
 
 MODE="${1:---native}"
 case "$MODE" in
   --native|--dist|--bundle) [[ $# -le 1 ]] || helper_error "用法：build.sh [--native|--dist|--bundle]" ;;
-  -h|--help) printf '用法：build.sh [--native|--dist|--bundle]\n需要 Go 1.27.3；源码保留在 helper/cmd/ 和 helper/internal/。\n'; exit 0 ;;
+  -h|--help) printf '用法：build.sh [--native|--dist|--bundle]\n需要 Go %s；源码保留在 helper/cmd/ 和 helper/internal/。\n' "$REQUIRED_GO_VERSION"; exit 0 ;;
   *) helper_error "用法：build.sh [--native|--dist|--bundle]" ;;
 esac
 BUILD_TASK=helper-build
@@ -14,14 +15,14 @@ case "$MODE" in
   --dist) BUILD_TASK=helper-dist ;;
   --bundle) BUILD_TASK=helper-bundle ;;
 esac
-GO_RECOVERY="请先运行 mise install go@1.27.3，再运行 mise run --tool go@1.27.3 $BUILD_TASK"
-command -v go >/dev/null 2>&1 || helper_error "构建需要 Go 1.27.3，当前 PATH 中没有 go；$GO_RECOVERY"
+GO_RECOVERY="请先运行 mise install go@${REQUIRED_GO_VERSION}，再运行 mise run --tool go@${REQUIRED_GO_VERSION} $BUILD_TASK"
+command -v go >/dev/null 2>&1 || helper_error "构建需要 Go ${REQUIRED_GO_VERSION}，当前 PATH 中没有 go；$GO_RECOVERY"
 printf '[~] 检查固定 Go 工具链与构建输入\n' >&2
 export GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOTELEMETRY=off
 export GOENV=off GOWORK=off GOFLAGS="" GOEXPERIMENT="" GOAMD64=v1 GOARM64=v8.0
 export GOCACHE="$REPO_ROOT/.system-sync/go/build" GOMODCACHE="$REPO_ROOT/.system-sync/go/mod"
-GO_VERSION="$(go env GOVERSION)" || helper_error "无法读取当前 Go 版本；$GO_RECOVERY"
-[[ "$GO_VERSION" == go1.27.3 ]] || helper_error "固定构建工具链为 Go 1.27.3，当前为 ${GO_VERSION:-未知}；$GO_RECOVERY"
+ACTUAL_GO_VERSION="$(go env GOVERSION)" || helper_error "无法读取当前 Go 版本；$GO_RECOVERY"
+[[ "$ACTUAL_GO_VERSION" == "go$REQUIRED_GO_VERSION" ]] || helper_error "固定构建工具链为 Go ${REQUIRED_GO_VERSION}，当前为 ${ACTUAL_GO_VERSION:-未知}；$GO_RECOVERY"
 VERSION="$(helper_version)"
 REVISION="$(git -C "$REPO_ROOT" rev-parse --short=12 HEAD 2>/dev/null || printf unknown)"
 if ! git -C "$REPO_ROOT" diff --quiet -- .; then REVISION="$REVISION-dirty"; fi

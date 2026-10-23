@@ -467,6 +467,13 @@ class GoHelperIntegrationTest(unittest.TestCase):
         source.write_bytes(before + b"\n// modified\n")
         self.assertIn("构建输入已变化", verify(False).stderr)
         source.write_bytes(before)
+        for relative in ("GO_VERSION", "scripts/go-version.sh"):
+            with self.subTest(build_input=relative):
+                source = self.root / "helper" / relative
+                before = source.read_bytes()
+                source.write_bytes(b"9.8.7\n" if relative == "GO_VERSION" else before + b"\n# modified\n")
+                self.assertIn("构建输入已变化", verify(False).stderr)
+                source.write_bytes(before)
         archive = next(bundle.glob("*.tar.gz"))
         archive.write_bytes(archive.read_bytes() + b"damaged")
         self.assertIn("SHA256 校验失败", verify(False).stderr)

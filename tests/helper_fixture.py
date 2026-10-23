@@ -8,6 +8,7 @@ import stat
 
 
 ROOT = Path(__file__).resolve().parents[1]
+GO_VERSION = (ROOT / "helper/GO_VERSION").read_text().strip()
 
 
 def prepare_helper(project):
@@ -23,9 +24,10 @@ def prepare_helper(project):
     shutil.copy2(ROOT / "scripts/task-output.sh", project / "scripts/task-output.sh")
     scripts = project / "helper/scripts"
     scripts.mkdir(parents=True)
-    for name in ("common.sh", "install.sh", "run.sh"):
+    for name in ("common.sh", "go-version.sh", "install.sh", "run.sh"):
         shutil.copy2(ROOT / "helper/scripts" / name, scripts / name)
-    shutil.copy2(ROOT / "helper/VERSION", project / "helper/VERSION")
+    for name in ("VERSION", "GO_VERSION"):
+        shutil.copy2(ROOT / "helper" / name, project / "helper" / name)
     return target / "system-sync-helper"
 
 
