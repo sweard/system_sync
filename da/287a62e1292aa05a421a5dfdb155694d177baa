@@ -1,0 +1,97 @@
+tests/test_environment.py
+  s_00332b4a331471::t_6fb7d9b20f712f 12-13,51,54
+tests/README.md
+  s_00332b4a331471::t_d694f7f253cce6 17-22,24-29,31-32,66
+  s_00332b4a331471::t_a2d7bf555b7fa8 30,80
+  s_00332b4a331471::t_19e879a15b6ff0 36-49
+  s_6b8270b6e632f5::t_c96cea45e8f44a 23
+tests/run_checks.py
+  s_00332b4a331471::t_d77e393e6fa902 1-5,7-8,10-15,17,19-36,38-39,41-72,79-81,237-239,241-248,250-255,257,259-261,266-269,282,287,289-300,306-329
+  s_00332b4a331471::t_0d7af1f2ac8556 174-175,179,181-191,256
+  s_00332b4a331471::t_7ee8013d2041cf 16,167-171,180,192-203
+  s_00332b4a331471::t_a661f3c168d5e4 275-276
+  s_00332b4a331471::t_02177e1672961d 6,9,18,37,40,73-78,82-106,109-166,172-173,176-178,204-236,240,249,258,262-265,270-274,284-286,288,301-302,304-305
+  s_00332b4a331471::t_02727f4ee2210b 107-108,277-281,283,303
+tests/test_task_feedback.py
+  s_00332b4a331471::t_7ee8013d2041cf 17,76
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_7ee8013d2041cf 15-16,333
+tests/test_check_runner.py
+  s_00332b4a331471::t_7ee8013d2041cf 209-230
+  s_00332b4a331471::t_0d7af1f2ac8556 54-55
+  s_00332b4a331471::t_a3f967e9503096 1-6,10,12,14-26,28-53,56,77,93-127
+  s_00332b4a331471::t_a661f3c168d5e4 78-91
+  s_00332b4a331471::t_b1b3bbb95b0d60 145-155
+  s_00332b4a331471::t_679d0ed6c69f2d 7-9,11,13,27,57-76,92,128-144,156-208,231-315
+.github/workflows/check.yml
+  s_00332b4a331471::t_6fb7d9b20f712f 75
+tests/test_espanso.py
+  s_00332b4a331471::t_6fb7d9b20f712f 13,23,26
+helper/scripts/verify.sh
+  s_00332b4a331471::t_6fb7d9b20f712f 6-11,19,29-35
+tests/check_scope.py
+  s_00332b4a331471::t_7ee8013d2041cf 60-69
+  s_00332b4a331471::t_0d7af1f2ac8556 51-53
+  s_00332b4a331471::t_4c6aab3ff51ec4 47
+  s_00332b4a331471::t_c3e71bbd1088e4 1-46,48-50,54-59,70-84
+mise.toml
+  s_00332b4a331471::t_d77e393e6fa902 46-47
+helper/README.md
+  s_6b8270b6e632f5::t_c96cea45e8f44a 88
+  s_00332b4a331471::t_d694f7f253cce6 89,120
+  s_6b8270b6e632f5::t_0516d37064f745 134
+  s_00332b4a331471::t_19e879a15b6ff0 128
+docs/roadmap.md
+  s_6b8270b6e632f5::t_c96cea45e8f44a 25
+  s_6b8270b6e632f5::t_0516d37064f745 18,28
+tests/test_zsh_startup.py
+  s_00332b4a331471::t_a661f3c168d5e4 7-8,94,100-108
+tests/test_homebrew_preview.py
+  s_00332b4a331471::t_6fb7d9b20f712f 10-11,104
+tests/test_onboarding.py
+  s_00332b4a331471::t_0d7af1f2ac8556 202
+  s_00332b4a331471::t_4c6aab3ff51ec4 15,82,165,167,221
+tests/test_rebuild.py
+  s_00332b4a331471::t_4c6aab3ff51ec4 12,85,94-97
+  s_00332b4a331471::t_6fb7d9b20f712f 13,82-84
+tests/test_go_helper.py
+  s_00332b4a331471::t_0d7af1f2ac8556 201
+  s_00332b4a331471::t_a661f3c168d5e4 17
+  s_00332b4a331471::t_4c6aab3ff51ec4 102,226,371-375,469-470,519
+README.md
+  s_6b8270b6e632f5::t_c96cea45e8f44a 76
+  s_00332b4a331471::t_d694f7f253cce6 77,106,124
+tests/test_converge.py
+  s_00332b4a331471::t_a661f3c168d5e4 313,342,365
+  s_00332b4a331471::t_4c6aab3ff51ec4 16,199-201,354,426,437,446
+  s_00332b4a331471::t_6fb7d9b20f712f 173,202-203
+  s_6b8270b6e632f5::t_fe092016d827b0 229,238,251,278,289,315,326,344,367,378,389,409,417-418
+  s_00332b4a331471::t_a2d7bf555b7fa8 483-484
+tests/test_ci_environment.py
+  s_00332b4a331471::t_02727f4ee2210b 61
+  s_00332b4a331471::t_6fb7d9b20f712f 247
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da287a62e1292aa05a421a5dfdb155694d177baa",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
