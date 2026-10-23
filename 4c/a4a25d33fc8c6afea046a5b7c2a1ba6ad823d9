@@ -1,0 +1,71 @@
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_6b8270b6e632f5::t_666f964abbd44a 22
+  s_00332b4a331471::t_e8354f03d73631 15-17,23
+helper/internal/extensions/version.go
+  s_00332b4a331471::t_350adf90b1145f 1-2,7-45,47-50,53-55
+  s_00332b4a331471::t_564b2ab962a419 3-6,46,51-52
+helper/internal/extensions/version_test.go
+  s_00332b4a331471::t_75d4e7cf1861c2 1-61
+README.md
+  s_00332b4a331471::t_76f7983ecf2d00 106
+helper/internal/helpercli/vscode_capture.go
+  s_00332b4a331471::t_01a9137cc06fc7 28
+  s_00332b4a331471::t_350adf90b1145f 16,39,57
+docs/dotfiles.md
+  s_00332b4a331471::t_01a9137cc06fc7 180
+  s_00332b4a331471::t_76f7983ecf2d00 111,130-134,150,152-159,166-169,182,184,186
+mise.toml
+  s_00332b4a331471::t_350adf90b1145f 127,133
+tests/test_task_feedback.py
+  s_00332b4a331471::t_75d4e7cf1861c2 137
+tests/test_vscode_extensions.py
+  s_00332b4a331471::t_537cd725231934 256-262
+  s_00332b4a331471::t_75d4e7cf1861c2 89-93,98,113,152,154,174-210
+  s_00332b4a331471::t_c1c0106af97ff6 211
+  s_00332b4a331471::t_b4511a69329137 263-264
+helper/internal/extensions/capture.go
+  s_00332b4a331471::t_5e7c1946b5ee38 14,28-33,37,125,134-141,146,155-223,225-229,261,265,271,275,281,284-294,320-324
+  s_00332b4a331471::t_d327781b921bde 230-245,248-257
+helper/internal/helpercli/writers.go
+  s_00332b4a331471::t_350adf90b1145f 114-115,117,119
+helper/README.md
+  s_00332b4a331471::t_76f7983ecf2d00 32
+  s_6b8270b6e632f5::t_a9b9553f80516b 124,126
+helper/internal/extensions/extensions.go
+  s_00332b4a331471::t_350adf90b1145f 165,176-181,185-186
+  s_00332b4a331471::t_f2de28673eb2a7 187
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_6b8270b6e632f5::t_666f964abbd44a 1-4
+helper/internal/extensions/capture_test.go
+  s_00332b4a331471::t_75d4e7cf1861c2 6
+  s_00332b4a331471::t_f63a27d1d7a09a 371
+  s_00332b4a331471::t_98a9bb99f8cac9 38,47,55,74,196-198,345-370,372-377,382-384,386-467
+  s_00332b4a331471::t_01a9137cc06fc7 378-381,385
+docs/roadmap.md
+  s_00332b4a331471::t_76f7983ecf2d00 20
+  s_6b8270b6e632f5::t_a9b9553f80516b 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4ca4a25d33fc8c6afea046a5b7c2a1ba6ad823d9",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
