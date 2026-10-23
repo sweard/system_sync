@@ -27,7 +27,7 @@ mise run audit --color always
 mise run audit --color never
 ```
 
-首次运行会自动从仓库 `helper/prebuilt/<版本>/` 校验并解压当前平台的 [Go helper](../helper/README.md) 到本机缓存；也可提前执行 `mise run helper-install`。这一初始化不下载或编译，安装提示仅写入 stderr，保持 `--json` 的 stdout 可解析。审计本身不修改系统包和用户配置。也可通过 `./helper/scripts/run.sh audit` 直接运行；日常审计及其系统包状态查询不依赖 Python 或 Go 编译器。[tests/reference/audit.py](../tests/reference/audit.py) 暂留作行为对照测试的参考实现。
+首次运行会自动从仓库 `helper/prebuilt/<版本>/` 校验并解压当前平台的 [Go helper](../helper/README.md) 到本机缓存；也可提前执行 `mise run helper-install`。这一初始化不下载或编译，安装提示仅写入 stderr，保持 `--json` 的 stdout 可解析。审计本身不修改系统包和用户配置。也可通过 `./helper/scripts/run.sh audit` 直接运行；日常审计及其系统包状态查询不依赖 Python 或 Go 编译器。旧 Python 参考实现已移除；真实 Go CLI 通过[独立报告基线](../tests/fixtures/audit/reports.json)及行为测试回归，来源和更新规则见[测试说明](../tests/README.md#审计完整报告基线)。
 
 ## 查询执行方式
 

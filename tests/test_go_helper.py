@@ -1,4 +1,4 @@
-"""Compare the Go CLI to the reference and validate offline binary activation."""
+"""Validate Go output against frozen contracts and offline binary activation."""
 
 import hashlib
 import io
@@ -14,79 +14,48 @@ import tempfile
 import unittest
 
 from helper_fixture import prepare_helper
-import test_audit as reference
-import test_parsers as parsers
+import audit_fixture as fixtures
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FAKE_MISE = '''import json, os, sys
-data = json.loads(open(os.environ["GO_HELPER_FIXTURE"]).read())
-args = sys.argv[1:]
-if args in data["failures"]:
-    print("private-query-output")
-    print("private-query-diagnostic", file=sys.stderr)
-    sys.exit(17)
-if args == ["ls", "--current", "--json"]: print(json.dumps(data["tools"]))
-elif args[:1] == ["which"]: print(data["paths"][args[-1]])
-elif args == ["bootstrap", "dotfiles", "status", "--json"]: print(json.dumps(data["config"]))
-else: sys.exit(91)
-'''
 
 
-class GoAuditParityTest(unittest.TestCase):
+class GoAuditGoldenTest(unittest.TestCase):
+    def setUp(self):
+        self.golden = json.loads((ROOT / "tests/fixtures/audit/reports.json").read_text())["cases"][self._testMethodName]
+        self.golden_index = 0
+
+    def tearDown(self):
+        self.assertEqual(self.golden_index, len(self.golden), "a frozen scenario was not exercised")
+
     def fixture(self):
-        fixture = reference.AuditTest("test_missing_tools_are_reported_without_installing")
+        fixture = fixtures.AuditFixture()
         fixture.setUp()
         self.addCleanup(fixture.doCleanups)
-        prepare_helper(fixture.root)
         return fixture
 
-    def compare(self, fixture, selected=reference.AUDIT.SECTIONS, strict=False, text=False):
-        commands = fixture.root / "query-bin"
-        commands.mkdir(exist_ok=True)
-        state = fixture.root / "query-fixture.json"
-        state.write_text(json.dumps({"tools": fixture.runner.tools, "paths": fixture.runner.paths,
-                                     "config": fixture.runner.config,
-                                     "failures": [list(call[1:]) for call in fixture.runner.failures]}))
-        (commands / "mise.py").write_text(FAKE_MISE)
-        mise = commands / "mise"
-        mise.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} -I -B {shlex.quote(str(commands / "mise.py"))} "$@"\n')
-        mise.chmod(0o755)
-        packages = fixture.root / "packages-output.txt"
-        packages.write_text(fixture.runner.packages)
-        status = fixture.root / "scripts/system-sync.sh"
-        status.write_text('#!/bin/sh\nexec /bin/cat ' + shlex.quote(str(packages)) + '\n')
-        status.chmod(0o755)
-        (fixture.root / "dotfiles/common/shell/path.sh").write_text(
-            '_system_sync_user_path() { PATH=' + shlex.quote(fixture.runner.policy) + '; export PATH; }\n')
-        environment = dict(fixture.environment, GO_HELPER_FIXTURE=str(state),
-                           PATH=str(commands) + ":" + fixture.environment["PATH"])
-        expected = reference.AUDIT.Audit(fixture.root, environment).execute(selected)
-        args = [str(fixture.root / "helper/scripts/run.sh"), "audit", "--json"]
-        for section in selected:
-            args += ["--only", section]
-        if strict:
-            args += ["--strict"]
-        result = subprocess.run(args, cwd=fixture.base, env=environment,
-                                capture_output=True, text=True, timeout=30)
-        self.assertEqual(result.returncode, reference.AUDIT.exit_code(expected, strict), result.stderr)
-        self.assertEqual(json.loads(result.stdout), expected)
+    def compare(self, fixture, selected=fixtures.SECTIONS, strict=False, text=False):
+        expected = self.golden[self.golden_index]
+        self.golden_index += 1
+        self.assertEqual(list(selected), expected["sections"])
+        self.assertEqual(strict, expected["strict"])
+        result = fixture.invoke(selected, strict)
+        self.assertEqual(result.returncode, expected["exit_code"], result.stderr)
+        self.assertEqual(fixture.normalize(json.loads(result.stdout)), expected["report"])
         self.assertNotIn("private-query", result.stdout + result.stderr)
         self.assertNotIn("fixture-private-token", result.stdout)
         if text:
-            text_args = [arg for arg in args if arg != "--json"] + ["--color", "never"]
-            result = subprocess.run(text_args, cwd=fixture.base, env=environment,
-                                    capture_output=True, text=True, timeout=30)
-            self.assertEqual(result.returncode, reference.AUDIT.exit_code(expected, strict), result.stderr)
-            self.assertEqual(result.stdout, reference.AUDIT.render(expected) + "\n")
+            result = fixture.invoke(selected, strict, text=True)
+            self.assertEqual(result.returncode, expected["exit_code"], result.stderr)
+            self.assertEqual(fixture.normalize(result.stdout), expected["text"])
             self.assertNotIn("fixture-private-token", result.stdout)
             return result.stdout
 
-    def test_all_candidate_details_and_healthy_omission_count_match_reference(self):
+    def test_all_candidate_details_and_healthy_omission_count_match_golden(self):
         fixture = self.fixture()
         candidates = [f"fixture-local-{i:02}" for i in range(12)]
         candidates[10] = "fixture-private-token"
-        fixture.runner.packages = reference.package_status(reference.AUDIT.PACKAGE_REQUIRED[0], {
+        fixture.runner.packages = fixtures.package_status(fixtures.PACKAGE_REQUIRED[0], {
             "Brewfile formula 根声明": [f"fixture-root-{i:02}" for i in range(12)],
             "Homebrew 可识别的未声明 requested formula": candidates,
         })
@@ -96,7 +65,7 @@ class GoAuditParityTest(unittest.TestCase):
         self.assertNotIn("    - fixture-root-11", output)
         self.assertIn("另有 4 项已核对条目", output)
 
-    def test_empty_and_declared_tools_match_reference(self):
+    def test_empty_and_declared_tools_match_golden(self):
         self.compare(self.fixture())
         fixture = self.fixture()
         fixture.tool(installed=False)
@@ -130,12 +99,12 @@ class GoAuditParityTest(unittest.TestCase):
         self.compare(fixture)
 
     def test_all_platform_reports_version_drift_and_cleanup_review_match(self):
-        for required in reference.AUDIT.PACKAGE_REQUIRED:
+        for required in fixtures.PACKAGE_REQUIRED:
             fixture = self.fixture()
-            fixture.runner.packages = reference.package_status(required)
+            fixture.runner.packages = fixtures.package_status(required)
             self.compare(fixture, ("packages",))
         fixture = self.fixture()
-        fixture.runner.packages = reference.package_status(reference.AUDIT.PACKAGE_REQUIRED[1],
+        fixture.runner.packages = fixtures.package_status(fixtures.PACKAGE_REQUIRED[1],
             {"mise 最终生效声明": ["pacman:git [version_mismatch]"],
              "声明但尚未以同名具体包安装": ["missing-tool"],
              "当前显式安装包中未声明、但受保护而保留": ["kernel"],
@@ -194,8 +163,7 @@ class GoHelperIntegrationTest(unittest.TestCase):
         for manager in ("apt", "dnf", "pacman", "aur", "zypper"):
             data = {manager: {"available": True, "packages": [{"package": "git", "state": "installed"}]}}
             result = self.run_helper("parse-status", "--manager", manager, "-", text=json.dumps(data))
-            expected = parsers.MISE.parse_status(data, (manager,))
-            self.assertEqual(result.stdout, "".join("\t".join(row) + "\n" for row in expected))
+            self.assertEqual(result.stdout, f"{manager}\tgit\tinstalled\n")
         for data in ({}, [], {"apt": {"available": False}}, {"apt": []},
                      {"apt": [{"package": "git", "state": "installed"}, {"package": "git;id", "state": "installed"}]}):
             result = self.run_helper("parse-status", "--manager", "apt", "-", text=json.dumps(data), success=False)

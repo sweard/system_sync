@@ -47,7 +47,7 @@ description = "校验仓库预编译包，显式构建 Go helper 并运行 Go/Py
 run = [
   "./helper/scripts/verify.sh",
   "./helper/scripts/build.sh",
-  "python3 ./tests/reference/sync_runtime.py --check",
+  "python3 ./tests/check_environment.py",
   "mise tasks validate",
   "./helper/scripts/test.sh",
   "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v",

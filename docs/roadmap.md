@@ -4,15 +4,15 @@
 
 以下内容记录核对时的状态和待办，不代表实时状态。日常操作见[项目首页](../README.md)，接管其他应用的步骤见[配置接管](dotfiles.md#后续逐项接管其他配置)。
 
-## Go 迁移进度（2026-10-22）
+## Go 迁移进度（2026-10-23）
 
 日常管理入口已完成迁移，源码保留在 `helper/cmd/system-sync-helper/` 和 `helper/internal/`，当前 helper 版本为 `v0.2.0`：
 
 - 已建立固定 Go 1.27.3 的构建、四平台归档、SHA256 校验安装和 CI artifact 流程；四平台包保存在 `helper/prebuilt/<版本>/`，随 clone 保存，首次调用直接离线初始化。日常 task 不自动编译或下载；开发者通过 `helper-bundle` 更新分发包，`check` 校验源码输入及归档，避免二进制遗漏更新。
 - `audit`、mise 包状态 JSON、zypper XML，以及 Bash 平台流程的版本预检、共享锁和事务日志已接入 Go；原有 task 名称、报告格式和 `yes` 确认保持。
 - 单包清单编辑、配置迁出、VS Code 扩展和本机配置历史均已接入 Go；原 task、`yes` 确认、原生 CLI、精确信任、备份/回滚和本机历史边界保持。TOML 库固定版本并 vendoring，构建仍可离线完成，预编译包同时携带许可。
-- Python 仅作为开发检查、原有测试及参考实现保留；后续可按需迁移测试。运行时迁移不修改本机真实包、扩展或用户配置，验收使用临时 HOME 和模拟命令。
-- 已将仍有测试用途的 7 个 Python 参考实现移入 `tests/reference/`，删除未引用的旧 `config-history.py`，同步检查入口、导入及隔离测试路径；`scripts/` 仅保留 Shell 执行入口。
+- Python 仅作为开发检查、真实 CLI 集成测试和模拟原生命令保留。验收使用临时 HOME 和模拟命令，不修改本机真实包、扩展或用户配置。
+- 已核对覆盖并移除全部 7 个 Python 参考实现：解析及扩展测试改为验收 Go；单包和迁出事务映射到 Go 并补齐断言；审计保留移除前双实现核对过的 21 份独立报告基线。版本前置检查委托 Go，锁测试使用最小 POSIX 辅助；`scripts/` 仅保留 Shell 执行入口，覆盖记录见[测试说明](../tests/README.md)。
 - Go 模块、依赖、版本、许可、构建/启动脚本、预编译包和说明统一集中在 `helper/`；根 `scripts/` 负责平台流程，项目级回归仍在 `tests/`。mise task 名称及根目录 `.system-sync/` 缓存位置保持一致。
 - 新增 `package-capture` / `machine-init`：支持 macOS 及四个 Linux profile，默认预览，只保存本机候选或分阶段补装，保留已有软件和孤立包；配置备份、来源核对及操作锁接入 Go helper。日常接入不要求编译器，候选仍需审阅后手工合并，Linux 真实包事务验收仍待完成。
 - 任务入口已收敛：`package-status` / `package-dry-run` 分别负责轻量状态与事务预览，旧名称保留兼容别名；VS Code 查询统一到 `vscode-status`。日常 `config-sync` 与 `machine-init` 共用 Go 配置计划、备份和复查能力，完整 helper 验收流程简化为 `helper-bundle → check`。
@@ -24,7 +24,7 @@
 - CI 同时发现并修复了进度计时进程启动瞬间的信号竞态：清理时查询 Bash 作业表，避免漏掉尚未记录 PID 的 sleep。回归在该信号边界主动暂停并中断计时进程，确认命令结束后输出管道及时关闭。
 - 构建和验证命令、源码位置与预编译安装步骤见 [Go helper](../helper/README.md)。未将交叉编译视为 Linux 真实包事务验收。
 
-2026-10-23 `v0.2.0` 本机检查通过：94 项 Go 测试（含 race 检查）、225 项 Python 回归、24 项 task 校验及 `go vet`。覆盖扩展采集默认公共分组、显式平台范围、原分组内版本更新、筛选、写入幂等和并发检查、同步降级提示、清单外扩展版本明细与保留、长列表脱敏及历史目标明细、兼容别名参数转交、状态与事务预演分离、共享配置计划/备份/复查、无 Python/Go 的日常入口、机器接入的采集/保留/重复执行、配置迁出失败回滚与并发修改保护、扩展进程树超时清理及本机历史范围检查；四平台归档和空模块缓存的离线构建已验证。本轮补充了空全局配置下的完整本机检查，已提交版本的远端结果见 [dev CI](https://github.com/sweard/system_sync/actions/workflows/check.yml?query=branch%3Adev)。
+2026-10-23 `v0.2.0` 本机检查通过：97 项 Go 测试（含 race 检查）、182 项 Python 集成回归、24 项 task 校验及 `go vet`。覆盖扩展采集默认公共分组、显式平台范围、原分组内版本更新、筛选、写入幂等和并发检查、同步降级提示、清单外扩展版本明细与保留、长列表脱敏及历史目标明细、兼容别名参数转交、状态与事务预演分离、共享配置计划/备份/复查、无 Python/Go 的日常入口、机器接入的采集/保留/重复执行、配置迁出失败回滚与并发修改保护、扩展进程树超时清理及本机历史范围检查；四平台归档和空模块缓存的离线构建已验证。本轮补充了空全局配置下的完整本机检查，已提交版本的远端结果见 [dev CI](https://github.com/sweard/system_sync/actions/workflows/check.yml?query=branch%3Adev)。
 
 ## Go 迁移前的性能核对（2026-10-21）
 
@@ -42,7 +42,7 @@
 
 | 项目 | 实施结果 |
 |---|---|
-| 1. Python 要求 | Go 迁移前已统一为 3.11+；当前日常入口使用 Go，此要求只用于开发检查和参考测试。 |
+| 1. Python 要求 | Go 迁移前已统一为 3.11+；当前日常入口使用 Go，此要求只用于开发检查和集成测试。 |
 | 2. 自动化验收 | 已完成：固定 mise 2026.10.15 和 Actions 提交，macOS / Ubuntu × Python 3.11 / 3.15 四组完整检查已通过；扩展超时回归也纳入相同矩阵。结果见 [dev CI](https://github.com/sweard/system_sync/actions/workflows/check.yml?query=branch%3Adev)。 |
 | 3. 新机重建 | 已完成：全局与 macOS 锁文件随配置部署，npm 依赖图纳入 Git；空 HOME 下重装原有八项工具并运行版本命令，JBR 从官方来源重装成功。详见[新机重建](rebuild.md)。 |
 | 4. Flutter | 已完成：备份 `pubspec.lock` 及补丁，复用 Flutter 3.47.2，Dart 随 SDK 提供；移除旧 PATH 声明。现有项目 master 的 ASCII 路径隔离副本通过依赖恢复、分析、测试，原 SDK 改动和原项目保持。 |
@@ -66,7 +66,7 @@
 
 | 顺序 | 工作项 | 当前状态 | 完成标准 |
 |---|---|---|---|
-| 1 | 对齐检查入口的 Python 要求 | 当时的 `scripts/sync_runtime.py`（现位于 `tests/reference/sync_runtime.py`）允许 Python 3.9+，但 `tests/test_environment.py` 直接导入 `tomllib`；本机系统 Python 3.9.6 没有该模块，当前 mise Python 3.15.0 不受影响。 | 选择保留 3.9 兼容性或明确提高检查入口要求，同步预检与文档，并在声明的最低版本下运行检查。 |
+| 1 | 对齐检查入口的 Python 要求 | 当时的 `scripts/sync_runtime.py` 允许 Python 3.9+，但 `tests/test_environment.py` 直接导入 `tomllib`；本机系统 Python 3.9.6 没有该模块。旧实现已移除，当前测试前置为 `tests/check_environment.py`，系统预检使用 Go。 | 选择保留 3.9 兼容性或明确提高检查入口要求，同步预检与文档，并在声明的最低版本下运行检查。 |
 | 2 | 增加自动化验收与 CI | 仓库尚未提供 CI 工作流，现有测试主要通过本机手动执行。 | 增加 macOS/Linux 自动检查，覆盖最低 Python 版本；保持隔离 HOME 和模拟包管理器，避免测试修改宿主系统软件。 |
 | 3 | 补齐新机重建能力 | Java 通过 mise 链接到本机外部 JBR；仓库、全局配置及公共来源旁均没有 `mise.lock`。 | 明确 JDK 的可重装来源或前置安装与注册步骤，为适用工具生成并部署全局锁文件，再在干净环境验证公共配置和工具重建、私有文件缺失时正常跳过。 |
 | 4 | 完成 Flutter 版本管理 | Flutter 仍由原目录维护，位于 `stable` 分支，核对时有 1 项本地改动。 | 先核对并保存本地改动，再迁入 mise；确认 Flutter/Dart 命令来源、版本和现有项目工作流正常。 |

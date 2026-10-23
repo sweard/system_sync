@@ -182,7 +182,7 @@ class ConfigPreviewTest(unittest.TestCase):
             self.assertEqual(result.returncode, 2, result.stdout)
             self.assertEqual(self.snapshot(), before)
             self.assertFalse((self.project / ".system-sync/history").exists())
-        from reference.sync_runtime import operation_lock
+        from helper_fixture import operation_lock
         with operation_lock(self.project):
             result = self.run_mise("run", "config-sync", "--yes")
             self.assertNotEqual(result.returncode, 0)

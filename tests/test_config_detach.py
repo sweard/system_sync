@@ -1,6 +1,5 @@
-"""Detach real mise deployments in disposable homes and exercise failed transactions."""
+"""Detach real mise deployments in disposable homes and preserve local files."""
 
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -10,19 +9,13 @@ import sys
 import tempfile
 import tomllib
 import unittest
-from unittest.mock import patch
 
 from test_converge import run_terminal
-from helper_fixture import prepare_helper
+from helper_fixture import operation_lock, prepare_helper, snapshot
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MISE = shutil.which("mise")
-sys.path.insert(0, str(ROOT / "tests/reference"))
-SPEC = importlib.util.spec_from_file_location("config_detach", ROOT / "tests/reference/config-detach.py")
-DETACH = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = DETACH
-SPEC.loader.exec_module(DETACH)
 
 
 @unittest.skipUnless(MISE and sys.platform in ("darwin", "linux"), "mise or supported OS unavailable")
@@ -87,25 +80,25 @@ class DeployedDetachTest(unittest.TestCase):
         return self.command([str(self.project / "helper/scripts/run.sh"), "config-detach", *args], success)
 
     def test_preview_and_noninteractive_refusal_leave_configuration_untouched(self):
-        before = DETACH.snapshot(self.home)
+        before = snapshot(self.home)
         preview = self.detach("--dry-run")
         self.assertIn("以上仅为预览", preview.stdout)
         self.assertIn("复制锁文件依赖目录", preview.stdout)
         self.assertIn("将 PATH 脚本引用改为本机位置", preview.stdout)
-        self.assertEqual(DETACH.snapshot(self.home), before)
+        self.assertEqual(snapshot(self.home), before)
         self.detach(success=False)
-        self.assertEqual(DETACH.snapshot(self.home), before)
+        self.assertEqual(snapshot(self.home), before)
         self.assertFalse(self.backups.exists())
         self.assertFalse((self.project / ".system-sync/operation.lock").exists())
 
     def test_interactive_detach_requires_yes_and_cancellation_leaves_no_backup(self):
-        before = DETACH.snapshot(self.home)
+        before = snapshot(self.home)
         command = [str(self.project / "helper/scripts/run.sh"), "config-detach"]
         for response in ("", "no", "y", "DETACH"):
             with self.subTest(response=response):
                 result = run_terminal(command, self.env, [("输入 yes 确认", response)])
                 self.assertEqual(result.returncode, 2, result.stdout)
-                self.assertEqual(DETACH.snapshot(self.home), before)
+                self.assertEqual(snapshot(self.home), before)
                 self.assertFalse(self.backups.exists())
         result = run_terminal(command, self.env, [("输入 yes 确认", "yes")])
         self.assertEqual(result.returncode, 0, result.stdout)
@@ -166,28 +159,28 @@ class DeployedDetachTest(unittest.TestCase):
         collision = self.home / ".config/mise/.mise/locks/npm-yarn/1.22.22"
         collision.mkdir(parents=True)
         (collision / "unrelated").write_text("keep me")
-        before = DETACH.snapshot(self.home)
+        before = snapshot(self.home)
         self.detach("--yes", success=False)
-        self.assertEqual(DETACH.snapshot(self.home), before)
+        self.assertEqual(snapshot(self.home), before)
         self.assertFalse(self.backups.exists())
 
     def test_custom_history_enrollment_and_broken_links_are_not_overwritten(self):
         self.enrollment.write_text('[dotfiles]\n"/unexpected" = {mode="track"}\n')
-        before = DETACH.snapshot(self.home)
+        before = snapshot(self.home)
         self.detach("--yes", success=False)
-        self.assertEqual(DETACH.snapshot(self.home), before)
+        self.assertEqual(snapshot(self.home), before)
         self.enrollment.unlink()
         self.private.unlink()
-        before = DETACH.snapshot(self.home)
+        before = snapshot(self.home)
         self.detach("--yes", success=False)
-        self.assertEqual(DETACH.snapshot(self.home), before)
+        self.assertEqual(snapshot(self.home), before)
         self.assertFalse(self.backups.exists())
 
     def test_shared_operation_lock_prevents_detach_during_package_changes(self):
-        before = DETACH.snapshot(self.home)
-        with DETACH.operation_lock(self.project):
+        before = snapshot(self.home)
+        with operation_lock(self.project):
             self.detach("--yes", success=False)
-        self.assertEqual(DETACH.snapshot(self.home), before)
+        self.assertEqual(snapshot(self.home), before)
         self.assertFalse(self.backups.exists())
 
     def test_user_replaced_external_config_links_are_preserved(self):
@@ -200,132 +193,6 @@ class DeployedDetachTest(unittest.TestCase):
         self.assertTrue(self.config.is_symlink())
         self.assertEqual(self.config.resolve(), external / "config.toml")
         self.assertEqual((external / "config.toml").read_bytes(), self.original_config)
-
-
-class DetachTransactionTest(unittest.TestCase):
-    def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="system-sync-detach-transaction-")
-        self.addCleanup(self.temp.cleanup)
-        self.base = Path(self.temp.name).resolve()
-        self.root, self.home = self.base / "repo", self.base / "home"
-        self.root.mkdir()
-        self.home.mkdir()
-        self.backups = self.home / "state/backups"
-
-    def plan(self):
-        plan = DETACH.DetachPlan(self.root, self.home)
-        for name in ("a", "b"):
-            (self.root / name).write_text(f"{name}-current-content")
-            (self.home / name).symlink_to(self.root / name)
-            plan.links(self.home / name)
-        return plan
-
-    def test_failed_replace_restores_all_previous_links(self):
-        plan = self.plan()
-        before = DETACH.snapshot(self.home)
-        original_replace = os.replace
-        failed = False
-
-        def fail_once(source, target):
-            nonlocal failed
-            if Path(target) == self.home / "b" and not failed:
-                failed = True
-                raise OSError("injected replacement failure")
-            return original_replace(source, target)
-
-        with patch.object(DETACH.os, "replace", side_effect=fail_once):
-            with self.assertRaises(OSError):
-                plan.apply(self.backups)
-        self.assertEqual({name: DETACH.snapshot(self.home / name) for name in ("a", "b")}, dict(before.value))
-        transaction = next(self.backups.glob("*/transaction.json"))
-        self.assertEqual(json.loads(transaction.read_text())["phase"], "rolled_back")
-        self.assertFalse(list(self.home.glob(".system-sync-*")))
-
-    def test_source_changes_and_linked_parent_abort_without_writes(self):
-        plan = self.plan()
-        (self.root / "a").write_text("new edit after preview")
-        with self.assertRaises(DETACH.RuntimeFailure):
-            plan.apply(self.backups)
-        self.assertTrue((self.home / "a").is_symlink())
-        self.assertFalse(self.backups.exists())
-        external = self.base / "external"
-        external.mkdir()
-        (self.home / "alias").symlink_to(external)
-        with self.assertRaises(DETACH.RuntimeFailure):
-            plan.check_parents(self.home / "alias/config")
-        with self.assertRaises(DETACH.RuntimeFailure):
-            plan.target(self.home / "../outside")
-
-    def test_rollback_preserves_a_concurrent_change_instead_of_clobbering_it(self):
-        plan = self.plan()
-        original_replace = os.replace
-        failed = False
-
-        def concurrent_edit(source, target):
-            nonlocal failed
-            if Path(target) == self.home / "b" and not failed:
-                failed = True
-                (self.home / "a").unlink()
-                raise OSError("injected concurrent deletion")
-            return original_replace(source, target)
-
-        with patch.object(DETACH.os, "replace", side_effect=concurrent_edit):
-            with self.assertRaises(OSError):
-                plan.apply(self.backups)
-        self.assertFalse((self.home / "a").exists())
-        transaction = json.loads(next(self.backups.glob("*/transaction.json")).read_text())
-        self.assertEqual(transaction["phase"], "recovery_required")
-        self.assertEqual(transaction["conflicts"], [str(self.home / "a")])
-        self.assertTrue((self.home / "b").is_symlink())
-
-    def test_failed_directory_replacement_restores_the_original_link(self):
-        source = self.root / "dir"
-        source.mkdir()
-        (source / "data").write_text("keep directory contents")
-        target = self.home / "dir"
-        target.symlink_to(source)
-        plan = DETACH.DetachPlan(self.root, self.home)
-        plan.links(target)
-        original_replace = os.replace
-        failed = False
-
-        def fail_once(staged, destination):
-            nonlocal failed
-            if Path(destination) == target and not failed:
-                failed = True
-                raise OSError("injected directory rename failure")
-            return original_replace(staged, destination)
-
-        with patch.object(DETACH.os, "replace", side_effect=fail_once):
-            with self.assertRaises(OSError):
-                plan.apply(self.backups)
-        self.assertTrue(target.is_symlink())
-        self.assertEqual((target / "data").read_text(), "keep directory contents")
-        transaction = json.loads(next(self.backups.glob("*/transaction.json")).read_text())
-        self.assertEqual(transaction["phase"], "rolled_back")
-
-    def test_directory_links_materialize_repo_links_and_keep_external_references(self):
-        source = self.root / "config"
-        source.mkdir()
-        (source / "private").write_text("private-directory-data")
-        (source / "private").chmod(0o600)
-        (source / "internal").symlink_to(source / "private")
-        external = self.home / "user-file"
-        external.write_text("unmanaged")
-        (source / "external").symlink_to(os.path.relpath(external, source))
-        target = self.home / "config"
-        target.symlink_to(source)
-        plan = DETACH.DetachPlan(self.root, self.home)
-        plan.links(target)
-        plan.apply(self.backups)
-        self.assertFalse(target.is_symlink())
-        self.assertFalse((target / "internal").is_symlink())
-        self.assertEqual((target / "private").stat().st_mode & 0o777, 0o600)
-        self.assertEqual((target / "internal").read_text(), "private-directory-data")
-        self.assertEqual((target / "external").resolve(), external)
-        self.root.rename(self.base / "moved-repo")
-        self.assertEqual((target / "internal").read_text(), "private-directory-data")
-        self.assertEqual((target / "external").read_text(), "unmanaged")
 
 
 if __name__ == "__main__":

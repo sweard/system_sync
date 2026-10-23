@@ -1,6 +1,5 @@
 """Verify extension reconciliation with an isolated fake public VS Code CLI."""
 
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -16,10 +15,6 @@ import unittest
 from helper_fixture import prepare_helper
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "tests/reference/vscode-extensions.py"
-spec = importlib.util.spec_from_file_location("vscode_extensions", SCRIPT)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
 
 
 class VSCodeExtensionsTest(unittest.TestCase):
@@ -137,8 +132,7 @@ else:
         data = tomllib.loads(self.manifest.read_text())
         self.assertEqual(data["common"], {"example.shared": "1.2.3"})
         self.assertEqual(data[platform], {"example.local": "4.5.6"})
-        self.assertIn("example.local", module.declarations(self.manifest, platform))
-        self.assertNotIn("example.local", module.declarations(self.manifest, other))
+        self.assertNotIn("example.local", data.get(other, {}))
         before = self.manifest.read_bytes(), self.manifest.stat().st_mtime_ns
         self.assertIn("无需修改清单", self.run_capture("--apply", "--yes").stdout)
         self.assertEqual((self.manifest.read_bytes(), self.manifest.stat().st_mtime_ns), before)
@@ -266,10 +260,13 @@ else:
         self.manifest.write_text('[common]\n"example.shared"="1.2.3"\n'
                                  '[macos]\n"example.mac"="2.0.0"\n'
                                  '[linux]\n"example.linux"="3.0.0"\n')
-        self.assertEqual(set(module.declarations(self.manifest, "linux")),
-                         {"example.shared", "example.linux"})
-        self.assertEqual(set(module.declarations(self.manifest, "macos")),
-                         {"example.shared", "example.mac"})
+        platform = "mac" if sys.platform == "darwin" else "linux"
+        other = "linux" if platform == "mac" else "mac"
+        output = self.run_cli("status").stdout
+        self.assertIn("example.shared", output)
+        self.assertIn("example." + platform, output)
+        self.assertNotIn("example." + other, output)
+        self.log.unlink()
         with self.manifest.open('a') as f: f.write('"--bad.flag"="1.0.0"\n')
         self.run_cli("sync", success=False)
         self.assertFalse(self.log.exists())
@@ -297,7 +294,7 @@ else:
                              for line in self.log.read_text().splitlines()), 1)
         self.assertNotIn("--uninstall-extension", self.log.read_text())
 
-    def test_extra_details_are_sorted_when_managed_extensions_match_and_match_reference(self):
+    def test_extra_details_are_sorted_when_managed_extensions_match(self):
         state = {"zeta.local": "4.5.6", "example.shared": "1.2.3", "alpha.local": "1.0.0-beta.2"}
         self.state.write_text(json.dumps(state))
         expected = ("[~] 保留 2 个清单外扩展：\n"
@@ -308,10 +305,8 @@ else:
             self.assertIn(expected, result.stdout)
             self.assertIn("无需同步", result.stdout)
             self.assertEqual(json.loads(self.state.read_text()), state)
-        result = subprocess.run([sys.executable, str(SCRIPT), "status", "--manifest", str(self.manifest),
-                                 "--code", str(self.code)], capture_output=True, text=True, timeout=10)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout, self.run_cli("status").stdout)
+        self.assertEqual(self.run_cli("status").stdout,
+                         expected + "[+] 1 个公共扩展均符合清单，无需同步。\n")
         self.assertTrue(all("--list-extensions" in json.loads(line) for line in self.log.read_text().splitlines()))
         self.state.write_text('{"example.shared":"1.2.3"}')
         self.assertNotIn("清单外扩展", self.run_cli("status").stdout)
@@ -366,17 +361,6 @@ else:
                 process.kill()
                 process.wait()
             process.stdout.close()
-
-    @unittest.skipUnless(sys.platform in ("darwin", "linux"), "requires process groups")
-    def test_timeout_stops_child_installer_from_writing_after_failure(self):
-        marker = self.base / "orphan-wrote"
-        child = "import pathlib,time; time.sleep(0.7); pathlib.Path(" + repr(str(marker)) + ").touch()"
-        parent = "import subprocess,sys,time; subprocess.Popen([sys.executable,'-c'," + repr(child) + "]); time.sleep(10)"
-        with self.assertRaisesRegex(ValueError, "超时"):
-            module.invoke([sys.executable, "-c", parent], timeout=0.3)
-        time.sleep(0.8)
-        self.assertFalse(marker.exists(), "child installer survived the deadline")
-
 
 if __name__ == "__main__":
     unittest.main()

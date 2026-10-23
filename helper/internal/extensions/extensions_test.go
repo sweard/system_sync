@@ -2,6 +2,8 @@ package extensions
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sweard/system_sync/helper/internal/taskexec"
 )
 
 type fakeCLI struct {
@@ -180,5 +184,24 @@ func TestNoExtraExtensionsHaveNoRetentionBlock(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "清单外扩展") || !strings.Contains(out.String(), "无需同步") {
 		t.Fatal(out.String())
+	}
+}
+
+func TestExtensionQueryTimeoutStopsDescendantsAndHidesDiagnostics(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "orphan-wrote")
+	script := filepath.Join(t.TempDir(), "code")
+	command := "#!/bin/sh\nprintf private-query-token >&2\n(sleep 0.3; printf unsafe > " + taskexec.Quote([]string{marker}) + ") &\nwait\n"
+	if err := os.WriteFile(script, []byte(command), 0700); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Millisecond)
+	defer cancel()
+	_, err := Installed(taskexec.Runner{Context: ctx}, []string{script})
+	if !errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), "private-query-token") {
+		t.Fatal("query timeout missing or private diagnostics leaked", err)
+	}
+	time.Sleep(400 * time.Millisecond)
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatal("extension CLI descendant survived cancellation")
 	}
 }

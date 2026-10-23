@@ -1,6 +1,7 @@
 package packageedit
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -185,8 +186,12 @@ func TestTargetedFormulaCaskAliasesAndOptions(t *testing.T) {
 				wanted = `brew "ruby", link: false`
 			}
 			f.runner.installed["automatically-installed-dependency"] = true
-			if err := execute(f.command(t, "macos", options), true); err != nil {
+			var output bytes.Buffer
+			if err := f.command(t, "macos", options).Execute(context.Background(), func() (bool, error) { return true, nil }, &output); err != nil {
 				t.Fatal(err)
+			}
+			if !strings.Contains(output.String(), "完成") {
+				t.Fatal("successful operation missing completion output", output.String())
 			}
 			after := read(t, f.brew)
 			if !strings.Contains(after, wanted) || strings.Contains(after, "automatically-installed-dependency") {
@@ -198,6 +203,32 @@ func TestTargetedFormulaCaskAliasesAndOptions(t *testing.T) {
 			if len(f.runner.mutations) != 1 {
 				t.Fatal(f.runner.mutations)
 			}
+			expected := []string{"brew", "install", "--formula", "gitui"}
+			switch which {
+			case "cask":
+				expected = []string{"brew", "install", "--cask", "zed"}
+				if strings.Contains(after, `brew "zed"`) {
+					t.Fatal("cask also added as formula")
+				}
+			case "alias":
+				expected = []string{"brew", "install", "--formula", "ripgrep"}
+				if strings.Contains(after, `brew "rg"`) {
+					t.Fatal("alias recorded instead of canonical root")
+				}
+			case "options":
+				expected = []string{"brew", "install", "--formula", "--skip-link", "ruby"}
+			}
+			if !reflect.DeepEqual(f.runner.mutations[0], expected) {
+				t.Fatal("unexpected native command", f.runner.mutations)
+			}
+			paths, err := filepath.Glob(filepath.Join(f.root, ".system-sync/history/*/transaction.json"))
+			if err != nil || len(paths) != 1 {
+				t.Fatal("successful operation missing completion journal", paths, err)
+			}
+			var record map[string]any
+			if err := json.Unmarshal([]byte(read(t, paths[0])), &record); err != nil || record["phase"] != "complete" {
+				t.Fatal("successful operation has no completed transaction", record, err)
+			}
 			info, err := os.Stat(f.brew)
 			if err != nil || info.Mode().Perm() != 0640 {
 				t.Fatal("manifest permissions changed")
@@ -206,18 +237,32 @@ func TestTargetedFormulaCaskAliasesAndOptions(t *testing.T) {
 	}
 }
 func TestPreviewCancellationAndAbsentUninstall(t *testing.T) {
-	for _, mode := range []string{"preview", "cancel", "absent", "uninstall"} {
+	for _, mode := range []string{"preview", "cancel", "install-preview", "install-cancel", "absent", "uninstall"} {
 		t.Run(mode, func(t *testing.T) {
 			f := newFixture(t)
 			before := read(t, f.brew)
-			options := Options{Action: "uninstall", Package: "firefox", Cask: true, DryRun: mode == "preview"}
+			preview, cancelled := strings.HasSuffix(mode, "preview"), strings.HasSuffix(mode, "cancel")
+			options := Options{Action: "uninstall", Package: "firefox", Cask: true, DryRun: preview}
+			if strings.HasPrefix(mode, "install-") {
+				options.Action = "install"
+				if preview {
+					options.Package, options.Cask = "gitui", false
+				}
+			}
 			if mode == "uninstall" {
 				f.runner.installed["firefox"], f.runner.installed["google-chrome"] = true, true
 			}
-			if err := execute(f.command(t, "macos", options), mode != "cancel"); err != nil {
+			var output bytes.Buffer
+			if err := f.command(t, "macos", options).Execute(context.Background(), func() (bool, error) { return !cancelled, nil }, &output); err != nil {
 				t.Fatal(err)
 			}
-			if mode == "preview" || mode == "cancel" {
+			if mode == "install-preview" && !strings.Contains(output.String(), `brew "gitui"`) {
+				t.Fatal("install preview omitted the planned declaration", output.String())
+			}
+			if cancelled && !strings.Contains(output.String(), "已取消") {
+				t.Fatal("cancelled operation missing confirmation output", output.String())
+			}
+			if preview || cancelled {
 				if read(t, f.brew) != before || len(f.runner.mutations) > 0 {
 					t.Fatal("preview/cancel mutated")
 				}
@@ -232,8 +277,55 @@ func TestPreviewCancellationAndAbsentUninstall(t *testing.T) {
 				if mode == "absent" && len(f.runner.mutations) != 0 {
 					t.Fatal("absent uninstall ran native command")
 				}
+				if mode == "uninstall" && (!reflect.DeepEqual(f.runner.mutations, [][]string{{"brew", "uninstall", "--cask", "firefox"}}) || !f.runner.installed["google-chrome"]) {
+					t.Fatal("uninstall changed an unrelated cask", f.runner.mutations)
+				}
 			}
 		})
+	}
+}
+
+func TestLinuxEditingPreservesCommentsOtherTablesAndOtherProfiles(t *testing.T) {
+	for profile, manager := range Managers {
+		t.Run(profile, func(t *testing.T) {
+			f := newFixture(t)
+			before := map[string]string{}
+			for name := range Managers {
+				path := filepath.Join(f.root, "packages/linux", name, "mise.toml")
+				before[path] = read(t, path)
+			}
+			path := filepath.Join(f.root, "packages/linux", profile, "mise.toml")
+			source := before[path] + "\n# unrelated settings\n[env]\nEXAMPLE = \"retained\"\n"
+			if err := os.WriteFile(path, []byte(source), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := execute(f.command(t, profile, Options{Action: "install", Package: "gitui"}), true); err != nil {
+				t.Fatal(err)
+			}
+			after := read(t, path)
+			entry := `"` + manager + `:gitui" = "latest"`
+			if !strings.Contains(after, "# Linux roots") || !strings.Contains(after, "# unrelated settings\n[env]\nEXAMPLE = \"retained\"") || strings.Index(after, entry) < 0 || strings.Index(after, entry) > strings.Index(after, "[env]") {
+				t.Fatal("profile edit damaged layout", after)
+			}
+			for other, original := range before {
+				if other != path && read(t, other) != original {
+					t.Fatal("another profile was modified", other)
+				}
+			}
+		})
+	}
+}
+
+func TestLinuxRejectsMacOSSelectorsBeforeMutation(t *testing.T) {
+	for _, option := range []Options{{Action: "install", Package: "firefox", Cask: true}, {Action: "install", Package: "git", Formula: true}} {
+		f := newFixture(t)
+		p, err := New(f.root, "debian", option, f.runner)
+		if err == nil {
+			err = execute(p, true)
+		}
+		if err == nil || len(f.runner.mutations) != 0 {
+			t.Fatal("macOS selector accepted on Linux", err, f.runner.mutations)
+		}
 	}
 }
 func TestFailuresNeverCommitPlannedManifestAndAreJournaled(t *testing.T) {
@@ -295,6 +387,7 @@ func TestThirdPartyTrustSourceConflictsAndUninstall(t *testing.T) {
 	for _, mode := range []string{"untrusted", "trusted", "preview", "conflict", "remove"} {
 		t.Run(mode, func(t *testing.T) {
 			f := newFixture(t)
+			before, trust := read(t, f.brew), read(t, f.trust)
 			options := Options{Action: "install", Package: "fixture/apps/demo", Cask: true, Trust: mode != "untrusted", DryRun: mode == "preview"}
 			if mode == "conflict" {
 				options.Package = "other/apps/tinycast"
@@ -319,6 +412,14 @@ func TestThirdPartyTrustSourceConflictsAndUninstall(t *testing.T) {
 				if !strings.Contains(read(t, f.brew), `tap "fixture/apps"`) || !strings.Contains(read(t, f.brew), `cask "fixture/apps/demo", trusted: true`) || !strings.Contains(read(t, f.trust), "fixture/apps/demo\n") {
 					t.Fatal("exact trust missing")
 				}
+				for _, command := range f.runner.calls {
+					if reflect.DeepEqual(command, []string{"brew", "trust", "fixture/apps"}) {
+						t.Fatal("trusted an entire tap", command)
+					}
+				}
+			}
+			if (mode == "untrusted" || mode == "conflict" || mode == "preview") && (len(f.runner.mutations) != 0 || read(t, f.brew) != before || read(t, f.trust) != trust) {
+				t.Fatal("rejected or preview operation changed package state")
 			}
 			if mode == "preview" {
 				if !reflect.DeepEqual(f.runner.calls, [][]string{{"brew", "list", "--cask"}}) {
@@ -326,7 +427,7 @@ func TestThirdPartyTrustSourceConflictsAndUninstall(t *testing.T) {
 				}
 			}
 			if mode == "remove" {
-				if strings.Contains(read(t, f.trust), "abue-ammar/tinycast/tinycast") || !strings.Contains(read(t, f.brew), `tap "abue-ammar/tinycast"`) {
+				if strings.Contains(read(t, f.brew), `cask "abue-ammar/tinycast/tinycast"`) || strings.Contains(read(t, f.trust), "abue-ammar/tinycast/tinycast") || !strings.Contains(read(t, f.brew), `tap "abue-ammar/tinycast"`) {
 					t.Fatal("tap/trust cleanup wrong")
 				}
 			}
@@ -450,8 +551,15 @@ func TestAURAndReverseDependencyGuards(t *testing.T) {
 	if f.runner.mutations[0][0] != "/fake/paru" {
 		t.Fatal(f.runner.mutations)
 	}
+	manifest := filepath.Join(f.root, "packages/linux/arch/mise.toml")
+	if !strings.Contains(read(t, manifest), `"aur:sample-aur-bin" = "latest"`) {
+		t.Fatal("AUR root recorded under the wrong manager", read(t, manifest))
+	}
 	if err := execute(f.command(t, "arch", Options{Action: "uninstall", Package: "sample-aur-bin"}), true); err != nil {
 		t.Fatal(err)
+	}
+	if strings.Contains(read(t, manifest), "sample-aur-bin") || len(f.runner.mutations) != 2 || !contains(f.runner.mutations[1], "pacman") || !contains(f.runner.mutations[1], "-R") {
+		t.Fatal("plain uninstall did not remove the AUR root through pacman", f.runner.mutations, read(t, manifest))
 	}
 	p = f.command(t, "arch", Options{Action: "install", Package: "other-aur", AUR: true})
 	p.UID = 0
@@ -511,6 +619,9 @@ func TestUnsafeDeclarationsNamesAndSymlinksFailBeforeMutation(t *testing.T) {
 				part = "受保护包"
 			}
 			expectError(t, execute(f.command(t, profile, options), true), part)
+			if mode == "dynamic" && len(f.runner.calls) != 0 {
+				t.Fatal("dynamic Brewfile reached a native query", f.runner.calls)
+			}
 			if len(f.runner.mutations) > 0 {
 				t.Fatal("unsafe input reached native writer")
 			}

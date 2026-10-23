@@ -53,7 +53,8 @@ system_sync/
 │   ├── licenses/               # Go 许可文本
 │   └── prebuilt/               # 随 clone 保存的四平台归档与校验清单
 ├── tests/                      # 隔离环境与模拟包管理器测试
-│   └── reference/              # Python 行为参考、检查前置与锁兼容性代码
+│   ├── README.md               # 测试分工与覆盖迁移记录
+│   └── fixtures/               # 独立审计报告基线
 ├── docs/                       # 分主题的操作说明与后续规划
 └── .system-sync/               # 本机 helper、构建缓存和审计状态，Git 忽略
 ```
@@ -66,7 +67,7 @@ system_sync/
 
 开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 Go 1.27.3、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。未全局选择 Go 时，先执行 `mise install go@1.27.3`，再用 `mise run --tool go@1.27.3 check`；CI 也使用这一入口。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
 
-Go helper 资源集中在 [helper/](helper/)，项目级隔离回归统一放在 `tests/`，Python 参考实现位于 [tests/reference/](tests/reference/)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
+Go helper 资源集中在 [helper/](helper/)，项目级隔离回归统一放在 `tests/`。旧 Python 参考实现已移除，保留直接验收 Go 的 Python 集成测试及独立报告基线，详见[测试与覆盖迁移](tests/README.md)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
 
 本仓库已关闭任务运行前的自动工具补装，避免审计时先改变本机状态。缺失的开发工具通过 `mise install` 显式安装。
 

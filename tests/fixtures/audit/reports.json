@@ -1,0 +1,1493 @@
+{
+  "schema": 1,
+  "origin": "Python baseline at 4ca4a25, checked against Go before removal",
+  "cases": {
+    "test_all_candidate_details_and_healthy_omission_count_match_golden": [
+      {
+        "sections": [
+          "packages"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 3,
+            "drift": 0,
+            "candidate": 1,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "12 项",
+                "items": [
+                  "fixture-root-00",
+                  "fixture-root-01",
+                  "fixture-root-02",
+                  "fixture-root-03",
+                  "fixture-root-04",
+                  "fixture-root-05",
+                  "fixture-root-06",
+                  "fixture-root-07",
+                  "fixture-root-08",
+                  "fixture-root-09",
+                  "fixture-root-10",
+                  "fixture-root-11"
+                ],
+                "count": 12
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "candidate",
+                "code": "package_group",
+                "item": "Homebrew 可识别的未声明 requested formula",
+                "message": "12 项",
+                "items": [
+                  "fixture-local-00",
+                  "fixture-local-01",
+                  "fixture-local-02",
+                  "fixture-local-03",
+                  "fixture-local-04",
+                  "fixture-local-05",
+                  "fixture-local-06",
+                  "fixture-local-07",
+                  "fixture-local-08",
+                  "fixture-local-09",
+                  "[REDACTED]",
+                  "fixture-local-11"
+                ],
+                "count": 12
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：12 项\n    - fixture-root-00\n    - fixture-root-01\n    - fixture-root-02\n    - fixture-root-03\n    - fixture-root-04\n    - fixture-root-05\n    - fixture-root-06\n    - fixture-root-07\n    另有 4 项已核对条目，完整列表见 --json 输出\n  [+] 已核对 · Brewfile tap 声明：0 项\n  [?] 待纳管候选 · Homebrew 可识别的未声明 requested formula：12 项\n    - fixture-local-00\n    - fixture-local-01\n    - fixture-local-02\n    - fixture-local-03\n    - fixture-local-04\n    - fixture-local-05\n    - fixture-local-06\n    - fixture-local-07\n    - fixture-local-08\n    - fixture-local-09\n    - [REDACTED]\n    - fixture-local-11\n\n汇总（报告条目数）：[+] 已核对 3，[!] 漂移 0，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      }
+    ],
+    "test_all_platform_reports_version_drift_and_cleanup_review_match": [
+      {
+        "sections": [
+          "packages"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 3,
+            "drift": 0,
+            "candidate": 0,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n汇总（报告条目数）：[+] 已核对 3，[!] 漂移 0，[?] 待纳管候选 0，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "packages"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 1,
+            "drift": 0,
+            "candidate": 0,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "mise 最终生效声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[packages]\n  [+] 已核对 · mise 最终生效声明：0 项\n\n汇总（报告条目数）：[+] 已核对 1，[!] 漂移 0，[?] 待纳管候选 0，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "packages"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 1,
+            "drift": 0,
+            "candidate": 0,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "mise 最终生效声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[packages]\n  [+] 已核对 · mise 最终生效声明：0 项\n\n汇总（报告条目数）：[+] 已核对 1，[!] 漂移 0，[?] 待纳管候选 0，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "packages"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 1,
+            "drift": 0,
+            "candidate": 0,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "声明的根包",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[packages]\n  [+] 已核对 · 声明的根包：0 项\n\n汇总（报告条目数）：[+] 已核对 1，[!] 漂移 0，[?] 待纳管候选 0，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "packages"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 1,
+            "drift": 2,
+            "candidate": 1,
+            "local": 1,
+            "error": 0
+          },
+          "sections": {
+            "packages": [
+              {
+                "kind": "candidate",
+                "code": "package_group",
+                "item": "apply 时会从 explicit 降级为 dependency 的未声明包",
+                "message": "1 项",
+                "items": [
+                  "old-tool"
+                ],
+                "count": 1
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "mise 最终生效声明",
+                "message": "1 项",
+                "items": [
+                  "pacman:git [version_mismatch]"
+                ],
+                "count": 1
+              },
+              {
+                "kind": "drift",
+                "code": "package_version",
+                "item": "mise 最终生效声明",
+                "message": "存在版本不符或需要修复的声明",
+                "items": [
+                  "pacman:git [version_mismatch]"
+                ]
+              },
+              {
+                "kind": "drift",
+                "code": "package_group",
+                "item": "声明但尚未以同名具体包安装",
+                "message": "1 项",
+                "items": [
+                  "missing-tool"
+                ],
+                "count": 1
+              },
+              {
+                "kind": "local",
+                "code": "package_group",
+                "item": "当前显式安装包中未声明、但受保护而保留",
+                "message": "1 项",
+                "items": [
+                  "kernel"
+                ],
+                "count": 1
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[packages]\n  [?] 待纳管候选 · apply 时会从 explicit 降级为 dependency 的未声明包：1 项\n    - old-tool\n  [+] 已核对 · mise 最终生效声明：1 项\n    - pacman:git [version_mismatch]\n  [!] 漂移 · mise 最终生效声明：存在版本不符或需要修复的声明\n    - pacman:git [version_mismatch]\n  [!] 漂移 · 声明但尚未以同名具体包安装：1 项\n    - missing-tool\n  [-] 本机保留 · 当前显式安装包中未声明、但受保护而保留：1 项\n    - kernel\n\n汇总（报告条目数）：[+] 已核对 1，[!] 漂移 2，[?] 待纳管候选 1，[-] 本机保留 1，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "packages"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 3,
+            "drift": 1,
+            "candidate": 1,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "drift",
+                "code": "bundle_check",
+                "item": "Homebrew",
+                "message": "bundle check 未通过，需单独运行 mise run package-status"
+              },
+              {
+                "kind": "candidate",
+                "code": "cleanup_review",
+                "item": "Homebrew",
+                "message": "cleanup 预演含额外输出，需单独运行 mise run package-dry-run 审阅"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n  [!] 漂移 · Homebrew：bundle check 未通过，需单独运行 mise run package-status\n  [?] 待纳管候选 · Homebrew：cleanup 预演含额外输出，需单独运行 mise run package-dry-run 审阅\n\n汇总（报告条目数）：[+] 已核对 3，[!] 漂移 1，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      }
+    ],
+    "test_empty_and_declared_tools_match_golden": [
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 4,
+            "drift": 2,
+            "candidate": 1,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "ok",
+                "code": "no_tools",
+                "item": "[tools]",
+                "message": "当前配置没有工具版本声明"
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              }
+            ],
+            "config": []
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [+] 已核对 · [tools]：当前配置没有工具版本声明\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n\n[config]\n\n汇总（报告条目数）：[+] 已核对 4，[!] 漂移 2，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": true,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 3,
+            "drift": 3,
+            "candidate": 1,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "drift",
+                "code": "tool_missing",
+                "item": "node",
+                "message": "声明版本 1.0.0 尚未安装",
+                "version": "1.0.0",
+                "source": "<repo>/mise.toml"
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              }
+            ],
+            "config": []
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [!] 漂移 · node：声明版本 1.0.0 尚未安装\n    source: <repo>/mise.toml\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n\n[config]\n\n汇总（报告条目数）：[+] 已核对 3，[!] 漂移 3，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 1
+      }
+    ],
+    "test_incomplete_schemas_and_query_failure_match": [
+      {
+        "sections": [
+          "tools",
+          "path"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 0,
+            "drift": 2,
+            "candidate": 1,
+            "local": 0,
+            "error": 2
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "tools",
+                "message": "工具状态顶层结构无法识别"
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "path",
+                "message": "工具状态顶层结构无法识别"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [x] 未完成核对 · tools：工具状态顶层结构无法识别\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [x] 未完成核对 · path：工具状态顶层结构无法识别\n\n汇总（报告条目数）：[+] 已核对 0，[!] 漂移 2，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 2\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 2
+      },
+      {
+        "sections": [
+          "tools",
+          "path"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 0,
+            "drift": 2,
+            "candidate": 1,
+            "local": 0,
+            "error": 2
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "tools",
+                "message": "工具版本列表无法识别"
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "path",
+                "message": "工具版本列表无法识别"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [x] 未完成核对 · tools：工具版本列表无法识别\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [x] 未完成核对 · path：工具版本列表无法识别\n\n汇总（报告条目数）：[+] 已核对 0，[!] 漂移 2，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 2\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 2
+      },
+      {
+        "sections": [
+          "tools",
+          "path"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 0,
+            "drift": 2,
+            "candidate": 1,
+            "local": 0,
+            "error": 2
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "tools",
+                "message": "工具版本状态缺少必需字段"
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "path",
+                "message": "工具版本状态缺少必需字段"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [x] 未完成核对 · tools：工具版本状态缺少必需字段\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [x] 未完成核对 · path：工具版本状态缺少必需字段\n\n汇总（报告条目数）：[+] 已核对 0，[!] 漂移 2，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 2\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 2
+      },
+      {
+        "sections": [
+          "tools",
+          "path"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 0,
+            "drift": 2,
+            "candidate": 1,
+            "local": 0,
+            "error": 2
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "tools",
+                "message": "工具配置来源结构无法识别"
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "path",
+                "message": "查询退出码为 1；请单独运行对应状态命令检查"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [x] 未完成核对 · tools：工具配置来源结构无法识别\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [x] 未完成核对 · path：查询退出码为 1；请单独运行对应状态命令检查\n\n汇总（报告条目数）：[+] 已核对 0，[!] 漂移 2，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 2\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 2
+      },
+      {
+        "sections": [
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 0,
+            "drift": 0,
+            "candidate": 0,
+            "local": 0,
+            "error": 1
+          },
+          "sections": {
+            "config": [
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "config",
+                "message": "配置映射出现未知状态；不能判定同步完成"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[config]\n  [x] 未完成核对 · config：配置映射出现未知状态；不能判定同步完成\n\n汇总（报告条目数）：[+] 已核对 0，[!] 漂移 0，[?] 待纳管候选 0，[-] 本机保留 0，[x] 未完成核对 1\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 2
+      },
+      {
+        "sections": [
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 0,
+            "drift": 0,
+            "candidate": 0,
+            "local": 0,
+            "error": 1
+          },
+          "sections": {
+            "config": [
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "config",
+                "message": "配置映射状态无法识别"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[config]\n  [x] 未完成核对 · config：配置映射状态无法识别\n\n汇总（报告条目数）：[+] 已核对 0，[!] 漂移 0，[?] 待纳管候选 0，[-] 本机保留 0，[x] 未完成核对 1\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 2
+      },
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 3,
+            "drift": 2,
+            "candidate": 1,
+            "local": 0,
+            "error": 2
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "tools",
+                "message": "查询退出码为 17；请单独运行对应状态命令检查"
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "error",
+                "code": "collector_failed",
+                "item": "path",
+                "message": "查询退出码为 17；请单独运行对应状态命令检查"
+              }
+            ],
+            "config": []
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [x] 未完成核对 · tools：查询退出码为 17；请单独运行对应状态命令检查\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [x] 未完成核对 · path：查询退出码为 17；请单独运行对应状态命令检查\n\n[config]\n\n汇总（报告条目数）：[+] 已核对 3，[!] 漂移 2，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 2\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 2
+      }
+    ],
+    "test_linked_rust_shim_virtual_environment_and_caller_path_match": [
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 5
+          },
+          "summary": {
+            "ok": 5,
+            "drift": 0,
+            "candidate": 1,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "ok",
+                "code": "tool_installed",
+                "item": "rust",
+                "message": "声明版本 1.0.0 已安装",
+                "version": "1.0.0",
+                "source": "<repo>/mise.toml"
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "ok",
+                "code": "command_selected",
+                "item": "rustc",
+                "message": "命令来源与 mise 选择一致",
+                "path": "~/.local/share/mise/shims/rustc"
+              }
+            ],
+            "config": []
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [+] 已核对 · rust：声明版本 1.0.0 已安装\n    source: <repo>/mise.toml\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [+] 已核对 · rustc：命令来源与 mise 选择一致\n    path: ~/.local/share/mise/shims/rustc\n\n[config]\n\n汇总（报告条目数）：[+] 已核对 5，[!] 漂移 0，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 5
+          },
+          "summary": {
+            "ok": 4,
+            "drift": 2,
+            "candidate": 2,
+            "local": 1,
+            "error": 0
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "ok",
+                "code": "tool_installed",
+                "item": "python",
+                "message": "声明版本 1.0.0 已安装",
+                "version": "1.0.0",
+                "source": "<repo>/mise.toml"
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/.venv/bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "local",
+                "code": "virtual_environment",
+                "item": "python3",
+                "message": "当前虚拟环境接管 Python",
+                "path": "<repo>/.venv/bin/python3"
+              }
+            ],
+            "config": []
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [+] 已核对 · python：声明版本 1.0.0 已安装\n    source: <repo>/mise.toml\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [?] 待纳管候选 · <repo>/.venv/bin：未由共享 PATH 规则声明，需要核对来源\n  [-] 本机保留 · python3：当前虚拟环境接管 Python\n    path: <repo>/.venv/bin/python3\n\n[config]\n\n汇总（报告条目数）：[+] 已核对 4，[!] 漂移 2，[?] 待纳管候选 2，[-] 本机保留 1，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      },
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "caller",
+            "path_entries": 5
+          },
+          "summary": {
+            "ok": 4,
+            "drift": 9,
+            "candidate": 1,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "ok",
+                "code": "tool_installed",
+                "item": "python",
+                "message": "声明版本 1.0.0 已安装",
+                "version": "1.0.0",
+                "source": "<repo>/mise.toml"
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "duplicate_path",
+                "item": "~",
+                "message": "重复 2 次"
+              },
+              {
+                "kind": "drift",
+                "code": "unsafe_path",
+                "item": "<空项>",
+                "message": "空或相对 PATH 项依赖当前目录"
+              },
+              {
+                "kind": "drift",
+                "code": "unsafe_path",
+                "item": "relative",
+                "message": "空或相对 PATH 项依赖当前目录"
+              },
+              {
+                "kind": "drift",
+                "code": "missing_directory",
+                "item": "~/absent",
+                "message": "PATH 目录不存在或不可访问"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/bin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-bin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "~",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "drift",
+                "code": "command_missing",
+                "item": "python3",
+                "message": "调用环境找不到已声明工具的主命令"
+              }
+            ],
+            "config": []
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：任务调整前的调用环境\n\n[tools]\n  [+] 已核对 · python：声明版本 1.0.0 已安装\n    source: <repo>/mise.toml\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [!] 漂移 · ~：重复 2 次\n  [!] 漂移 · <空项>：空或相对 PATH 项依赖当前目录\n  [!] 漂移 · relative：空或相对 PATH 项依赖当前目录\n  [!] 漂移 · ~/absent：PATH 目录不存在或不可访问\n  [!] 漂移 · <fixture>/system/bin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-bin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · ~：未由共享 PATH 规则声明，需要核对来源\n  [!] 漂移 · python3：调用环境找不到已声明工具的主命令\n\n[config]\n\n汇总（报告条目数）：[+] 已核对 4，[!] 漂移 9，[?] 待纳管候选 1，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      }
+    ],
+    "test_path_shadowing_alternatives_and_other_installers_match": [
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 5
+          },
+          "summary": {
+            "ok": 4,
+            "drift": 3,
+            "candidate": 3,
+            "local": 0,
+            "error": 0
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "ok",
+                "code": "tool_installed",
+                "item": "node",
+                "message": "声明版本 1.0.0 已安装",
+                "version": "1.0.0",
+                "source": "<repo>/mise.toml"
+              },
+              {
+                "kind": "candidate",
+                "code": "external_installations",
+                "item": "nvm",
+                "message": "发现其他安装来源；可能是历史版本或备用安装，需要核对意图",
+                "items": [
+                  "~/.nvm/versions/node/v0.1.0/bin/node"
+                ],
+                "count": 1
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "~/.local/bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              },
+              {
+                "kind": "drift",
+                "code": "command_shadowed",
+                "item": "node",
+                "message": "PATH 中优先命令与 mise 选择不一致",
+                "actual": "~/.local/bin/node",
+                "expected": "~/.local/share/mise/installs/node/1.0.0/bin/node"
+              }
+            ],
+            "config": []
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [+] 已核对 · node：声明版本 1.0.0 已安装\n    source: <repo>/mise.toml\n  [?] 待纳管候选 · nvm：发现其他安装来源；可能是历史版本或备用安装，需要核对意图\n    - ~/.nvm/versions/node/v0.1.0/bin/node\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n  [?] 待纳管候选 · ~/.local/bin：未由共享 PATH 规则声明，需要核对来源\n  [!] 漂移 · node：PATH 中优先命令与 mise 选择不一致\n    actual: ~/.local/bin/node\n    expected: ~/.local/share/mise/installs/node/1.0.0/bin/node\n\n[config]\n\n汇总（报告条目数）：[+] 已核对 4，[!] 漂移 3，[?] 待纳管候选 3，[-] 本机保留 0，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      }
+    ],
+    "test_private_files_config_candidates_and_redaction_match": [
+      {
+        "sections": [
+          "tools",
+          "packages",
+          "path",
+          "config"
+        ],
+        "strict": false,
+        "report": {
+          "schema_version": 1,
+          "context": {
+            "root": "<fixture>/project",
+            "path_source": "process",
+            "path_entries": 3
+          },
+          "summary": {
+            "ok": 4,
+            "drift": 4,
+            "candidate": 3,
+            "local": 1,
+            "error": 0
+          },
+          "sections": {
+            "tools": [
+              {
+                "kind": "drift",
+                "code": "tool_missing",
+                "item": "[REDACTED]",
+                "message": "声明版本 1.0.0 尚未安装",
+                "version": "1.0.0",
+                "source": "unknown"
+              }
+            ],
+            "packages": [
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile cask 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile formula 根声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              },
+              {
+                "kind": "ok",
+                "code": "package_group",
+                "item": "Brewfile tap 声明",
+                "message": "0 项",
+                "items": [],
+                "count": 0
+              }
+            ],
+            "path": [
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "drift",
+                "code": "policy_path_missing",
+                "item": "<fixture>/system/usr-sbin",
+                "message": "共享 PATH 规则声明的现有目录未进入调用环境"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_path",
+                "item": "<repo>/query-bin",
+                "message": "未由共享 PATH 规则声明，需要核对来源"
+              }
+            ],
+            "config": [
+              {
+                "kind": "drift",
+                "code": "dotfile_state",
+                "item": "~/.zshrc",
+                "message": "映射状态：missing"
+              },
+              {
+                "kind": "ok",
+                "code": "dotfile_state",
+                "item": "~/.codex/config.toml",
+                "message": "映射状态：applied"
+              },
+              {
+                "kind": "candidate",
+                "code": "orphaned_mapping",
+                "item": "~/.retired",
+                "message": "以前部署过的文件不再由当前映射管理"
+              },
+              {
+                "kind": "candidate",
+                "code": "unmanaged_config",
+                "item": "~/.gitconfig",
+                "message": "已存在，但不在当前配置映射中；仅列路径"
+              },
+              {
+                "kind": "local",
+                "code": "private_local",
+                "item": "~/.config/mise/secrets.env",
+                "message": "按约定保留在本机，不读取内容"
+              }
+            ]
+          }
+        },
+        "text": "只读审计：tools / packages / PATH / config\nPATH 来源：当前进程环境\n\n[tools]\n  [!] 漂移 · [REDACTED]：声明版本 1.0.0 尚未安装\n    source: unknown\n\n[packages]\n  [+] 已核对 · Brewfile cask 声明：0 项\n  [+] 已核对 · Brewfile formula 根声明：0 项\n  [+] 已核对 · Brewfile tap 声明：0 项\n\n[path]\n  [!] 漂移 · <fixture>/system/sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [!] 漂移 · <fixture>/system/usr-sbin：共享 PATH 规则声明的现有目录未进入调用环境\n  [?] 待纳管候选 · <repo>/query-bin：未由共享 PATH 规则声明，需要核对来源\n\n[config]\n  [!] 漂移 · ~/.zshrc：映射状态：missing\n  [+] 已核对 · ~/.codex/config.toml：映射状态：applied\n  [?] 待纳管候选 · ~/.retired：以前部署过的文件不再由当前映射管理\n  [?] 待纳管候选 · ~/.gitconfig：已存在，但不在当前配置映射中；仅列路径\n  [-] 本机保留 · ~/.config/mise/secrets.env：按约定保留在本机，不读取内容\n\n汇总（报告条目数）：[+] 已核对 4，[!] 漂移 4，[?] 待纳管候选 3，[-] 本机保留 1，[x] 未完成核对 0\n候选项需要人工核对意图；本任务不安装、卸载或改写声明。\n",
+        "exit_code": 0
+      }
+    ]
+  }
+}
