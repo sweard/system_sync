@@ -14,9 +14,10 @@ Go 源码、测试、构建脚本及四个平台的预编译归档都随仓库�
 | 构建、安装、校验、测试与启动 | [`scripts/`](scripts/) 中的 `build.sh`、`install.sh`、`verify.sh`、`test.sh`、`run.sh`；共用函数在 `common.sh` |
 | 固定 Go 工具链及读取入口 | [`../dotfiles/common/mise/config.toml`](../dotfiles/common/mise/config.toml) 的 `tools.go`、[`scripts/go-version.sh`](scripts/go-version.sh)；本机默认 Go、CI、构建及测试共用 |
 | 预编译分发包与源码输入清单 | [`prebuilt/`](prebuilt/) |
+| 开发检查与隔离验收 | [`dev/check/`](dev/check/)、[`dev/checkrun/`](dev/checkrun/)、[`dev/integration/`](dev/integration/) |
 | Go 许可文本 | [`licenses/`](licenses/) |
 
-Go 单元测试随源码保存；项目级 CLI、离线安装和独立报告基线回归统一放在根目录 [`tests/`](../tests/README.md)。`helper/` 是独立 Go 模块，直接使用 `go test`、`go vet` 等命令时应先进入本目录；通过 mise task 运行时，脚本会自动选择模块目录。启动器始终向二进制传入仓库根路径，包清单、配置、锁和日志仍以仓库根目录为准，本机安装缓存继续使用 `.system-sync/helper/`。
+Go 单元测试随生产源码保存；检查运行器与项目级 CLI/离线安装回归集中在 [`dev/`](dev/)，根目录 [`tests/`](../tests/README.md) 保留入口、覆盖清单和独立报告基线。`helper/` 是独立 Go 模块，直接使用 `go test`、`go vet` 等命令时应先进入本目录；通过 mise task 运行时，脚本会自动选择模块目录。启动器始终向二进制传入仓库根路径，包清单、配置、锁和日志仍以仓库根目录为准，本机安装缓存继续使用 `.system-sync/helper/`。
 
 ## 已迁移的范围
 
@@ -32,9 +33,9 @@ Go 单元测试随源码保存；项目级 CLI、离线安装和独立报告基�
 | `config-detach` | Go；保留链接物化、PATH 与锁文件依赖迁出、私有备份、并发检查及事务回滚 |
 | VS Code 扩展 | Go；调用官方 CLI，列出并保留清单外扩展；`vscode-status --capture` 预览新增项及已纳管项的本机版本变化，新项默认归入 `common`，已有项原分组更新，可筛选后备份并原子写入清单；同步明确提示降级；保留隔离目录、版本复核及超时子进程清理 |
 | 本机配置历史 | Go；仍调用 mise 原生历史能力，保持 `track-local`、手动保存及严格候选范围；逐项列出登记、保存和跳过的路径，不输出正文 |
-| 开发测试 | Go 单元与 race 测试、直接验收 Go 的 Python CLI/部署测试、冻结报告和预编译安装回归；旧参考实现已移除 |
+| 开发测试 | Go 单元与 race 测试、Go CLI/部署集成测试、冻结报告和预编译安装回归；旧 Python 实现及测试已移除 |
 
-除开发检查 `check` 外，所有日常 task 均不需要 Python 或 Go 编译器。7 个 Python 参考实现已在覆盖映射和补齐 Go 断言后移除，`scripts/` 不保留 Python 文件。Python 仍用于真实 CLI 集成测试、模拟原生命令及最小版本前置检查；系统预检委托 Go，共享锁竞争使用最小 POSIX 测试辅助。覆盖分工和审计基线来源见[测试说明](../tests/README.md)。单包操作与配置迁出继续共享操作锁；单包原生事务失败后保留人工复核记录，配置迁出失败则按原行为回滚且不覆盖并发修改。
+所有日常 task 均不需要 Python 或 Go 编译器；开发检查 `check` 需要 Go 和本机 C 工具链，同样无需 Python。原有 7 个 Python 参考实现及全部 Python 测试/辅助文件已在逐项核对覆盖后移除。检查运行器、隔离集成测试和复杂命令替身集中在 `dev/`，复用当前模块和 vendor 依赖；系统预检直接调用 Go，共享锁竞争使用 Go 的 POSIX `flock`。覆盖分工和审计基线来源见[测试说明](../tests/README.md)。单包操作与配置迁出继续共享操作锁；单包原生事务失败后保留人工复核记录，配置迁出失败则按原行为回滚且不覆盖并发修改。
 
 ## 新机器直接运行
 
@@ -85,13 +86,13 @@ mise run --tool "go@$toolchain_version" check
 
 `check` 已包含本机构建和安装，不需要在完整验收前再运行一次 `helper-build`；开发中仅需快速构建并试用本机版本时，单独使用 `mise run helper-build`。
 
-`check` 的默认范围随执行机器自动识别，包含公共逻辑及当前 OS、CPU 架构和 Linux profile；集成测试默认最多 2 进程，显示阶段和逐用例耗时摘要。`check --jobs 1` 用于串行诊断，发布前或 CI 使用 `check --all-platforms` 保留完整跨平台覆盖；报告和详细日志位于 `.system-sync/check/`，见[测试说明](../tests/README.md#运行检查)。
+`check` 的默认范围随执行机器自动识别，包含公共逻辑及当前 OS、CPU 架构和 Linux profile；集成测试默认最多 2 项并发，显示阶段和逐用例耗时摘要。`check --jobs 1` 用于串行诊断，发布前或 CI 使用 `check --all-platforms` 保留完整跨平台覆盖；报告和详细日志位于 `.system-sync/check/`，见[测试说明](../tests/README.md#运行检查)。
 
-`--tool` 为这次 task 显式选择已安装的版本，不改写项目或全局工具声明。外层 `mise exec "go@$toolchain_version" -- mise run ...` 的内层 task 会重新计算工具环境，不能代替内层的显式选择。直接调用脚本时可使用 `mise exec "go@$toolchain_version" -- ./helper/scripts/build.sh`。构建与 Go 测试脚本均严格检查当前编译器是否与 `tools.go` 一致；`GOTOOLCHAIN=local` 禁止自动切换工具链，Go 模块网络保持关闭。完整检查还需要 Python 3.11+ 和支持 Go race 检查的本机 C 工具链。
+`--tool` 为这次 task 显式选择已安装的版本，不改写项目或全局工具声明。外层 `mise exec "go@$toolchain_version" -- mise run ...` 的内层 task 会重新计算工具环境，不能代替内层的显式选择。直接调用脚本时可使用 `mise exec "go@$toolchain_version" -- ./helper/scripts/build.sh`。构建与 Go 测试脚本均严格检查当前编译器是否与 `tools.go` 一致；`GOTOOLCHAIN=local` 禁止自动切换工具链，Go 模块网络保持关闭。完整检查还需要 zsh 和支持 Go race 检查的本机 C 工具链，无需 Python。
 
 通过 `mise upgrade --global --bump --no-prune go` 更新受管 `tools.go` 后，workflow、脚本、测试替身和错误提示会自动读取新值，无需另改版本文件。升级不会自动重建预编译包；需按上述流程重建四平台包、运行检查并刷新相应 mise 锁文件，将配置、锁文件、归档及校验清单一同审阅提交。直接编辑版本时同样适用。`go.mod` 的 `go` 声明用于模块兼容性要求，不承担精确构建版本选择。
 
-构建使用 `CGO_ENABLED=0`、`-trimpath` 和固定版本注入，关闭自动 VCS 信息捕获；`REVISION` 记录 Git 提交及是否有本地改动，不嵌入本机配置或绝对源码路径。`helper-build` 构建并启用本机版本；`helper-bundle` 更新随仓库保存的四平台归档。修改源码不会隐式重编译，源码与新的 `helper/prebuilt/<版本>/` 应一同提交。
+构建使用 `CGO_ENABLED=0`、`-trimpath` 和固定版本注入，关闭自动 VCS 信息捕获；`REVISION` 记录 Git 提交及是否有本地改动，不嵌入本机配置或绝对源码路径。`helper-build` 构建并启用本机版本；`helper-bundle` 更新随仓库保存的四平台归档。修改生产源码不会隐式重编译，生产源码与新的 `helper/prebuilt/<版本>/` 应一同提交。`dev/` 的检查运行器和集成测试不进入生产分发包；仅修改开发检查时无需重建预编译包。
 
 ## 生成和安装预编译产物
 
@@ -125,16 +126,16 @@ mise run helper-install /绝对路径/产物目录
 
 成功安装位于 `.system-sync/helper/<版本>/<二进制 SHA256>/`，然后原子更新 `current` 指针；失败时保留之前激活的版本。启动入口每次校验固定版本和二进制 SHA256，并显式传入仓库路径，不依赖调用时所在目录。只有尚未初始化时自动安装；已有记录过期或校验失败时停止，避免覆盖异常现场。更新 `helper/VERSION` 后运行 `mise run helper-install` 启用仓库的新版本；同版本更新分发包后也需显式安装才能切换已有缓存。旧构建保留在本机，可在不使用时自行清理对应目录。
 
-CI 在准备编译器前校验并启动仓库内的预编译工具，再通过 `go-version.sh` 读取 `tools.go`，显式安装并选择该 Go 运行四组 macOS/Linux 与 Python 版本的 `check --all-platforms`；产物 job 使用同一读取入口。CI 的全局配置为空，不依赖手工把 mise 安装目录写入 `GITHUB_PATH`；回归测试在隔离 HOME 下执行 workflow 的实际调用，覆盖没有 Go 路径、已有 mise Go 路径及旧系统 Go 三种环境，并用临时版本验证安装、测试、构建和错误提示随 `tools.go` 改变、非法配置在 Go 查询或安装前停止。通过后重新构建四平台包，上传 `system-sync-helper-<提交 SHA>` artifact，仅包含归档和校验清单。当前工作流见 [check.yml](../.github/workflows/check.yml)，不会自动创建 Release、推送代码或打包本机历史、私有配置和日志。普通 clone 已有运行所需的包，不依赖 GitHub artifact 或额外下载。
+CI 在准备编译器前校验并启动仓库内的预编译工具，再通过 `go-version.sh` 读取 `tools.go`，显式安装并选择该 Go 运行 macOS/Linux 两组 `check --all-platforms`，不再配置 Python 矩阵；产物 job 使用同一读取入口。CI 的全局配置为空，不依赖手工把 mise 安装目录写入 `GITHUB_PATH`；回归测试在隔离 HOME 下执行 workflow 的实际调用，覆盖没有 Go 路径、已有 mise Go 路径及旧系统 Go 三种环境，并用临时版本验证安装、测试、构建和错误提示随 `tools.go` 改变、非法配置在 Go 查询或安装前停止。通过后重新构建四平台包，上传 `system-sync-helper-<提交 SHA>` artifact，仅包含归档和校验清单。当前工作流见 [check.yml](../.github/workflows/check.yml)，不会自动创建 Release、推送代码或打包本机历史、私有配置和日志。普通 clone 已有运行所需的包，不依赖 GitHub artifact 或额外下载。
 
 ## 验证与后续工作
 
-`mise run check` 先校验仓库分发包，再显式重建本机 helper、检查前置版本和 task 配置，运行 Go race 检查和 Python 集成测试。Go 覆盖安全解析、查询超时清理、并发和共享状态、锁冲突与继承、日志状态；CLI 测试使用临时 HOME、合成私有值和替身命令，将 Go 的完整报告与迁移前冻结的 21 份独立基线核对。预编译回归另覆盖空缓存首次调用、并发初始化、禁用 Go/Python/下载命令、JSON 输出、四平台归档校验、源码漂移及损坏拒绝执行。
+`mise run check` 先校验仓库分发包，再显式重建本机 helper、检查前置版本和 task 配置，运行 Go race 检查和 Go 集成测试。Go 覆盖安全解析、查询超时清理、并发和共享状态、锁冲突与继承、日志状态；CLI 测试使用临时 HOME、合成私有值和替身命令，将 Go 的完整报告与迁移前冻结的 21 份独立基线核对。预编译回归另覆盖空缓存首次调用、并发初始化、禁用 Go/Python/下载命令、JSON 输出、四平台归档校验、源码漂移及损坏拒绝执行。
 
-2026-10-23 本机 macOS ARM64 的 `v0.2.0` 已通过 97 项 Go 测试（含 race 检查）、201 项 Python 集成回归、24 项 task 校验及 `go vet`。扩展采集回归覆盖新增项及已纳管版本的选择与排除、默认公共分组与显式平台范围、原分组更新、缺失项和注释保留、实际版本双向采集与同步降级提示、权限和备份、重复执行、并发修改及锁冲突；真实 mise 的合并入口在隔离 HOME 中通过。安装与同步输出回归覆盖五平台实时 stdout/stderr、机器初始化、扩展安装过程、失败退出码、阶段顺序及安全等待提示；计时进程启动后的信号边界回归确保快速命令不会遗留后台 sleep 或未关闭的管道。输出回归覆盖清单外扩展的版本明细与保留、长列表完整展开与脱敏，以及历史登记/保存/跳过的路径。机器接入覆盖五平台采集与补装、保留清单外软件和 orphan、重复执行、固定版本阻止误装、失败与并发检查；另有 7 项接入 CLI 回归，包含真实 mise 在临时 HOME 中部署、私有键保留及备份核对。原有隔离部署、扩展安装和本机历史测试继续调用 Go；旧参考实现已移除，Python 保留真实 CLI 回归；禁用 Go、Python CLI 和下载命令的接入验收通过。真实 Mac 只读预览已运行，未在宿主执行初始化或扩展采集 apply。
+2026-10-23 本机 macOS ARM64 的 `v0.2.0` 已通过 103 项 Go 单元测试（含 race 检查）、201 项 Go 集成回归、24 项 task 校验及 `go vet`。扩展采集回归覆盖新增项及已纳管版本的选择与排除、默认公共分组与显式平台范围、原分组更新、缺失项和注释保留、实际版本双向采集与同步降级提示、权限和备份、重复执行、并发修改及锁冲突；真实 mise 的合并入口在隔离 HOME 中通过。安装与同步输出回归覆盖五平台实时 stdout/stderr、机器初始化、扩展安装过程、失败退出码、阶段顺序及安全等待提示；计时进程启动后的信号边界回归确保快速命令不会遗留后台 sleep 或未关闭的管道。输出回归覆盖清单外扩展的版本明细与保留、长列表完整展开与脱敏，以及历史登记/保存/跳过的路径。机器接入覆盖五平台采集与补装、保留清单外软件和 orphan、重复执行、固定版本阻止误装、失败与并发检查；另有 7 项接入 CLI 回归，包含真实 mise 在临时 HOME 中部署、私有键保留及备份核对。原有隔离部署、扩展安装和本机历史测试继续调用 Go；旧 Python 参考实现与测试文件已移除，真实 CLI 回归由 Go 执行；禁用 Go、Python CLI 和下载命令的接入验收通过。真实 Mac 只读预览已运行，未在宿主执行初始化或扩展采集 apply。
 
-四个平台归档、内外两层 SHA256、目标格式及 Linux 静态链接均已核对，压缩包合计约 6.4 MiB；模块缓存为空且关闭网络时，仍可从 `helper/vendor/` 构建。此前真实只读审计与 Python 参考报告逐字段一致。上述验证均未修改本机真实软件包、扩展或用户配置；已提交版本的远端检查结果见 [dev CI](https://github.com/sweard/system_sync/actions/workflows/check.yml?query=branch%3Adev)。
+四个平台归档、内外两层 SHA256、目标格式及 Linux 静态链接均已核对，压缩包合计约 6.4 MiB；模块缓存为空且关闭网络时，仍可从 `helper/vendor/` 构建。此前真实只读审计与 Python 参考报告逐字段一致。上述验证均未修改本机真实软件包、扩展或用户配置；本次本机验证不代表远端 CI 结果，历史已提交版本的检查结果见 [dev CI](https://github.com/sweard/system_sync/actions/workflows/check.yml?query=branch%3Adev)。
 
 本轮另有 8 项只读及维护入口反馈回归：用阻塞替身验证审计、采集、状态/差异/历史和迁出规划在原生命令结束前就显示进度，JSON 预览保持可解析且安静；覆盖原生命令失败与不可识别版本的分类、帮助命令失败退出、构建目标和退出码、捕获数据隔离，以及 Bash 3.2 严格模式下快操作及时退出、不遗留计时器。Go 测试覆盖捕获查询超时及错误身份保留，原生安装不套用查询超时，扩展查询与安装分别使用独立时限。
 
-日常管理入口及旧参考实现的测试迁移均已完成；Python 仅保留开发测试用途。当前 Linux 原生包管理器的真实主机验收仍待完成，交叉编译成功不代表已完成真实 Linux 系统安装/卸载验收。
+日常管理、检查运行器、外部命令替身及集成测试均已完成 Go 迁移，项目不再依赖 Python。当前 Linux 原生包管理器的真实主机验收仍待完成，交叉编译成功不代表已完成真实 Linux 系统安装/卸载验收。

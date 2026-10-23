@@ -44,7 +44,7 @@ run = "./helper/scripts/run.sh audit"
 
 [tasks.check]
 description = "检查当前平台并统计阶段与集成测试耗时；--all-platforms 完整验收，不修改系统软件"
-run = "python3 -B ./tests/run_checks.py"
+run = "./tests/check.sh"
 
 [tasks.clean]
 description = "预览本机验证环境与缓存清理；--apply 输入 yes 执行，--apply --yes 跳过确认"

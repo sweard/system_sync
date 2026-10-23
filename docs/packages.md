@@ -435,7 +435,7 @@ Arch、Debian、Fedora、openSUSE 的安装入口显式使用 `mise bootstrap pa
 
 ## 隔离测试
 
-完整检查会显式构建本机 Go helper，运行 Go race 检查和 Python 测试；测试使用替身包管理器，不修改本机软件：
+完整检查会显式构建本机 Go helper，运行 Go race 检查和 Go 集成测试；测试使用替身包管理器，不修改本机软件：
 
 ```bash
 mise run check

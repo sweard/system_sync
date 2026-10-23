@@ -65,7 +65,7 @@ system_sync/
 
 以下命令在仓库根目录执行。审计、整机包流程、单包清单编辑、配置迁出、VS Code 扩展和配置历史均已接入 Go helper；日常任务无需 Python 或 Go 编译器。首次运行自动从随仓库保存的 `helper/prebuilt/<版本>/` 校验并解压本机 helper，无需联网准备 helper。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器；扩展管理还需 VS Code CLI。
 
-开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 [dotfiles/common/mise/config.toml](dotfiles/common/mise/config.toml) 的 `tools.go` 固定的 Go、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。本机默认 Go、CI、构建和测试共用这一版本，通过 mise 原生 TOML 解析读取；显式准备及选择方式如下。Go 声明升级后需重建预编译包并检查，其他合法配置变化不会触发 helper 构建输入漂移。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
+开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 单元与集成测试，需要 [dotfiles/common/mise/config.toml](dotfiles/common/mise/config.toml) 的 `tools.go` 固定的 Go、zsh 和支持 Go race 检查的本机 C 工具链；无需 Python。本机默认 Go、CI、构建和测试共用这一版本，通过 mise 原生 TOML 解析读取；显式准备及选择方式如下。Go 声明升级后需重建预编译包并检查，其他合法配置变化不会触发 helper 构建输入漂移。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
 
 ```bash
 toolchain_version="$(./helper/scripts/go-version.sh)"
@@ -73,9 +73,9 @@ mise install "go@$toolchain_version"
 mise run --tool "go@$toolchain_version" check
 ```
 
-`check` 根据执行命令的机器自动选择系统、CPU 架构和 Linux profile，运行公共与当前平台的验收；集成测试默认最多 2 个进程并行，并显示阶段耗时、完成数量及最慢用例。使用 `check --jobs 1` 串行诊断，`check --all-platforms` 执行 CI 使用的完整跨平台范围。逐项数据和详细日志保存在 Git 忽略的 `.system-sync/check/`，见[检查范围与计时](tests/README.md#运行检查)。
+`check` 根据执行命令的机器自动选择系统、CPU 架构和 Linux profile，运行公共与当前平台的验收；集成测试默认最多 2 项并发，并显示阶段耗时、完成数量及最慢用例。使用 `check --jobs 1` 串行诊断，`check --all-platforms` 执行 CI 使用的完整跨平台范围。逐项数据和详细日志保存在 Git 忽略的 `.system-sync/check/`，见[检查范围与计时](tests/README.md#运行检查)。
 
-Go helper 资源集中在 [helper/](helper/)，项目级隔离回归统一放在 `tests/`。旧 Python 参考实现已移除，保留直接验收 Go 的 Python 集成测试及独立报告基线，详见[测试与覆盖迁移](tests/README.md)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
+Go helper 源码、检查运行器和隔离回归集中在 [helper/](helper/)；`tests/` 保留检查入口、覆盖对照及独立报告基线。旧 Python 参考实现和测试脚本已移除，详见[测试与覆盖迁移](tests/README.md)。helper 启动器向二进制显式传入仓库根路径；本机缓存仍保存在根目录 `.system-sync/`。
 
 本仓库已关闭任务运行前的自动工具补装，避免审计时先改变本机状态。缺失的开发工具通过 `mise install` 显式安装。
 
@@ -143,7 +143,7 @@ Linux 清单尚未导入目标机器的完整 baseline，首次整机应用前�
 | [系统软件包](docs/packages.md) | 单包操作、漂移捕获、Linux baseline、平台收敛顺序及保护规则 |
 | [全局开发环境](docs/development-environment.md) | 工具命令速查、全局与项目版本、安装升级卸载、zsh、环境变量及 PATH |
 | [新机器重建](docs/rebuild.md) | 公共配置重建、全局锁文件、JBR 与 Flutter 来源及验证范围 |
-| [Go helper](helper/README.md) | 随仓库预编译包、离线初始化、源码与构建、Python 迁移范围 |
+| [Go helper](helper/README.md) | 随仓库预编译包、离线初始化、源码与构建、Go 验收覆盖 |
 | [应用配置与接管](docs/dotfiles.md) | Espanso、ChatGPT、VS Code、平台映射及日常同步 |
 | [取消、冲突与恢复](docs/recovery.md) | 操作中断、链接和配置恢复、审计及 Git 管理 |
 | [后续规划](docs/roadmap.md) | 核对快照、未启用功能及后续推进顺序 |
