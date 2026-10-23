@@ -1,0 +1,62 @@
+tests/helper_fixture.py
+  s_00332b4a331471::t_0501237acfb69f 8,12-20,38
+mise.toml
+  s_00332b4a331471::t_0501237acfb69f 62
+tests/test_go_helper.py
+  s_00332b4a331471::t_1e3b171546ab08 457-458
+  s_00332b4a331471::t_b45281cd4e3280 16,450,466-477,493,497
+  s_00332b4a331471::t_e8d9304ee5a189 479-487
+docs/roadmap.md
+  s_6b8270b6e632f5::t_175b5bc75ba8f3 16,27
+  s_00332b4a331471::t_198761bcfc0116 11,23
+tests/README.md
+  s_00332b4a331471::t_198761bcfc0116 9,19
+  s_6b8270b6e632f5::t_175b5bc75ba8f3 21,51
+README.md
+  s_6b8270b6e632f5::t_175b5bc75ba8f3 68
+docs/development-environment.md
+  s_00332b4a331471::t_198761bcfc0116 103
+dotfiles/common/mise/config.toml
+  s_00332b4a331471::t_0501237acfb69f 27
+tests/test_ci_environment.py
+  s_00332b4a331471::t_b45281cd4e3280 14,30-31,101,125-126,133,138,140-144,150-164,167-168,177,179,181-187,189-190,192,194,199-201,207-210,213-225,241-242,244
+  s_00332b4a331471::t_e8d9304ee5a189 188
+helper/scripts/go-version.sh
+  s_00332b4a331471::t_0501237acfb69f 2
+helper/README.md
+  s_6b8270b6e632f5::t_175b5bc75ba8f3 132
+  s_00332b4a331471::t_198761bcfc0116 9,15,77,88,90,116-118,126
+tests/test_task_feedback.py
+  s_00332b4a331471::t_b45281cd4e3280 16,27-30,84
+helper/scripts/common.sh
+  s_00332b4a331471::t_e8d9304ee5a189 24,26,28
+  s_00332b4a331471::t_0501237acfb69f 19-23,25,27,30,65-66,69,72,77-81
+helper/prebuilt/v0.2.0/SHA256SUMS
+  s_6b8270b6e632f5::t_dcae2eeee29047 1-4
+helper/prebuilt/v0.2.0/SOURCE_SHA256SUMS
+  s_6b8270b6e632f5::t_6ba57cd18abc88 1,45-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "577775fba49aa7d3af7c2ff58d1f2010795e7a50",
+  "prompts": {},
+  "sessions": {
+    "s_00332b4a331471": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    },
+    "s_6b8270b6e632f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a142af-20a1-73e3-b869-1acad50b8667",
+        "model": "unknown"
+      },
+      "human_author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
