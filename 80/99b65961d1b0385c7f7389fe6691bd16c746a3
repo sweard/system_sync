@@ -1,0 +1,14 @@
+dotfiles/common/vscode/extensions.toml
+  h_74ac6e576b13a5 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8099b65961d1b0385c7f7389fe6691bd16c746a3",
+  "prompts": {},
+  "humans": {
+    "h_74ac6e576b13a5": {
+      "author": "fangjian <fangjian@wondertechlabs.com>"
+    }
+  }
+}
