@@ -50,7 +50,6 @@ system_sync/
 │   ├── vendor/                 # TOML 库源码与许可，构建不联网取依赖
 │   ├── scripts/                # build、install、verify、test、run 及共用函数
 │   ├── VERSION                 # 与预编译 helper 匹配的固定版本
-│   ├── GO_VERSION              # CI、构建与测试共用的固定 Go 工具链版本
 │   ├── licenses/               # Go 许可文本
 │   └── prebuilt/               # 随 clone 保存的四平台归档与校验清单
 ├── tests/                      # 隔离环境与模拟包管理器测试
@@ -66,7 +65,7 @@ system_sync/
 
 以下命令在仓库根目录执行。审计、整机包流程、单包清单编辑、配置迁出、VS Code 扩展和配置历史均已接入 Go helper；日常任务无需 Python 或 Go 编译器。首次运行自动从随仓库保存的 `helper/prebuilt/<版本>/` 校验并解压本机 helper，无需联网准备 helper。共同前置要求是 mise 2026.10.11+、Bash、tar、SHA256 校验工具和对应系统包管理器；扩展管理还需 VS Code CLI。
 
-开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 [helper/GO_VERSION](helper/GO_VERSION) 固定的 Go、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。CI、构建和测试统一读取这一版本；显式准备及选择方式如下。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
+开发验收使用 `mise run check`，先校验仓库预编译包及源码输入，再显式构建 helper 并运行 Go 与 Python 测试，需要 [dotfiles/common/mise/config.toml](dotfiles/common/mise/config.toml) 的 `tools.go` 固定的 Go、Python 3.11+ 和支持 Go race 检查的本机 C 工具链。本机默认 Go、CI、构建和测试共用这一版本，通过 mise 原生 TOML 解析读取；显式准备及选择方式如下。Go 声明升级后需重建预编译包并检查，其他合法配置变化不会触发 helper 构建输入漂移。新机器日常使用无需先运行 `check`。CI 配置覆盖 macOS/Linux × Python 3.11/3.15，并构建四个平台归档；隔离测试不操作本机真实软件包。源码、预编译安装和迁移范围见 [Go helper](helper/README.md)。
 
 ```bash
 toolchain_version="$(./helper/scripts/go-version.sh)"

@@ -24,6 +24,7 @@ uv = "0.13.1"
 "npm:yarn" = { version = "1.22.22", depends = ["node"] }
 # 包含 Dart；当前机器复用已备份的 SDK，新机器从 Flutter 官方归档安装。
 flutter = "3.47.2"
+# 本机默认 Go 及 helper 的 CI、构建和测试共用此固定版本；升级后需重建预编译包。
 go = "1.27.3"
 
 [env]

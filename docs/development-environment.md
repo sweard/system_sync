@@ -100,7 +100,7 @@ mise install "go@$toolchain_version"
 mise exec "go@$toolchain_version" -- go version
 ```
 
-仅安装的版本不会自动成为全局默认。helper 的固定构建版本统一位于 `helper/GO_VERSION`，本机默认 Go 可独立升级；构建和 CI 显式选择版本文件中的工具链。修改构建版本后，需要重建预编译包并检查，见[helper 构建说明](../helper/README.md#生成和安装预编译产物)。使用 `mise upgrade` 更新固定完整版本号的声明时，需加 `--bump`，例如逐个升级 uv：
+仅安装的版本不会自动成为全局默认。本机默认 Go、helper 构建、测试与 CI 共用 `dotfiles/common/mise/config.toml` 的 `tools.go`，必须保留完整版本字符串。升级该声明会同步改变各入口要求的 Go 版本，但不会自动重建已有二进制；之后需要刷新 Go 锁文件、重建四平台预编译包并检查，见[helper 构建说明](../helper/README.md#修改源码并构建)。其他工具、环境变量或注释变化不会使 helper 的构建输入校验失效。使用 `mise upgrade` 更新固定完整版本号的声明时，需加 `--bump`，例如逐个升级 uv：
 
 ```bash
 mise upgrade --global --bump --no-prune --dry-run uv

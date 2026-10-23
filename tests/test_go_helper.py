@@ -13,7 +13,7 @@ import tarfile
 import tempfile
 import unittest
 
-from helper_fixture import prepare_helper
+from helper_fixture import GO_VERSION, prepare_go_config, prepare_helper
 import audit_fixture as fixtures
 
 
@@ -447,13 +447,15 @@ class GoHelperIntegrationTest(unittest.TestCase):
 
     def test_bundle_verification_rejects_source_drift_and_damaged_archives(self):
         bundle = self.clone_bundle()
+        config = prepare_go_config(self.root)
         for name in ("cmd", "internal", "licenses", "vendor"):
             shutil.copytree(ROOT / "helper" / name, self.root / "helper" / name)
         for name in ("go.mod", "go.sum"):
             shutil.copy2(ROOT / "helper" / name, self.root / "helper" / name)
         for name in ("build.sh", "verify.sh"):
             shutil.copy2(ROOT / "helper/scripts" / name, self.root / "helper/scripts" / name)
-        _, marker = self.deny_build_and_download()
+        commands, marker = self.deny_build_and_download()
+        (commands / "mise").symlink_to(shutil.which("mise"))
 
         def verify(success=True):
             result = subprocess.run([str(self.root / "helper/scripts/verify.sh")], cwd=self.root.parent,
@@ -461,17 +463,38 @@ class GoHelperIntegrationTest(unittest.TestCase):
             self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
             return result
 
+        manifest = (bundle / "SOURCE_SHA256SUMS").read_text()
+        go_digest = hashlib.sha256((GO_VERSION + "\n").encode()).hexdigest()
+        self.assertIn(go_digest + "  ../dotfiles/common/mise/config.toml#tools.go\n", manifest)
         verify()
+        config.write_text(f'# Comments and unrelated tool/env changes do not stale the bundle.\n'
+                          f'[tools]\nnode="99.0.0"\npython="99.0.0"\n  go = "{GO_VERSION}" # fixed\n'
+                          '[env]\nEXAMPLE="unrelated"\n_.file="missing-private.env"\n')
+        verify()
+        before = config.read_bytes()
+        config.write_text('[tools]\ngo="9.8.7"\n')
+        self.assertIn("构建输入已变化", verify(False).stderr)
+        config.write_bytes(before)
+        verify()
+        config.write_text('[env]\nsecret="private-parser-diagnostic"\n[tools\n')
+        result = subprocess.run(["/bin/bash", "-e", "-o", "pipefail", "-c", 'source "$1"; helper_source_manifest',
+                                 "manifest", str(self.root / "helper/scripts/common.sh")],
+                                env=self.environment, capture_output=True, text=True, timeout=15)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "", "invalid Go config emitted a partial source manifest")
+        self.assertIn("tools.go", result.stderr)
+        self.assertNotIn("private-parser-diagnostic", result.stderr)
+        config.write_bytes(before)
         source = self.root / "helper/cmd/system-sync-helper/main.go"
         before = source.read_bytes()
         source.write_bytes(before + b"\n// modified\n")
         self.assertIn("构建输入已变化", verify(False).stderr)
         source.write_bytes(before)
-        for relative in ("GO_VERSION", "scripts/go-version.sh"):
+        for relative in ("scripts/go-version.sh",):
             with self.subTest(build_input=relative):
                 source = self.root / "helper" / relative
                 before = source.read_bytes()
-                source.write_bytes(b"9.8.7\n" if relative == "GO_VERSION" else before + b"\n# modified\n")
+                source.write_bytes(before + b"\n# modified\n")
                 self.assertIn("构建输入已变化", verify(False).stderr)
                 source.write_bytes(before)
         archive = next(bundle.glob("*.tar.gz"))

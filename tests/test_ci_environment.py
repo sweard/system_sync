@@ -11,7 +11,7 @@ import tempfile
 import textwrap
 import unittest
 
-from helper_fixture import GO_VERSION
+from helper_fixture import GO_VERSION, prepare_go_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +27,8 @@ def workflow_commands(name):
 
 
 def prepare_toolchain_fixture(project):
-    for name in ("helper/GO_VERSION", "helper/scripts/go-version.sh", "helper/scripts/common.sh",
+    prepare_go_config(project)
+    for name in ("helper/scripts/go-version.sh", "helper/scripts/common.sh",
                  "helper/scripts/build.sh", "helper/scripts/test.sh", "scripts/task-output.sh"):
         target = project / name
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -97,6 +98,7 @@ class CleanCIEnvironmentTest(unittest.TestCase):
             tools.mkdir()
             for name in ("bash", "dirname", "cat"):
                 (tools / name).symlink_to(Path("/bin/bash") if name == "bash" else Path(shutil.which(name)).resolve())
+            (tools / "mise").symlink_to(MISE)
             env = {"HOME": str(base), "PATH": str(tools), "LC_ALL": "C"}
             for state in ("missing", "wrong-version", "version-query-failed"):
                 if state != "missing":
@@ -120,29 +122,50 @@ class CleanCIEnvironmentTest(unittest.TestCase):
                         self.assertFalse((base / ".system-sync").exists())
 
 
-class PinnedGoVersionTest(unittest.TestCase):
+@unittest.skipUnless(MISE, "mise unavailable")
+class ConfigGoVersionTest(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="system-sync-go-pin-")
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve() / "repo with spaces 中文"
         self.root.mkdir()
         prepare_toolchain_fixture(self.root)
-        self.pin = self.root / "helper/GO_VERSION"
+        self.config = self.root / "dotfiles/common/mise/config.toml"
         self.tools = self.root / "bin"
         self.tools.mkdir()
         for name in ("bash", "dirname", "cat"):
             (self.tools / name).symlink_to(Path("/bin/bash") if name == "bash" else Path(shutil.which(name)).resolve())
+        (self.tools / "mise").symlink_to(MISE)
         self.env = {"HOME": str(self.root), "PATH": str(self.tools), "GOTOOLCHAIN": "local",
-                    "GO_VERSION": "99.0.0", "REQUIRED_GO_VERSION": "99.0.0", "LC_ALL": "C"}
+                    "GO_VERSION": "99.0.0", "REQUIRED_GO_VERSION": "99.0.0", "LC_ALL": "C",
+                    "MISE_CONFIG_DIR": str(self.root / "global"),
+                    "MISE_SYSTEM_CONFIG_DIR": str(self.root / "system"),
+                    "MISE_DATA_DIR": str(self.root / "data"), "MISE_STATE_DIR": str(self.root / "state"),
+                    "MISE_CACHE_DIR": str(self.root / "cache"), "MISE_CEILING_PATHS": str(self.root.parent)}
 
     def command(self, script, *args):
         return subprocess.run([str(self.root / "helper/scripts" / script), *args], cwd=self.root.parent,
                               env=self.env, capture_output=True, text=True, timeout=10)
 
-    def test_reader_and_build_help_follow_only_the_file_without_a_compiler(self):
+    def mock_tool_operations(self, action):
+        mise = self.tools / "mise"
+        mise.unlink()
+        mise.write_text('#!/bin/sh\nif [ "$1" = config ]; then\n  exec ' + shlex.quote(MISE)
+                        + ' "$@"\nfi\n' + action)
+        mise.chmod(0o755)
+
+    def test_reader_and_build_help_follow_only_stored_go_without_a_compiler_or_environment_loading(self):
+        marker = self.root / "loaded-private-environment"
+        private = self.root / "private.sh"
+        private.write_text("touch " + shlex.quote(str(marker)) + "\n")
+        for path in (self.root / "global/config.toml", self.root / "mise.toml",
+                     self.config.with_name("config.local.toml")):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('[tools]\ngo="99.0.0"\n')
         for version in (GO_VERSION, "9.8.7"):
             with self.subTest(version=version):
-                self.pin.write_text(version + "\n")
+                self.config.write_text(f'[tools]\nnode="latest"\ngo="{version}"\n[env]\n'
+                                       f'_.source="{private}"\n_.file="missing-private.env"\n')
                 result = self.command("go-version.sh")
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout, version + "\n")
@@ -151,35 +174,55 @@ class PinnedGoVersionTest(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("需要 Go " + version, result.stdout)
         self.assertFalse((self.root / ".system-sync").exists())
+        self.assertFalse(marker.exists())
 
-    def test_invalid_or_missing_pin_stops_before_querying_or_installing_tools(self):
+    def test_invalid_or_missing_config_stops_before_querying_go_or_installing_tools(self):
         marker = self.root / "queried"
-        for name in ("go", "mise"):
-            command = self.tools / name
-            command.write_text('#!/bin/sh\nprintf unsafe > ' + shlex.quote(str(marker)) + '\nexit 99\n')
-            command.chmod(0o755)
-        for value in (None, "", "latest\n", "1.2\n", "go1.2.3\n", "1.2.3\n9.8.7\n", "1.2.3;id\n"):
-            with self.subTest(pin=value):
+        action = 'printf unsafe > ' + shlex.quote(str(marker)) + '\nexit 99\n'
+        self.mock_tool_operations(action)
+        go = self.tools / "go"
+        go.write_text('#!/bin/sh\n' + action)
+        go.chmod(0o755)
+        for value in (None, "", '[tools]\nnode="latest"\n', '[env]\nsecret="private-parser-diagnostic"\n[tools\n',
+                      *(f'[tools]\ngo={literal}\n' for literal in (
+                          '"latest"', '"1.2"', '"^1.2.3"', '"go1.2.3"', '"1.2.3\\n9.8.7"', '"1.2.3\\n"', '"1.2.3;id"',
+                          '["1.2.3"]', '{version="1.2.3"}', 'true', '123', '"{{env.GO_VERSION}}"'))):
+            with self.subTest(config=value):
                 if value is None:
-                    self.pin.unlink()
+                    self.config.unlink()
                 else:
-                    self.pin.write_text(value)
+                    self.config.write_text(value)
                 for script in ("go-version.sh", "build.sh", "test.sh"):
                     result = self.command(script)
                     self.assertNotEqual(result.returncode, 0, result.stdout)
                     self.assertEqual(result.stdout, "")
-                    self.assertIn("helper/GO_VERSION", result.stderr)
+                    self.assertIn("dotfiles/common/mise/config.toml", result.stderr)
+                    self.assertIn("tools.go", result.stderr)
+                    self.assertNotIn("private-parser-diagnostic", result.stderr)
                 for step in ("Prepare pinned Go compiler for explicit builds", "Run isolated tests",
                              "Build four platform archives from public source only"):
                     result = subprocess.run([str(self.tools / "bash"), "-e", "-o", "pipefail", "-c", workflow_commands(step)],
                                             cwd=self.root, env=self.env, capture_output=True, text=True, timeout=10)
                     self.assertNotEqual(result.returncode, 0, result.stdout)
-                    self.assertIn("helper/GO_VERSION", result.stderr)
-                self.assertFalse(marker.exists(), "invalid pin reached native tools")
+                    self.assertIn("tools.go", result.stderr)
+                    self.assertEqual(result.stdout, "")
+                    self.assertNotIn("private-parser-diagnostic", result.stderr)
+                self.assertFalse(marker.exists(), "invalid config queried Go or installed tools")
                 self.assertFalse((self.root / ".system-sync").exists())
 
-    def test_changed_pin_controls_build_and_test_mismatch_diagnostics(self):
-        self.pin.write_text("9.8.7\n")
+    def test_missing_mise_reports_the_parser_requirement_before_build_or_test(self):
+        (self.tools / "mise").unlink()
+        for script in ("go-version.sh", "build.sh", "test.sh"):
+            with self.subTest(script=script):
+                result = self.command(script)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("tools.go 需要 mise", result.stderr)
+                self.assertIn("PATH", result.stderr)
+        self.assertFalse((self.root / ".system-sync").exists())
+
+    def test_changed_go_controls_build_and_test_mismatch_diagnostics(self):
+        self.config.write_text('[tools]\ngo="9.8.7"\n')
         go = self.tools / "go"
         go.write_text('#!/bin/sh\nprintf "go0.0.0\\n"\n')
         go.chmod(0o755)
@@ -195,12 +238,10 @@ class PinnedGoVersionTest(unittest.TestCase):
                 self.assertIn("mise run --tool go@9.8.7 " + task, result.stderr)
                 self.assertFalse((self.root / ".system-sync").exists())
 
-    def test_workflow_steps_read_changed_pin_for_every_go_invocation(self):
-        self.pin.write_text("9.8.7\n")
+    def test_workflow_steps_read_changed_go_for_every_go_invocation(self):
+        self.config.write_text('[tools]\ngo="9.8.7"\n')
         log = self.root / "mise.log"
-        mise = self.tools / "mise"
-        mise.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> ' + shlex.quote(str(log)) + '\n')
-        mise.chmod(0o755)
+        self.mock_tool_operations('printf "%s\\n" "$*" >> ' + shlex.quote(str(log)) + '\n')
         for step, expected in (
             ("Prepare pinned Go compiler for explicit builds", ["trust --all", "install go@9.8.7", "exec go@9.8.7 -- go version"]),
             ("Run isolated tests", ["run --tool go@9.8.7 check"]),

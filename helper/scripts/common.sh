@@ -16,11 +16,18 @@ helper_version() {
 }
 
 helper_go_version() {
-  local version
-  [[ -f "$HELPER_DIR/GO_VERSION" ]] || helper_error "缺少固定工具链声明 helper/GO_VERSION"
-  version="$(cat "$HELPER_DIR/GO_VERSION")" || helper_error "无法读取 helper/GO_VERSION"
+  local config version
+  config="$REPO_ROOT/dotfiles/common/mise/config.toml"
+  [[ -f "$config" ]] || helper_error "缺少 Go 版本来源 dotfiles/common/mise/config.toml（tools.go）"
+  command -v mise >/dev/null 2>&1 \
+    || helper_error "读取 dotfiles/common/mise/config.toml 的 tools.go 需要 mise；请先安装 mise 并确保在 PATH 中"
+  # Preserve any newline inside the TOML string so validation cannot trim it away.
+  version="$(MISE_AUTO_INSTALL=false MISE_TASK_RUN_AUTO_INSTALL=false MISE_OFFLINE=1 \
+    mise config get --file "$config" tools.go 2>/dev/null && printf '.')" \
+    || helper_error "无法读取 dotfiles/common/mise/config.toml 的 tools.go；请检查 TOML 语法并声明完整 Go 版本号（major.minor.patch）"
+  version="${version%$'\n.'}"
   [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
-    || helper_error "helper/GO_VERSION 必须是完整 Go 版本号（major.minor.patch）"
+    || helper_error "dotfiles/common/mise/config.toml 的 tools.go 必须是完整 Go 版本号字符串（major.minor.patch）"
   printf '%s\n' "$version"
 }
 
@@ -55,17 +62,23 @@ helper_state() {
   mkdir -p -- "$REPO_ROOT/.system-sync/helper"
 }
 
-# Record public build inputs, never configuration, local state or test fixtures.
+# Record public build inputs and only the stored Go version from managed config.
+# Other configuration, private environment, local state and fixtures are excluded.
 helper_source_manifest() {
   (
+    version="$(helper_go_version)" || exit 1
     cd -- "$HELPER_DIR"
     {
-      printf '%s\n' go.mod VERSION GO_VERSION licenses/Go-LICENSE.txt scripts/build.sh scripts/common.sh scripts/go-version.sh ../scripts/task-output.sh
+      printf '%s\n' go.mod VERSION '../dotfiles/common/mise/config.toml#tools.go' licenses/Go-LICENSE.txt scripts/build.sh scripts/common.sh scripts/go-version.sh ../scripts/task-output.sh
       [[ ! -f go.sum ]] || printf '%s\n' go.sum
       find cmd internal -type f -name '*.go' ! -name '*_test.go'
       find vendor -type f
     } | LC_ALL=C sort | while IFS= read -r file; do
-      printf '%s  %s\n' "$(helper_checksum "$file")" "$file"
+      if [[ "$file" == '../dotfiles/common/mise/config.toml#tools.go' ]]; then
+        printf '%s  %s\n' "$(printf '%s\n' "$version" | helper_checksum -)" "$file"
+      else
+        printf '%s  %s\n' "$(helper_checksum "$file")" "$file"
+      fi
     done
   )
 }

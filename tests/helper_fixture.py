@@ -5,10 +5,19 @@ import os
 from pathlib import Path
 import shutil
 import stat
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GO_VERSION = (ROOT / "helper/GO_VERSION").read_text().strip()
+GO_VERSION = tomllib.loads((ROOT / "dotfiles/common/mise/config.toml").read_text())["tools"]["go"]
+
+
+def prepare_go_config(project):
+    """Write only the public version needed by build/version-reader fixtures."""
+    config = project / "dotfiles/common/mise/config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(f'[tools]\ngo = "{GO_VERSION}"\n')
+    return config
 
 
 def prepare_helper(project):
@@ -26,8 +35,7 @@ def prepare_helper(project):
     scripts.mkdir(parents=True)
     for name in ("common.sh", "go-version.sh", "install.sh", "run.sh"):
         shutil.copy2(ROOT / "helper/scripts" / name, scripts / name)
-    for name in ("VERSION", "GO_VERSION"):
-        shutil.copy2(ROOT / "helper" / name, project / "helper" / name)
+    shutil.copy2(ROOT / "helper/VERSION", project / "helper/VERSION")
     return target / "system-sync-helper"
 
 

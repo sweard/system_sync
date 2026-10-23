@@ -13,7 +13,7 @@ import tempfile
 import time
 import unittest
 
-from helper_fixture import GO_VERSION, prepare_helper
+from helper_fixture import GO_VERSION, prepare_go_config, prepare_helper
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +23,10 @@ from pathlib import Path
 program, args = sys.argv[1], sys.argv[2:]
 if program == "uname":
     print("Darwin")
+    sys.exit(0)
+if program == "mise" and args[:3] == ["config", "get", "--file"]:
+    import tomllib
+    print(tomllib.loads(Path(args[3]).read_text())["tools"]["go"])
     sys.exit(0)
 if program == "mise" and args == ["--version"]:
     if os.environ.get("FEEDBACK_FAIL_VERSION"):
@@ -77,6 +81,7 @@ class TaskFeedbackTest(unittest.TestCase):
         for directory in (self.root, self.home, self.bin):
             directory.mkdir()
         prepare_helper(self.root)
+        prepare_go_config(self.root)
         backend = self.base / "native.py"
         backend.write_text(BACKEND)
         for name in ("mise", "uname", "brew", "code", "go", "git"):
