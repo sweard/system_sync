@@ -15,7 +15,7 @@
 - `check` 可检测 Go 版本及四平台下载锁漂移，交互终端输入完整小写 `yes` 后，在隔离配置中只刷新 Go 锁、备份并重建四平台归档，复核后继续原检查范围。共享锁、并发复查和准备失败回滚已接入；非交互/CI 不自动准备，源码漂移或损坏归档仍失败。正常检查加入 Go 静态检查和 Git 改动检查，详见[准备流程](../helper/README.md#go-升级后的准备)。
 - 已核对覆盖并移除全部 7 个 Python 参考实现：解析及扩展测试改为验收 Go；单包和迁出事务映射到 Go 并补齐断言；审计保留移除前双实现核对过的 21 份独立报告基线。版本前置检查委托 Go，锁测试使用最小 POSIX 辅助；`scripts/` 仅保留 Shell 执行入口，覆盖记录见[测试说明](../tests/README.md)。
 - Go 模块、依赖、helper 版本、许可、构建/启动脚本、预编译包和说明统一集中在 `helper/`；根 `scripts/` 负责平台流程，项目级 Go 回归与检查运行器在 `helper/dev/`，`tests/` 保留入口、覆盖对照和冻结基线。mise task 名称及根目录 `.system-sync/` 缓存位置保持一致。
-- 新增 `package-capture` / `machine-init`：支持 macOS 及四个 Linux profile，默认预览，只保存本机候选或分阶段补装，保留已有软件和孤立包；配置备份、来源核对及操作锁接入 Go helper。日常接入不要求编译器，候选仍需审阅后手工合并，Linux 真实包事务验收仍待完成。
+- 新增 `package-capture` / `machine-init`：支持 macOS 及四个 Linux profile，默认预览，保存本机候选或分阶段补装，保留已有软件和孤立包；配置备份、来源核对及操作锁接入 Go helper。capture 的 `--apply --merge` 可在审阅 diff 并输入 `yes` 后备份、复查并原子追加来源明确的根包声明。日常接入不要求编译器，Linux 真实包事务验收仍待完成。
 - 任务入口已收敛：`package-status` / `package-dry-run` 分别负责轻量状态与事务预览，旧名称保留兼容别名；VS Code 查询统一到 `vscode-status`。日常 `config-sync` 与 `machine-init` 共用 Go 配置计划、备份和复查能力，完整 helper 验收流程为 `helper-bundle → check --all-platforms`。
 - 输出明细已补齐：VS Code 清单外扩展逐项显示标识和版本并保留；审计中的漂移、候选、本机保留和错误分组完整展开；配置历史登记、保存及跳过目标列出路径，私有正文继续留在本机。
 - 扩展采集合并到 `vscode-status --capture`：默认预览新增扩展和已纳管扩展的本机版本变化及 diff，新项默认加入 `common`，平台专属新项显式指定 `--group`；已有项保留原分组更新版本，支持选中、排除，确认后备份并原子写入，保留缺失项声明及本机安装状态。状态及同步明确提示降级/回滚与先采集本机版本的选择，不增加独立 task。

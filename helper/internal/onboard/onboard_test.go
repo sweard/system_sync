@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/sweard/system_sync/helper/internal/configops"
+	"github.com/sweard/system_sync/helper/internal/localconfig"
 	"github.com/sweard/system_sync/helper/internal/taskexec"
 )
 
@@ -181,7 +182,15 @@ func (f *fake) Run(command []string, capture bool) (string, error) {
 	}
 	if strings.HasPrefix(joined, "mise -C ") {
 		state := []any{}
-		for _, name := range []string{"git", "missing-tool"} {
+		data, err := localconfig.Read(filepath.Join(command[2], "mise.toml"))
+		if err != nil {
+			return "", err
+		}
+		for id := range localconfig.Table(localconfig.Table(data["bootstrap"])["packages"]) {
+			manager, name, _ := strings.Cut(id, ":")
+			if manager != f.e.manager() {
+				continue
+			}
 			status := "missing"
 			if has(f.installed, name) {
 				status = "installed"

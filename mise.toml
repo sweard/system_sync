@@ -25,7 +25,7 @@ description = "查看系统软件声明、缺失项和额外软件；不执行�
 run = "./scripts/system-sync.sh --status"
 
 [tasks.package-capture]
-description = "预览本机软件清单与合并候选；--apply 仅保存本机快照，不改写受管清单"
+description = "预览本机根包与候选；--apply 保存快照，另加 --merge 输入 yes 后追加根包声明"
 raw = true
 run = "./helper/scripts/run.sh package-capture"
 

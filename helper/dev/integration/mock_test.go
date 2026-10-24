@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 func mockLoad(path string) map[string]any {
@@ -711,14 +713,27 @@ func mockOnboard(name string, args []string) int {
 		}
 		if len(args) > 4 && args[0] == "-C" && strings.Join(args[len(args)-4:], " ") == "bootstrap packages status --json" {
 			packages := []any{}
-			for _, n := range []string{"git", "missing-tool"} {
+			b, err := os.ReadFile(filepath.Join(args[1], "mise.toml"))
+			var data struct {
+				Bootstrap struct {
+					Packages map[string]any
+				}
+			}
+			if err != nil || toml.Unmarshal(b, &data) != nil {
+				return 91
+			}
+			for id := range data.Bootstrap.Packages {
+				manager, n, _ := strings.Cut(id, ":")
+				if manager != "pacman" {
+					continue
+				}
 				state := "missing"
 				if has(list(s["installed"]), n) {
 					state = "installed"
 				}
 				packages = append(packages, map[string]any{"package": n, "state": state})
 			}
-			b, _ := json.Marshal(map[string]any{"pacman": map[string]any{"available": true, "packages": packages}})
+			b, _ = json.Marshal(map[string]any{"pacman": map[string]any{"available": true, "packages": packages}})
 			fmt.Println(string(b))
 			return 0
 		}

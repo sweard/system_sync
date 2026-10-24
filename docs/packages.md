@@ -106,7 +106,7 @@ mise run package-install --cask --trust abue-ammar/tinycast/tinycast
 
 ## 从当前系统反向校正清单漂移
 
-`system-sync` 的方向是“声明 → 系统”。如果希望保留当前机器的软件状态，应先按下面的命令导出“系统 → 声明”的候选，再核对差异；这些导出命令不安装或卸载软件，也不直接覆盖受管清单。请在仓库根目录执行，且不要与包操作并行运行。
+`system-sync` 的方向是“声明 → 系统”。如果希望保留当前机器的软件状态，应先按下面的命令导出“系统 → 声明”的候选，再核对差异。默认采集只生成候选，显式 `--apply --merge` 才会在确认后追加到受管清单；采集与合并均不安装或卸载软件。请在仓库根目录执行，且不要与包操作并行运行。
 
 优先使用跨平台 task，自动识别现有 macOS / Linux profile，复用共享锁，区分有效空结果和查询失败，并检查采集期间软件状态是否变化：
 
@@ -114,11 +114,16 @@ mise run package-install --cask --trust abue-ammar/tinycast/tinycast
 mise run package-capture             # 默认预览根包、缺失项、待核对来源与候选 diff
 mise run package-capture --json      # 结构化预览
 mise run package-capture --apply     # 仅保存本机快照和候选，不改写清单或系统软件
+mise run package-capture --apply --merge # 展示 diff，输入 yes 后追加来源明确的根包声明
 ```
 
 输出到 `.system-sync/capture/<时间>-<平台>-*/`，包括 `capture.json`、`sources.before.json` 和 `Brewfile.candidate` 或 `mise.toml.candidate`。文件为 `0600`、目录为 `0700`，均被 Git 忽略。候选保留原清单的声明、注释及选项，仅追加已识别的清单外根包；仍未安装的原声明不会被删掉，合并前需要重新核对当前差异。
 
-Homebrew 从原生 Bundle 快照取得 formula/cask/tap；新发现的第三方 tap 和完整包名只列为待核对，不自动扩大信任。Arch 的 foreign 显式根包单独记录，不自动认定为 AUR 或转为 `pacman:`；已有 orphan 也会列出并保留。查询失败不会发布部分候选。手工根包标记不一定完全反映使用意图，候选必须审阅后再合并；unknown、absent、skipped、版本不符等状态不能作为无条件补装计划。
+`--apply --merge` 将同一份候选追加到本平台受管清单（例如 Arch 的 `packages/linux/arch/mise.toml`），要求交互终端，并在显示完整 diff 后输入小写 `yes`；不支持通过 `--yes` 或管道跳过确认。回车或其他输入取消。单独 `--merge` 无效，预览直接使用不带写入参数的命令即可。无新增项时不询问、不改写清单，也不保存候选或备份。单独 `--apply` 的保存行为保持。
+
+确认后复查清单、本机已安装包、根包和来源；期间有变化则拒绝合并。合并沿用共享操作锁，保留已有声明、缺失项、注释和选项，只追加候选中的来源明确根包，不安装、卸载软件或改变包的安装原因。原清单以 `mise.toml.before` / `Brewfile.before` 存在同一采集目录，`transaction.json` 记录 `merging` / `complete` / `needs-review`；清单使用临时文件原子替换并保留原权限。写入失败保留恢复资料，见[恢复流程](recovery.md#中断与写入失败的恢复)。
+
+Homebrew 从原生 Bundle 快照取得 formula/cask/tap；新发现的第三方 tap 和完整包名只列为待核对，不自动扩大信任。Arch 的 foreign 显式根包单独记录，不自动认定为 AUR 或转为 `pacman:`；已有 orphan 也会列出并保留。`--merge` 同样跳过这些来源不明项目，可合并其余候选；待处理项仍需单独核对。查询失败不会发布部分候选。手工根包标记不一定完全反映使用意图，确认前仍需核对用途；unknown、absent、skipped、版本不符等状态不能作为无条件补装计划。
 
 首次接入建议先运行 `mise run machine-init --apply --only packages`，只补装缺失声明并保留已有软件。配置及工具阶段见[机器接入](rebuild.md#使用-machine-init-分阶段接入)。以下原生命令保留作人工导出参考；Arch 无匹配返回 1 的情况优先交给 `package-capture` 处理。
 

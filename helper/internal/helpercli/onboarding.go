@@ -21,13 +21,16 @@ import (
 func onboarding(command string, args []string, root string, stdin *os.File, out, stderr io.Writer) (int, error) {
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	apply := fs.Bool("apply", false, "执行；package-capture 仅保存本机候选，machine-init 仅补装")
+	apply := fs.Bool("apply", false, "执行；package-capture 保存本机候选，另加 --merge 确认后合并；machine-init 仅补装")
 	dryRun := fs.Bool("dry-run", false, "只预览（默认）")
 	jsonOutput := fs.Bool("json", false, "以 JSON 显示预览")
 	yes := fs.Bool("yes", false, "machine-init 已审阅计划，跳过项目确认")
+	merge := false
 	var only stringsFlag
 	if command == "machine-init" {
 		fs.Var(&only, "only", "packages、config、tools，可重复或用逗号分隔")
+	} else {
+		fs.BoolVar(&merge, "merge", false, "与 --apply 同用；展示差异并输入 yes 后追加来源明确的根包声明")
 	}
 	if code, err := parse(fs, args); err != nil {
 		return code, nil
@@ -37,6 +40,9 @@ func onboarding(command string, args []string, root string, stdin *os.File, out,
 	}
 	if *apply && *dryRun {
 		return 2, fmt.Errorf("--apply 与 --dry-run 不能同时使用")
+	}
+	if merge && !*apply {
+		return 2, fmt.Errorf("--merge 必须与 package-capture --apply 同用；预览请直接运行 package-capture")
 	}
 	if *yes && (!*apply || command != "machine-init") {
 		return 2, fmt.Errorf("--yes 只适用于 machine-init --apply")
@@ -102,12 +108,36 @@ func onboarding(command string, args []string, root string, stdin *os.File, out,
 			fmt.Fprintln(out, "[+] 以上仅为预览；未保存候选、修改清单或系统软件。使用 --apply 保存本机候选。")
 			return 0, nil
 		}
+		if merge {
+			if capture.Candidate.Diff == "" {
+				fmt.Fprintln(out, "[+] 无新增根包声明需要合并；未改写清单或保存备份。")
+				return 0, nil
+			}
+			if !terminal.IsTerminal(stdin) {
+				return 1, fmt.Errorf("合并清单请在交互终端运行，并输入 yes 确认展示的差异")
+			}
+			confirmed, err := taskexec.Confirm(ctx, stdin, out, "仅追加以上差异中的根包声明，不安装或卸载软件。输入 yes 确认合并（其他输入取消）：")
+			if err != nil {
+				return 1, err
+			}
+			if !confirmed {
+				fmt.Fprintln(out, "[-] 已取消；未合并清单或保存备份。")
+				return 2, nil
+			}
+			directory, err := e.Merge(ctx, capture, out)
+			if err != nil {
+				return 1, err
+			}
+			fmt.Fprintln(out, "[+] 根包声明已合并："+capture.Candidate.Path)
+			fmt.Fprintln(out, "[+] 本机快照、候选与原清单备份："+directory)
+			return 0, nil
+		}
 		directory, err := capture.Save(root, "capture")
 		if err != nil {
 			return 1, err
 		}
 		fmt.Fprintln(out, "[+] 本机快照与合并候选已保存："+directory)
-		fmt.Fprintln(out, "[+] 受管清单未修改；请审阅候选、来源和保护项后手工合并。")
+		fmt.Fprintln(out, "[+] 受管清单未修改；可用 package-capture --apply --merge 审阅差异并确认合并，或手工合并候选。")
 		return 0, nil
 	}
 	var plan *onboard.Plan

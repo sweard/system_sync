@@ -73,6 +73,7 @@ func onboardCase(f *fixture, name string) {
 		equal(t, info.Mode().Perm(), os.FileMode(0600))
 		equal(t, read(t, manifest), before)
 		equal(t, mutations(), 0)
+		captureMergeCLICases(t)
 	case "test_install_only_on_macos_and_arch_preserves_extras_and_is_repeatable":
 		ps := []string{"macos", "arch"}
 		if p := os.Getenv("SYSTEM_SYNC_TEST_PROFILE"); p != "all" && p != "" {
@@ -106,10 +107,43 @@ func onboardCase(f *fixture, name string) {
 		s := jsonData(f, state)
 		s["live_progress"] = true
 		writeJSON(t, state, s)
-		r := good(t, f.terminal([]string{filepath.Join(f.root, "helper/scripts/run.sh"), "machine-init", "--only", "packages", "--apply", "--yes"}, [][2]string{{"Fixture: onboard download", "download-seen"}, {"Fixture: onboard install", "install-seen"}}))
+		brew := read(t, filepath.Join(f.bin, "brew"))
+		// Model sudo's /dev/tty password input without invoking real sudo.
+		f.shell("brew", `if [ "$1 $2" = 'bundle install' ]; then
+  stty -echo < /dev/tty || exit 97
+  printf 'Fixture password: ' > /dev/tty
+  IFS= read -r password < /dev/tty
+  stty echo < /dev/tty || exit 98
+  printf '\n' > /dev/tty
+  [ "$password" = 'fixture-password-731' ] || exit 99
+fi
+`+brew)
+		script := filepath.Join(f.base, "interactive-init.sh")
+		executable(t, script, "#!/bin/sh\n"+quote(filepath.Join(f.root, "helper/scripts/run.sh"))+" machine-init --only packages --apply || exit $?\nprintf 'Fixture after init: '\nIFS= read -r answer\n[ \"$answer\" = done ]\n")
+		r := good(t, f.controllingTerminal([]string{script}, [2]string{"输入 yes 确认（其他输入取消）：", "yes"}, [2]string{"Fixture password: ", "fixture-password-731"}, [2]string{"Fixture: onboard download", "download-seen"}, [2]string{"Fixture: onboard install", "install-seen"}, [2]string{"Fixture after init: ", "done"}))
+		excludes(t, r.out, "fixture-password-731")
+		contains(t, r.out, "Fixture after init: done")
 		contains(t, r.out, "开始接入阶段 1/1：packages")
 		assertOrder(f, r.out, []string{"Fixture: onboard install", "复核补装结果"})
 		contains(t, r.out, "缺失软件已补装")
+
+		// Cancellation must restore both foreground ownership and echo, and
+		// still stop descendants of the native operation's process group.
+		s = jsonData(f, state)
+		s["installed"] = []string{"git", "local-tool", "orphan-lib"}
+		writeJSON(t, state, s)
+		orphan := filepath.Join(f.base, "cancelled-child-survived")
+		f.shell("brew", `if [ "$1 $2" = 'bundle install' ]; then
+  stty -echo < /dev/tty || exit 97
+  (sleep 0.3; printf survived > `+quote(orphan)+`) &
+  kill -TERM "$PPID"
+  wait
+  exit 99
+fi
+`+brew)
+		executable(t, script, "#!/bin/sh\n"+quote(filepath.Join(f.root, "helper/scripts/run.sh"))+" machine-init --only packages --apply --yes\n[ $? -eq 130 ] || exit 91\nprintf 'Fixture after cancellation: '\nIFS= read -r answer\n[ \"$answer\" = done ] || exit 92\nsleep 0.4\n[ ! -e "+quote(orphan)+" ]\n")
+		r = good(t, f.controllingTerminal([]string{script}, [2]string{"Fixture after cancellation: ", "done"}))
+		contains(t, r.out, "Fixture after cancellation: done")
 	case "test_query_failure_does_not_publish_partial_capture":
 		configure("arch")
 		s := jsonData(f, state)
@@ -122,6 +156,7 @@ func onboardCase(f *fixture, name string) {
 	case "test_shared_lock_prevents_capture_and_initialization":
 		release := lock(t, f.root)
 		bad(t, cli("package-capture"))
+		bad(t, cli("package-capture", "--apply", "--merge"))
 		bad(t, cli("machine-init", "--only", "packages", "--apply", "--yes"))
 		release()
 		equal(t, mutations(), 0)

@@ -1358,7 +1358,7 @@
   {
     "id": "test_onboarding.OnboardingCLITest.test_capture_apply_only_saves_private_candidates",
     "platforms": [
-      "macos"
+      "common"
     ],
     "serial": false,
     "go": "TestIntegration/parallel/test_onboarding.OnboardingCLITest.test_capture_apply_only_saves_private_candidates",
@@ -1386,7 +1386,7 @@
   {
     "id": "test_onboarding.OnboardingCLITest.test_machine_init_streams_homebrew_output_and_reports_verification",
     "platforms": [
-      "macos"
+      "common"
     ],
     "serial": false,
     "go": "TestIntegration/parallel/test_onboarding.OnboardingCLITest.test_machine_init_streams_homebrew_output_and_reports_verification",

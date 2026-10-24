@@ -545,6 +545,14 @@ func (w *liveWriter) Write(p []byte) (int, error) {
 
 // ttyOutput is used only when stdout's terminal status is the behavior under test.
 func (f *fixture) ttyOutput(args []string, answers ...[2]string) result {
+	return f.ptyOutput(args, false, answers...)
+}
+
+func (f *fixture) controllingTerminal(args []string, answers ...[2]string) result {
+	return f.ptyOutput(args, true, answers...)
+}
+
+func (f *fixture) ptyOutput(args []string, controlling bool, answers ...[2]string) result {
 	t := f.t
 	master, slave, e := openPTY()
 	if e != nil {
@@ -561,6 +569,9 @@ func (f *fixture) ttyOutput(args []string, answers ...[2]string) result {
 	c.Stdout = slave
 	c.Stderr = slave
 	c.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if controlling {
+		c.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
+	}
 	c.Cancel = func() error { return syscall.Kill(-c.Process.Pid, syscall.SIGKILL) }
 	if e := startTracked(c); e != nil {
 		t.Fatal(e)

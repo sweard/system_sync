@@ -96,7 +96,7 @@ mise run config-dry-run
 
 | 操作 | 命令 |
 |---|---|
-| 预览本机根包及清单合并候选 | `mise run package-capture`；`--apply` 仅保存本机快照与候选，见[清单采集](docs/packages.md#从当前系统反向校正清单漂移) |
+| 预览本机根包及清单合并候选 | `mise run package-capture`；`--apply` 仅保存快照与候选，`--apply --merge` 输入 `yes` 后追加根包声明，见[清单采集](docs/packages.md#从当前系统反向校正清单漂移) |
 | 预览 / 执行机器接入，保留已有软件 | `mise run machine-init` / `machine-init --apply`；支持 `--only packages`、`config`、`tools`，见[分阶段接入](docs/rebuild.md#使用-machine-init-分阶段接入) |
 | 查看系统软件声明、缺失项与额外软件 | `mise run package-status`，不运行安装或清理预演 |
 | 预览系统软件安装、收敛和清理计划 | `mise run package-dry-run` |

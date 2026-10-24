@@ -104,6 +104,8 @@ mise dot --local rollback ~/.codex/config.toml --to <检查点ID>
 
 `machine-init` 的记录位于 `.system-sync/history/<时间>-machine-init-*/`：`plan.json` 是接入计划，`transaction.json` 记录已完成阶段；失败标为 `needs-review`，不会自动卸载已经补装的软件。先核对原生包状态、失败原因和实际配置，再重跑相同阶段，已安装项会跳过。受管清单始终不由初始化自动改写。
 
+`package-capture --apply --merge` 的记录位于 `.system-sync/capture/<时间>-<平台>-*/`：`mise.toml.before` / `Brewfile.before` 保存原清单，`*.candidate` 保存已确认的候选，`transaction.json` 记录 `merging` / `complete` / `needs-review`。写入失败或中断时，先比较受管清单、原清单和候选；原子替换前失败通常保留原清单，替换后若日志失败则清单可能已更新。核对后可重新运行预览或手工恢复 `*.before`；不要覆盖期间发生的人工编辑。该操作不改变已安装软件，预览、确认前取消或无新增项不保存这类备份。
+
 配置阶段前保存的 `config.before.tar` 包含原 HOME 相对路径、内容、链接和权限；备份可能含私有值，仅保存在本机。需要恢复时先在独立目录解包核对，再逐目标恢复，避免向仍指向仓库的链接直接写入而改动公共来源。原本不存在的目标可结合 `plan.json` 与归档条目判断。软件清单候选另存在 `.system-sync/capture/`，不是已安装包的完整备份。
 
 确认后，操作前后的清单副本和事务阶段保存在 `.system-sync/history/<时间>-package-<随机值>/`：`*.before` 是原文件，`*.after` 是候选结果，`transaction.json` 记录命令与状态。该目录被 Git 忽略。

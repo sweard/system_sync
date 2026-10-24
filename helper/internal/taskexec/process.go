@@ -14,6 +14,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/sweard/system_sync/helper/internal/terminal"
 )
 
 type Failure struct {
@@ -101,7 +103,7 @@ func (r Runner) Run(command []string, capture bool) (string, error) {
 	}
 	return output, err
 }
-func (r Runner) Invoke(command []string, capture bool, timeout time.Duration) (string, error) {
+func (r Runner) Invoke(command []string, capture bool, timeout time.Duration) (output string, resultErr error) {
 	ctx := r.Context
 	if ctx == nil {
 		ctx = context.Background()
@@ -117,6 +119,23 @@ func (r Runner) Invoke(command []string, capture bool, timeout time.Duration) (s
 	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
 	cmd.Dir, cmd.Env = r.Dir, r.Env
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if !capture {
+		foreground, err := terminal.PrepareForeground()
+		if err != nil {
+			return "", fmt.Errorf("读取交互终端失败：%w", err)
+		}
+		if foreground != nil {
+			// Keep group cancellation, but let sudo and other native prompts
+			// read the controlling terminal and change echo without SIGTTIN/TTOU.
+			cmd.SysProcAttr.Foreground = true
+			cmd.SysProcAttr.Ctty = int(foreground.File.Fd())
+			defer func() {
+				if err := foreground.Restore(); err != nil {
+					resultErr = errors.Join(resultErr, fmt.Errorf("恢复交互终端失败：%w", err))
+				}
+			}()
+		}
+	}
 	cmd.Cancel = func() error {
 		err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 		if errors.Is(err, syscall.ESRCH) {

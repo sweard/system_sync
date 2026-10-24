@@ -1,5 +1,6 @@
 // Package onboard captures the host baseline and coordinates additive setup.
-// It never writes managed manifests or invokes the convergence/cleanup scripts.
+// Only an explicitly confirmed capture merge writes managed manifests; no
+// capture operation invokes installation or convergence/cleanup scripts.
 package onboard
 
 import (

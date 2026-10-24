@@ -14,6 +14,7 @@ mise run helper-install             # 已有 checkout 更新后显式启用新 h
 mise run package-capture            # 默认预览本机清单与合并候选
 mise run machine-init               # 默认预览 packages → config → tools
 mise run package-capture --apply    # 仅保存本机快照与候选
+mise run package-capture --apply --merge # 审阅 diff，输入 yes 后追加根包声明
 
 # 已有机器建议分阶段接入
 mise run machine-init --apply --only packages
@@ -27,6 +28,8 @@ mise run audit
 
 `--dry-run` 显式指定预览；`--only` 可重复或用逗号分隔，始终按上述顺序执行。执行时输入小写 `yes`，已审阅计划可显式加 `--yes` 跳过项目确认，冲突和来源检查始终保留。Arch/zypper 在项目确认后非交互补装；sudo 认证、其他包管理器及第三方信任仍可能需要交互。`--json` 用于结构化预览，与 `--apply` 互斥。
 
+sudo 密码由原生命令直接从终端读取，输入时不显示字符，回车后继续。交互命令执行期间持有终端前台控制权，结束或取消后恢复终端设置。
+
 | 阶段 | 行为与保留范围 |
 |---|---|
 | packages | 仅安装声明中尚未安装的软件。Homebrew 用只含缺失项的临时 Brewfile，保留原选项并禁用自动升级、cleanup 和 autoremove；Linux 使用原生安装命令及适用的保留策略。不改变已有根包的安装原因、不清理 orphan，也不自动刷新 Arch 数据库或全量升级。 |
@@ -35,7 +38,7 @@ mise run audit
 
 完整计划有阻塞项时不执行任何阶段，可先用 `--only packages` 完成独立补装。Linux 自动补装仅接受本 profile 的 `latest` 声明；缺失的固定版本、额外选项及继承来源先单独核对，避免误装为最新版。AUR 缺失项先审阅并通过 `package-install --aur` 单独处理；未知、absent、跳过和不完整状态不用于初始化。原生依赖事务可能更新依赖，出现冲突或移除建议应取消并人工处理；安装后复核原有软件的名称/架构身份仍在。失败保留 `needs-review` 记录及已完成阶段，不自动回滚系统包；重跑会重新计算并跳过已安装项。
 
-快照与候选保存在 `.system-sync/capture/<时间>-<平台>-*/`；初始化计划、原配置 `config.before.tar` 和事务记录位于 `.system-sync/history/<时间>-machine-init-*/`。目录为 `0700`、文件为 `0600`，均被 Git 忽略。备份可能包含私有配置，只保存在本机。候选需人工合并，来源不明的软件继续保留；审阅完整 baseline、保护项和删除预览后，才单独运行 `system-sync`。预览不保存候选或配置备份，但首次 helper 初始化和共享锁仍会写入本机缓存。
+快照与候选保存在 `.system-sync/capture/<时间>-<平台>-*/`；初始化计划、原配置 `config.before.tar` 和事务记录位于 `.system-sync/history/<时间>-machine-init-*/`。目录为 `0700`、文件为 `0600`，均被 Git 忽略。备份可能包含私有配置，只保存在本机。候选可以手工合并，也可用 `package-capture --apply --merge` 在交互终端审阅 diff 并输入 `yes`，复查后追加来源明确的根包声明；原清单的 `*.before` 备份和事务记录存在同一采集目录。不安装或卸载软件，来源不明项目继续保留待核对。审阅完整 baseline、保护项和删除预览后，才单独运行 `system-sync`。预览不保存候选或配置备份，但首次 helper 初始化和共享锁仍会写入本机缓存。
 
 WSL 的 Windows 应用配置、VS Code Remote 的设置/扩展目标、Windows PATH 和 Docker/systemd 服务需另行核对；task 不接管 Windows 配置或启用服务。工具下载仍受平台限制，例如当前 Flutter 官方归档没有 Linux ARM64 版本。
 

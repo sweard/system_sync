@@ -24,7 +24,7 @@ Go 单元测试随生产源码保存；检查运行器与项目级 CLI/离线安
 | 命令或入口 | 实现与状态 |
 |---|---|
 | `mise run audit` | Go；保持 JSON schema 1、颜色和固定标记、查询并发、脱敏及退出状态；非正常分组完整展开明细，正常分组明确省略数量 |
-| `package-capture` / `machine-init` | Go；默认预览，五平台清单采集、追加候选、分阶段补装、配置备份与工具来源核对；保留已有软件，不调用整机清理 |
+| `package-capture` / `machine-init` | Go；默认预览，五平台采集；capture 的 `--apply --merge` 确认后追加根包声明并备份，init 分阶段补装、配置备份与工具来源核对；保留已有软件，不调用整机清理 |
 | `parse-status` | Go；校验 mise 包状态结构、状态、名称及非空声明，输出 TSV |
 | `parse-zypper` | Go；校验 XML 根节点、名称、对象种类及完整移除事务 |
 | 系统软件 `package-status` / `package-dry-run` / `system-sync`、`macos-upgrade` | 保留 Bash 平台流程，预检、共享锁、事务日志和解析调用 Go |
