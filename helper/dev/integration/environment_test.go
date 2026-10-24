@@ -155,6 +155,7 @@ func environmentCase(f *fixture, name string) {
 		if _, ok := resolved(outside)["CASE_SUBMITTER"]; ok {
 			t.Fatal("deleted private env leaked")
 		}
+		pythonBootstrapCase(f, configSource, outside, python)
 	case "test_exec_task_and_repeated_loading_keep_shared_path":
 		for _, rel := range []string{".local/bin", ".git-ai/bin", "development/flutter/bin"} {
 			mkdir(t, filepath.Join(f.home, rel))
@@ -239,6 +240,78 @@ printf '%s|%s|%s\n' "$CASE_SUBMITTER" "$ANDROID_HOME" "$PATH"`
 	default:
 		t.Fatal("unported", name)
 	}
+}
+
+// Missing tools must not prevent the configuration task that deploys their
+// declarations. uv must still refuse to select an unrelated system Python.
+func pythonBootstrapCase(f *fixture, configSource, outside, installedPython string) {
+	t := f.t
+	original := read(t, configSource)
+	envSource := strings.SplitN(original, "\n[env]\n", 2)[1]
+	guard := filepath.Join(filepath.Dir(configSource), "python-required.sh")
+	copyTree(t, filepath.Join(repo, "dotfiles/common/mise/python-required.sh"), guard)
+	f.helper()
+	write(t, filepath.Join(f.root, "managed.txt"), "bootstrap fixture\n")
+	taskConfig := "[settings.task]\nrun_auto_install=false\n[tasks.config-sync]\nraw=true\nrun='./helper/scripts/run.sh config sync'\n[dotfiles]\n\"~/.bootstrap-fixture\"={source=\"managed.txt\",mode=\"copy\"}\n"
+	write(t, filepath.Join(f.root, "mise.toml"), taskConfig)
+	marker := filepath.Join(f.base, "system-python-used")
+	f.shell("python3", "printf called > "+quote(marker)+"\nexit 99")
+	f.env["PATH"] = f.bin + ":" + f.env["PATH"]
+	wanted := tomlData(f, filepath.Join(repo, "dotfiles/common/mise/config.toml"))["tools"].(map[string]any)["python"].(string)
+	resolved := func() map[string]any {
+		r := good(t, f.mise("-C", outside, "env", "--json"))
+		var values map[string]any
+		if err := json.Unmarshal([]byte(r.out), &values); err != nil {
+			t.Fatal(err)
+		}
+		return values
+	}
+	for _, goReady := range []bool{false, true} {
+		tools := "python=" + quoteTOML(wanted) + "\n"
+		if goReady {
+			goPath := filepath.Join(f.home, "go-ready")
+			executable(t, filepath.Join(goPath, "bin/go"), "#!/bin/sh\nexit 0\n")
+			tools += "go=" + quoteTOML("path:"+goPath) + "\n"
+		}
+		write(t, configSource, "[tools]\n"+tools+"\n[env]\n"+envSource)
+		values := resolved()
+		equal(t, values["UV_PYTHON"], guard)
+		equal(t, values["UV_PYTHON_DOWNLOADS"], "never")
+		contains(t, good(t, f.mise("run", "--quiet", "config-sync", "--dry-run", "--force")).out, "bootstrap fixture")
+		contains(t, good(t, f.mise("exec", "--", "sh", "-c", "printf bootstrap-ready")).out, "bootstrap-ready")
+		contains(t, bad(t, f.run(guard, "--version")).err, "请先运行 mise install python")
+		if exists(marker) || exists(filepath.Join(f.home, ".bootstrap-fixture")) {
+			t.Fatal("bootstrap used system Python or applied the preview")
+		}
+	}
+	// An uninstalled project version must not silently use an installed global
+	// Python; an installed project version must still take precedence.
+	write(t, configSource, original)
+	write(t, filepath.Join(f.root, "mise.toml"), taskConfig+"\n[tools]\npython="+quoteTOML(wanted)+"\n")
+	var values map[string]any
+	prior, inherited := f.env["UV_PYTHON"]
+	f.env["UV_PYTHON"] = filepath.Join(installedPython, "bin/python3")
+	r := good(t, f.mise("env", "--json"))
+	if err := json.Unmarshal([]byte(r.out), &values); err != nil {
+		t.Fatal(err)
+	}
+	equal(t, values["UV_PYTHON"], guard)
+	if inherited {
+		f.env["UV_PYTHON"] = prior
+	} else {
+		delete(f.env, "UV_PYTHON")
+	}
+	projectPython := filepath.Join(f.home, "project-python")
+	executable(t, filepath.Join(projectPython, "bin/python3"), "#!/bin/sh\nprintf selected-project-python\n")
+	write(t, filepath.Join(f.root, "mise.toml"), taskConfig+"\n[tools]\npython="+quoteTOML("path:"+projectPython)+"\n")
+	r = good(t, f.mise("env", "--json"))
+	if err := json.Unmarshal([]byte(r.out), &values); err != nil {
+		t.Fatal(err)
+	}
+	equal(t, values["UV_PYTHON"], filepath.Join(projectPython, "bin/python3"))
+	equal(t, good(t, f.run(values["UV_PYTHON"].(string), "--version")).out, "selected-project-python")
+	paths, _ := filepath.Glob(filepath.Join(f.env["MISE_DATA_DIR"], "installs/python/*"))
+	equal(t, len(paths), 0)
 }
 func zshCase(f *fixture, name string) {
 	t := f.t

@@ -35,5 +35,6 @@ _.file = { path = "{{ env.HOME }}/.config/mise/secrets.env", redact = true }
 _.source = { path = "{{ config_source | canonicalize | dirname }}/../shell/path.sh", tools = true }
 
 # uv 负责依赖和虚拟环境，解释器统一由 mise 选择，禁止另行下载。
-UV_PYTHON = { value = "{{ tools.python.path }}/bin/python3", tools = true }
+# tools 只包含已安装的当前版本；缺少 Python 时允许配置部署，uv 调用则明确提示安装。
+UV_PYTHON = { value = "{% if tools.python is defined %}{{ tools.python.path }}/bin/python3{% else %}{{ config_source | canonicalize | dirname }}/python-required.sh{% endif %}", tools = true }
 UV_PYTHON_DOWNLOADS = "never"

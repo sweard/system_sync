@@ -27,6 +27,8 @@
 
 Python 的 `UV_PYTHON` 指向 mise 选择的解释器，`UV_PYTHON_DOWNLOADS=never` 禁止 uv 再下载另一套 Python。项目需要其他 Python 时，在项目 mise 配置或已启用识别的 `.python-version` 中声明，再运行 `mise install`；项目版本覆盖全局默认。Apple Python 的原有用户库继续留在其 3.9 环境中，不会自动迁移到 mise 选择的其他版本；旧脚本需要它时显式使用 `/usr/bin/python3`，新项目通过 `uv sync` 安装自己的依赖。
 
+当前选择的 Python 尚未安装时，仍可加载环境并运行 `config-sync`、`audit` 等接入任务；调用 uv 时会提示先运行 `mise install python`，不会借用其他系统 Python。安装完成后自动绑定当前选中的解释器，包括项目覆盖版本。mise 的 `tools` 模板变量只包含已安装的当前版本，因此配置在引用解释器路径前先检查它是否存在，见[官方模板说明](https://mise.jdx.dev/templates.html#variables)。
+
 全局启用 `.nvmrc` / `.node-version`、Python、Ruby、Java 和 Rust 的原生版本文件识别，保留项目级版本选择；Node 不从 `package.json` 自动切换。Rust 仍使用 rustup 作为 mise 的底层安装器，不再由独立的默认通道决定 mise 环境中的版本。参见 [Rust 后端](https://mise.jdx.dev/lang/rust.html)。
 
 首次使用工具配置，先部署对应全局 mise 映射并信任，再安装和核对：
